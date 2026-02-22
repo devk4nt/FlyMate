@@ -1,0 +1,29 @@
+import SwiftUI
+import ComposableArchitecture
+
+public struct StudyNavigationView: View {
+    @Bindable var store: StoreOf<StudyNavigationFeature>
+
+    public init(store: StoreOf<StudyNavigationFeature>) {
+        self.store = store
+    }
+
+    public var body: some View {
+        NavigationStack(
+            path: $store.scope(state: \.path, action: \.path)
+        ) {
+            StudyListView(
+                store: store.scope(state: \.studyList, action: \.studyList)
+            )
+        } destination: { store in
+            switch store.case {
+            case .studyDetail(let detailStore):
+                StudyDetailView(store: detailStore)
+            case .videoDetail(let videoStore):
+                VideoDetailView(store: videoStore)
+            case .videoUpload(let uploadStore):
+                VideoUploadView(store: uploadStore)
+            }
+        }
+    }
+}

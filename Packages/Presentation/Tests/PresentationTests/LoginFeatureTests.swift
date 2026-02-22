@@ -1,0 +1,76 @@
+import Testing
+import ComposableArchitecture
+import Domain
+import Core
+
+@testable import Presentation
+
+@MainActor
+struct LoginFeatureTests {
+    @Test
+    func Apple_로그인_성공() async {
+        let mockUser = User.mock
+
+        let store = TestStore(initialState: LoginFeature.State()) {
+            LoginFeature()
+        } withDependencies: {
+            $0.authClient.signInWithApple = { _, _ in mockUser }
+        }
+
+        await store.send(.appleLoginTapped) {
+            $0.isLoading = true
+            $0.error = nil
+        }
+
+        await store.receive(\.loginResponse.success) {
+            $0.isLoading = false
+        }
+    }
+
+    @Test
+    func Apple_로그인_실패() async {
+        let store = TestStore(initialState: LoginFeature.State()) {
+            LoginFeature()
+        } withDependencies: {
+            $0.authClient.signInWithApple = { _, _ in
+                throw AppError.network(.noConnection)
+            }
+        }
+
+        await store.send(.appleLoginTapped) {
+            $0.isLoading = true
+            $0.error = nil
+        }
+
+        await store.receive(\.loginResponse.failure) {
+            $0.isLoading = false
+            $0.error = .network(.noConnection)
+        }
+    }
+
+    @Test
+    func 에러_다이얼로그_닫기() async {
+        var state = LoginFeature.State()
+        state.error = .network(.noConnection)
+
+        let store = TestStore(initialState: state) {
+            LoginFeature()
+        }
+
+        await store.send(.errorDismissed) {
+            $0.error = nil
+        }
+    }
+}
+
+// MARK: - Mock Data
+
+extension User {
+    static let mock = User(
+        id: UUID(uuidString: "00000000-0000-0000-0000-000000000010")!,
+        email: "test@example.com",
+        name: "테스트 유저",
+        provider: .apple,
+        createdAt: Date(timeIntervalSince1970: 1_700_000_000)
+    )
+}

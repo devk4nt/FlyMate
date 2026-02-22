@@ -1,0 +1,21 @@
+import Foundation
+
+public protocol AuthRepository: Sendable {
+    /// 현재 인증된 사용자 세션을 확인한다.
+    func currentUser() async throws -> User?
+
+    /// Apple 로그인을 수행한다.
+    func signInWithApple(idToken: String, nonce: String) async throws -> User
+
+    /// 카카오 로그인을 수행한다.
+    func signInWithKakao(accessToken: String) async throws -> User
+
+    /// 로그아웃을 수행한다.
+    func signOut() async throws
+
+    /// 계정을 탈퇴한다.
+    func deleteAccount() async throws
+
+    /// 인증 상태 변경을 관찰한다.
+    func observeAuthState() -> AsyncStream<User?>
+}

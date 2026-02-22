@@ -1,0 +1,367 @@
+import SwiftUI
+import ComposableArchitecture
+import Domain
+import Presentation
+import Data
+import Foundation
+
+@main
+struct FlyMateApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
+    let store: StoreOf<AppFeature>
+
+    init() {
+        self.store = Store(initialState: AppFeature.State()) {
+            AppFeature()
+        } withDependencies: {
+            #if DEBUG
+            if AppFeature.skipAuth {
+                Self.registerMockDependencies(&$0)
+                return
+            }
+            #endif
+            Self.registerLiveDependencies(&$0)
+        }
+    }
+
+    private static func registerLiveDependencies(_ dependencies: inout DependencyValues) {
+        let supabaseClient = SupabaseClientProvider.shared.client
+
+        // Auth
+        let authRepo = AuthRepositoryImpl(client: supabaseClient)
+        dependencies.authClient = AuthClient(
+            currentUser: { try await authRepo.currentUser() },
+            signInWithApple: { try await authRepo.signInWithApple(idToken: $0, nonce: $1) },
+            signInWithKakao: { try await authRepo.signInWithKakao(accessToken: $0) },
+            signOut: { try await authRepo.signOut() },
+            deleteAccount: { try await authRepo.deleteAccount() },
+            observeAuthState: { authRepo.observeAuthState() }
+        )
+
+        // Study
+        let studyRepo = StudyRepositoryImpl(client: supabaseClient)
+        dependencies.studyClient = StudyClient(
+            fetchMyStudies: { try await studyRepo.fetchMyStudies() },
+            fetchStudy: { try await studyRepo.fetchStudy(id: $0) },
+            createStudy: { try await studyRepo.createStudy($0) },
+            joinStudy: { try await studyRepo.joinStudy(inviteCode: $0) },
+            leaveStudy: { try await studyRepo.leaveStudy(id: $0) },
+            deleteStudy: { try await studyRepo.deleteStudy(id: $0) },
+            removeMember: { try await studyRepo.removeMember(studyID: $0, userID: $1) },
+            fetchInviteCodeInfo: { try await studyRepo.fetchInviteCodeInfo(code: $0) }
+        )
+
+        // Video
+        let videoRepo = VideoRepositoryImpl(client: supabaseClient)
+        dependencies.videoClient = VideoClient(
+            fetchVideos: { try await videoRepo.fetchVideos(studyID: $0, cursor: $1) },
+            fetchVideo: { try await videoRepo.fetchVideo(id: $0) },
+            uploadVideo: { try await videoRepo.uploadVideo($0, progress: $1) },
+            deleteVideo: { try await videoRepo.deleteVideo(id: $0) }
+        )
+
+        // Feedback
+        let feedbackRepo = FeedbackRepositoryImpl(client: supabaseClient)
+        dependencies.feedbackClient = FeedbackClient(
+            fetchFeedbacks: { try await feedbackRepo.fetchFeedbacks(videoID: $0) },
+            createFeedback: { try await feedbackRepo.createFeedback($0) },
+            fetchReceived: { try await feedbackRepo.fetchReceivedFeedbacks(userID: $0, cursor: $1) },
+            fetchGiven: { try await feedbackRepo.fetchGivenFeedbacks(userID: $0, cursor: $1) },
+            observeFeedbacks: { feedbackRepo.observeFeedbacks(videoID: $0) },
+            deleteFeedback: { try await feedbackRepo.deleteFeedback(id: $0) }
+        )
+
+        // User
+        let userRepo = UserRepositoryImpl(client: supabaseClient)
+        dependencies.userClient = UserClient(
+            fetchUser: { try await userRepo.fetchUser(id: $0) },
+            updateProfile: { try await userRepo.updateProfile($0) },
+            registerDeviceToken: { try await userRepo.registerDeviceToken($0) },
+            updateNotificationSettings: { try await userRepo.updateNotificationSettings(enabled: $0) }
+        )
+    }
+
+    #if DEBUG
+    private static func registerMockDependencies(_ dependencies: inout DependencyValues) {
+        let previewUserID = UUID(uuidString: "00000000-0000-0000-0000-000000000010")!
+        let previewUser = User(
+            id: previewUserID,
+            email: "preview@flymate.app",
+            name: "Preview User",
+            provider: .apple,
+            createdAt: Date()
+        )
+
+        let mockStudyID = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+        let mockStudy = Study(
+            id: mockStudyID,
+            name: "iOS 면접 스터디",
+            description: "Swift & iOS 면접 준비 스터디",
+            ownerID: previewUserID,
+            inviteCode: "ABC123",
+            maxMembers: 6,
+            members: [
+                StudyMember(
+                    id: UUID(),
+                    userID: previewUserID,
+                    userName: "Preview User",
+                    role: .owner,
+                    joinedAt: Date()
+                )
+            ],
+            createdAt: Date()
+        )
+
+        // Auth
+        dependencies.authClient = AuthClient(
+            currentUser: { previewUser },
+            signInWithApple: { _, _ in previewUser },
+            signInWithKakao: { _ in previewUser },
+            signOut: {},
+            deleteAccount: {},
+            observeAuthState: { AsyncStream { continuation in continuation.yield(previewUser) } }
+        )
+
+        // Study
+        dependencies.studyClient = StudyClient(
+            fetchMyStudies: { [mockStudy] },
+            fetchStudy: { _ in mockStudy },
+            createStudy: { request in
+                Study(
+                    id: UUID(),
+                    name: request.name,
+                    description: request.description,
+                    ownerID: previewUserID,
+                    inviteCode: "NEW123",
+                    maxMembers: request.maxMembers,
+                    members: [
+                        StudyMember(
+                            id: UUID(),
+                            userID: previewUserID,
+                            userName: "Preview User",
+                            role: .owner,
+                            joinedAt: Date()
+                        )
+                    ],
+                    createdAt: Date()
+                )
+            },
+            joinStudy: { _ in mockStudy },
+            leaveStudy: { _ in },
+            deleteStudy: { _ in },
+            removeMember: { _, _ in },
+            fetchInviteCodeInfo: { code in
+                InviteCode(code: code, studyID: mockStudyID, studyName: "iOS 면접 스터디", createdAt: Date())
+            }
+        )
+
+        // Video
+        dependencies.videoClient = VideoClient(
+            fetchVideos: { studyID, _ in
+                [
+                    Video(
+                        id: UUID(uuidString: "00000000-0000-0000-0000-000000000100")!,
+                        studyID: studyID,
+                        uploaderID: previewUserID,
+                        uploaderName: "Preview User",
+                        title: "자기소개 면접 연습",
+                        videoURL: URL(string: "https://example.com/video1.mp4")!,
+                        durationSeconds: 180,
+                        feedbackCount: 3,
+                        createdAt: Date().addingTimeInterval(-86400)
+                    ),
+                    Video(
+                        id: UUID(uuidString: "00000000-0000-0000-0000-000000000101")!,
+                        studyID: studyID,
+                        uploaderID: previewUserID,
+                        uploaderName: "Preview User",
+                        title: "기술 면접 모의",
+                        videoURL: URL(string: "https://example.com/video2.mp4")!,
+                        durationSeconds: 240,
+                        feedbackCount: 1,
+                        createdAt: Date()
+                    ),
+                ]
+            },
+            fetchVideo: { id in
+                Video(
+                    id: id,
+                    studyID: mockStudyID,
+                    uploaderID: previewUserID,
+                    uploaderName: "Preview User",
+                    title: "Mock Video",
+                    videoURL: URL(string: "https://example.com/video.mp4")!,
+                    durationSeconds: 120,
+                    createdAt: Date()
+                )
+            },
+            uploadVideo: { request, progress in
+                for p in [0.3, 0.6, 0.9, 1.0] as [Double] {
+                    try await Task.sleep(for: .milliseconds(300))
+                    progress(p)
+                }
+                return Video(
+                    id: UUID(),
+                    studyID: request.studyID,
+                    uploaderID: previewUserID,
+                    uploaderName: "Preview User",
+                    title: request.title,
+                    videoURL: URL(string: "https://example.com/uploaded.mp4")!,
+                    durationSeconds: 60,
+                    createdAt: Date()
+                )
+            },
+            deleteVideo: { _ in }
+        )
+
+        // Feedback
+        let mockVideoID1 = UUID(uuidString: "00000000-0000-0000-0000-000000000100")!
+        let mockVideoID2 = UUID(uuidString: "00000000-0000-0000-0000-000000000101")!
+        let reviewerID = UUID(uuidString: "00000000-0000-0000-0000-000000000020")!
+
+        let feedbackStore = MockFeedbackStore(initialFeedbacks: [
+            Feedback(
+                id: UUID(uuidString: "00000000-0000-0000-0000-000000000200")!,
+                videoID: mockVideoID1,
+                studyID: mockStudyID,
+                authorID: reviewerID,
+                authorName: "김면접",
+                content: "자기소개 도입부가 인상적이에요. 다만 경력 설명 부분에서 좀 더 구체적인 수치를 넣으면 좋겠습니다.",
+                timestampSeconds: 35,
+                createdAt: Date().addingTimeInterval(-7200)
+            ),
+            Feedback(
+                id: UUID(uuidString: "00000000-0000-0000-0000-000000000201")!,
+                videoID: mockVideoID1,
+                studyID: mockStudyID,
+                authorID: reviewerID,
+                authorName: "김면접",
+                content: "마무리 멘트가 자연스럽고 좋습니다!",
+                timestampSeconds: 150,
+                createdAt: Date().addingTimeInterval(-3600)
+            ),
+            Feedback(
+                id: UUID(uuidString: "00000000-0000-0000-0000-000000000202")!,
+                videoID: mockVideoID2,
+                studyID: mockStudyID,
+                authorID: reviewerID,
+                authorName: "김면접",
+                content: "Swift Concurrency 설명할 때 Actor 예시를 추가하면 더 설득력 있을 것 같아요.",
+                timestampSeconds: 90,
+                createdAt: Date().addingTimeInterval(-1800)
+            ),
+        ])
+
+        dependencies.feedbackClient = FeedbackClient(
+            fetchFeedbacks: { videoID in
+                feedbackStore.feedbacks(for: videoID)
+            },
+            createFeedback: { request in
+                let feedback = Feedback(
+                    id: UUID(),
+                    videoID: request.videoID,
+                    studyID: mockStudyID,
+                    authorID: previewUserID,
+                    authorName: "Preview User",
+                    content: request.content,
+                    timestampSeconds: request.timestampSeconds,
+                    createdAt: Date()
+                )
+                feedbackStore.add(feedback)
+                return feedback
+            },
+            fetchReceived: { userID, _ in
+                feedbackStore.received(by: userID)
+            },
+            fetchGiven: { userID, _ in
+                feedbackStore.given(by: userID)
+            },
+            observeFeedbacks: { videoID in
+                feedbackStore.observe(videoID: videoID)
+            },
+            deleteFeedback: { id in
+                feedbackStore.delete(id: id)
+            }
+        )
+
+        // User
+        dependencies.userClient = UserClient(
+            fetchUser: { _ in previewUser },
+            updateProfile: { _ in previewUser },
+            registerDeviceToken: { _ in },
+            updateNotificationSettings: { _ in }
+        )
+    }
+
+    private final class MockFeedbackStore: @unchecked Sendable {
+        private let lock = NSLock()
+        private var feedbacks: [Feedback]
+        private var continuations: [UUID: AsyncStream<[Feedback]>.Continuation] = [:]
+
+        init(initialFeedbacks: [Feedback]) {
+            self.feedbacks = initialFeedbacks
+        }
+
+        func feedbacks(for videoID: UUID) -> [Feedback] {
+            lock.withLock {
+                feedbacks.filter { $0.videoID == videoID }
+            }
+        }
+
+        func received(by userID: UUID) -> [Feedback] {
+            lock.withLock {
+                feedbacks.filter { $0.authorID != userID }
+            }
+        }
+
+        func given(by userID: UUID) -> [Feedback] {
+            lock.withLock {
+                feedbacks.filter { $0.authorID == userID }
+            }
+        }
+
+        func add(_ feedback: Feedback) {
+            lock.withLock {
+                feedbacks.append(feedback)
+            }
+            let videoFeedbacks = self.feedbacks(for: feedback.videoID)
+            lock.withLock {
+                continuations[feedback.videoID]?.yield(videoFeedbacks)
+            }
+        }
+
+        func delete(id: UUID) {
+            lock.withLock {
+                feedbacks.removeAll { $0.id == id }
+            }
+        }
+
+        func observe(videoID: UUID) -> AsyncStream<[Feedback]> {
+            AsyncStream { [weak self] continuation in
+                guard let self else {
+                    continuation.finish()
+                    return
+                }
+                self.lock.withLock {
+                    self.continuations[videoID] = continuation
+                }
+                continuation.onTermination = { [weak self] _ in
+                    self?.lock.withLock {
+                        self?.continuations.removeValue(forKey: videoID)
+                    }
+                }
+            }
+        }
+    }
+    #endif
+
+    var body: some Scene {
+        WindowGroup {
+            AppView(store: store)
+                .onOpenURL { url in
+                    _ = KakaoSignInClient.handleOpenURL(url)
+                }
+        }
+    }
+}
