@@ -8,6 +8,8 @@ struct StudyDTO: Codable, Sendable {
     let inviteCode: String
     let maxMembers: Int
     let createdAt: String
+    let notice: String?
+    let noticeUpdatedAt: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -17,6 +19,8 @@ struct StudyDTO: Codable, Sendable {
         case inviteCode = "invite_code"
         case maxMembers = "max_members"
         case createdAt = "created_at"
+        case notice
+        case noticeUpdatedAt = "notice_updated_at"
     }
 }
 

@@ -10,6 +10,8 @@ public struct Video: Equatable, Identifiable, Sendable, Hashable {
     public let thumbnailURL: URL?
     public let durationSeconds: TimeInterval
     public let feedbackCount: Int
+    public let focusPoints: String?
+    public let feedbackRequest: String?
     public let createdAt: Date
 
     public init(
@@ -22,6 +24,8 @@ public struct Video: Equatable, Identifiable, Sendable, Hashable {
         thumbnailURL: URL? = nil,
         durationSeconds: TimeInterval,
         feedbackCount: Int = 0,
+        focusPoints: String? = nil,
+        feedbackRequest: String? = nil,
         createdAt: Date
     ) {
         self.id = id
@@ -33,6 +37,8 @@ public struct Video: Equatable, Identifiable, Sendable, Hashable {
         self.thumbnailURL = thumbnailURL
         self.durationSeconds = durationSeconds
         self.feedbackCount = feedbackCount
+        self.focusPoints = focusPoints
+        self.feedbackRequest = feedbackRequest
         self.createdAt = createdAt
     }
 }

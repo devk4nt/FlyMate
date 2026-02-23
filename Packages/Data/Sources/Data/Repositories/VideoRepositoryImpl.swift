@@ -80,6 +80,8 @@ public struct VideoRepositoryImpl: VideoRepository {
             let videoURL: String
             let thumbnailURL: String?
             let durationSeconds: Double
+            let focusPoints: String?
+            let feedbackRequest: String?
             enum CodingKeys: String, CodingKey {
                 case id, title
                 case studyID = "study_id"
@@ -87,6 +89,8 @@ public struct VideoRepositoryImpl: VideoRepository {
                 case videoURL = "video_url"
                 case thumbnailURL = "thumbnail_url"
                 case durationSeconds = "duration_seconds"
+                case focusPoints = "focus_points"
+                case feedbackRequest = "feedback_request"
             }
         }
 
@@ -99,7 +103,9 @@ public struct VideoRepositoryImpl: VideoRepository {
                 title: request.title,
                 videoURL: videoURL.absoluteString,
                 thumbnailURL: thumbnailURL?.absoluteString,
-                durationSeconds: 0
+                durationSeconds: request.durationSeconds,
+                focusPoints: request.focusPoints,
+                feedbackRequest: request.feedbackRequest
             ))
             .select()
             .single()

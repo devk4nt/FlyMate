@@ -9,7 +9,10 @@ public struct VideoUploadFeature {
     public struct State: Equatable {
         public let studyID: UUID
         public var title = ""
+        public var focusPoints = ""
+        public var feedbackRequest = ""
         public var selectedVideoData: Data?
+        public var selectedThumbnailData: Data?
         public var videoDuration: TimeInterval = 0
         public var uploadProgress: Double = 0
         public var uploadState: UploadState = .idle
@@ -35,12 +38,16 @@ public struct VideoUploadFeature {
 
     public enum Action: Equatable {
         case titleChanged(String)
-        case videoSelected(Data, duration: TimeInterval)
+        case focusPointsChanged(String)
+        case feedbackRequestChanged(String)
+        case videoSelected(Data, thumbnailData: Data?, duration: TimeInterval)
+        case videoProcessingFailed(AppError)
         case uploadTapped
         case uploadProgressUpdated(Double)
         case uploadResponse(Result<Video, AppError>)
         case uploadCompleted
         case cancelTapped
+        case dismissUploadError
     }
 
     @Dependency(\.videoClient) private var videoClient
@@ -55,8 +62,17 @@ public struct VideoUploadFeature {
                 state.title = title
                 return .none
 
-            case .videoSelected(let data, let duration):
+            case .focusPointsChanged(let text):
+                state.focusPoints = text
+                return .none
+
+            case .feedbackRequestChanged(let text):
+                state.feedbackRequest = text
+                return .none
+
+            case .videoSelected(let data, let thumbnailData, let duration):
                 state.selectedVideoData = data
+                state.selectedThumbnailData = thumbnailData
                 state.videoDuration = duration
                 if duration > AppConstants.maxVideoDurationSeconds {
                     state.error = .business(.videoTooLong)
@@ -65,13 +81,24 @@ public struct VideoUploadFeature {
                 }
                 return .none
 
+            case .videoProcessingFailed(let error):
+                state.error = error
+                state.selectedVideoData = nil
+                state.selectedThumbnailData = nil
+                state.videoDuration = 0
+                return .none
+
             case .uploadTapped:
                 guard state.isValid, let videoData = state.selectedVideoData else { return .none }
                 state.uploadState = .uploading
                 let request = UploadVideoRequest(
                     studyID: state.studyID,
                     title: state.title,
-                    videoData: videoData
+                    videoData: videoData,
+                    thumbnailData: state.selectedThumbnailData,
+                    durationSeconds: state.videoDuration,
+                    focusPoints: state.focusPoints.isBlank ? nil : state.focusPoints,
+                    feedbackRequest: state.feedbackRequest.isBlank ? nil : state.feedbackRequest
                 )
                 let client = videoClient
                 return .run { send in
@@ -107,6 +134,12 @@ public struct VideoUploadFeature {
             case .cancelTapped:
                 let dismiss = dismiss
                 return .run { _ in await dismiss() }
+
+            case .dismissUploadError:
+                state.uploadState = .idle
+                state.uploadProgress = 0
+                state.error = nil
+                return .none
             }
         }
     }

@@ -47,14 +47,29 @@ public struct StudyCreateView: View {
                 }
             }
             ToolbarItem(placement: .confirmationAction) {
-                FMButton(
-                    title: "만들기",
-                    style: .text,
-                    isLoading: store.isSubmitting,
-                    isEnabled: store.isValid
-                ) {
-                    store.send(.submitTapped)
+                if store.isSubmitting {
+                    ProgressView()
+                } else {
+                    Button("만들기") {
+                        store.send(.submitTapped)
+                    }
+                    .disabled(!store.isValid)
                 }
+            }
+        }
+        .alert(
+            "오류",
+            isPresented: Binding(
+                get: { store.error != nil },
+                set: { if !$0 { store.send(.errorDismissed) } }
+            )
+        ) {
+            Button("확인") {
+                store.send(.errorDismissed)
+            }
+        } message: {
+            if let error = store.error {
+                Text(error.localizedDescription)
             }
         }
     }

@@ -53,6 +53,52 @@ struct StudyListFeatureTests {
     }
 
     @Test
+    func 참여_시트_표시() async {
+        let store = TestStore(initialState: StudyListFeature.State()) {
+            StudyListFeature()
+        }
+
+        await store.send(.joinStudyTapped) {
+            $0.joinStudy = JoinStudyFeature.State()
+        }
+    }
+
+    @Test
+    func 초대코드로_참여_시트_프리필() async {
+        let store = TestStore(initialState: StudyListFeature.State()) {
+            StudyListFeature()
+        }
+
+        await store.send(.showJoinStudy(inviteCode: "TEST01")) {
+            $0.joinStudy = JoinStudyFeature.State(inviteCode: "TEST01")
+        }
+    }
+
+    @Test
+    func 참여_성공시_시트_닫고_새로고침() async {
+        var state = StudyListFeature.State()
+        state.joinStudy = JoinStudyFeature.State(inviteCode: "ABC123")
+
+        let store = TestStore(initialState: state) {
+            StudyListFeature()
+        } withDependencies: {
+            $0.studyClient.fetchMyStudies = { [Study.mock] }
+        }
+
+        await store.send(.joinStudy(.presented(.delegate(.studyJoined(Study.mock))))) {
+            $0.joinStudy = nil
+        }
+
+        await store.receive(\.refresh) {
+            $0.studies = .loading
+        }
+
+        await store.receive(\.studiesResponse.success) {
+            $0.studies = .loaded([Study.mock])
+        }
+    }
+
+    @Test
     func 새로고침시_목록_다시_로딩() async {
         var state = StudyListFeature.State()
         state.studies = .loaded([Study.mock])

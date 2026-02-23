@@ -1,0 +1,145 @@
+import AVFoundation
+import SwiftUI
+import UIKit
+
+struct VideoPlayerView: UIViewRepresentable {
+    let url: URL
+    let isPlaying: Bool
+    let seekTime: TimeInterval
+    let isSeeking: Bool
+    let onCurrentTimeUpdate: (TimeInterval) -> Void
+    let onDurationUpdate: (TimeInterval) -> Void
+    let onPlaybackEnded: () -> Void
+    let onSeekCompleted: () -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(parent: self)
+    }
+
+    func makeUIView(context: Context) -> PlayerUIView {
+        let view = PlayerUIView()
+        let coordinator = context.coordinator
+        coordinator.setupPlayer(url: url, in: view)
+        return view
+    }
+
+    func updateUIView(_ uiView: PlayerUIView, context: Context) {
+        let coordinator = context.coordinator
+        guard let player = coordinator.player else { return }
+
+        if isPlaying {
+            if player.rate == 0 {
+                player.play()
+            }
+        } else {
+            if player.rate != 0 {
+                player.pause()
+            }
+        }
+
+        if isSeeking {
+            let target = CMTime(seconds: seekTime, preferredTimescale: 600)
+            player.seek(
+                to: target,
+                toleranceBefore: .zero,
+                toleranceAfter: .zero
+            ) { [weak coordinator] finished in
+                guard finished else { return }
+                Task { @MainActor in
+                    coordinator?.parent.onSeekCompleted()
+                }
+            }
+        }
+    }
+
+    static func dismantleUIView(_ uiView: PlayerUIView, coordinator: Coordinator) {
+        coordinator.cleanup()
+    }
+
+    // MARK: - Coordinator
+
+    final class Coordinator: NSObject, @unchecked Sendable {
+        var parent: VideoPlayerView
+        var player: AVPlayer?
+        private var timeObserver: Any?
+        private var statusObservation: NSKeyValueObservation?
+        private var endObserver: NSObjectProtocol?
+
+        init(parent: VideoPlayerView) {
+            self.parent = parent
+        }
+
+        func setupPlayer(url: URL, in view: PlayerUIView) {
+            try? AVAudioSession.sharedInstance().setCategory(.playback)
+            try? AVAudioSession.sharedInstance().setActive(true)
+
+            let playerItem = AVPlayerItem(url: url)
+            let player = AVPlayer(playerItem: playerItem)
+            self.player = player
+
+            view.playerLayer.player = player
+            view.playerLayer.videoGravity = .resizeAspect
+
+            // Periodic time observer (0.25s interval)
+            let interval = CMTime(seconds: 0.25, preferredTimescale: 600)
+            timeObserver = player.addPeriodicTimeObserver(
+                forInterval: interval,
+                queue: .main
+            ) { [weak self] time in
+                guard let self else { return }
+                let seconds = CMTimeGetSeconds(time)
+                guard seconds.isFinite else { return }
+                self.parent.onCurrentTimeUpdate(seconds)
+            }
+
+            // Observe player item status for duration
+            statusObservation = playerItem.observe(\.status, options: [.new]) { [weak self] item, _ in
+                guard let self, item.status == .readyToPlay else { return }
+                let duration = CMTimeGetSeconds(item.duration)
+                guard duration.isFinite else { return }
+                Task { @MainActor in
+                    self.parent.onDurationUpdate(duration)
+                }
+            }
+
+            // Observe playback end
+            endObserver = NotificationCenter.default.addObserver(
+                forName: .AVPlayerItemDidPlayToEndTime,
+                object: playerItem,
+                queue: .main
+            ) { [weak self] _ in
+                self?.parent.onPlaybackEnded()
+            }
+        }
+
+        func cleanup() {
+            if let timeObserver {
+                player?.removeTimeObserver(timeObserver)
+            }
+            timeObserver = nil
+            statusObservation?.invalidate()
+            statusObservation = nil
+            if let endObserver {
+                NotificationCenter.default.removeObserver(endObserver)
+            }
+            endObserver = nil
+            player?.pause()
+            player = nil
+        }
+
+        deinit {
+            cleanup()
+        }
+    }
+}
+
+// MARK: - PlayerUIView
+
+final class PlayerUIView: UIView {
+    override static var layerClass: AnyClass { AVPlayerLayer.self }
+
+    var playerLayer: AVPlayerLayer {
+        // swiftlint:disable:next force_cast
+        layer as! AVPlayerLayer
+    }
+}

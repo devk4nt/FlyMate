@@ -10,6 +10,8 @@ struct VideoDTO: Codable, Sendable {
     let thumbnailURL: String?
     let durationSeconds: Double
     let feedbackCount: Int
+    let focusPoints: String?
+    let feedbackRequest: String?
     let createdAt: String
 
     enum CodingKeys: String, CodingKey {
@@ -22,6 +24,8 @@ struct VideoDTO: Codable, Sendable {
         case thumbnailURL = "thumbnail_url"
         case durationSeconds = "duration_seconds"
         case feedbackCount = "feedback_count"
+        case focusPoints = "focus_points"
+        case feedbackRequest = "feedback_request"
         case createdAt = "created_at"
     }
 }

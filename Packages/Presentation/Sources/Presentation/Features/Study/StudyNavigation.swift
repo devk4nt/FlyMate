@@ -8,15 +8,18 @@ public struct StudyNavigationFeature {
     public struct State: Equatable {
         public var studyList = StudyListFeature.State()
         public var path = StackState<Path.State>()
-        public var pendingInviteCode: String?
+        public var currentUserID: UUID?
 
-        public init() {}
+        public init(currentUserID: UUID? = nil) {
+            self.currentUserID = currentUserID
+        }
     }
 
     public enum Action {
         case studyList(StudyListFeature.Action)
         case path(StackActionOf<Path>)
         case navigateToVideo(Study, Video)
+        case showInviteCode(String)
     }
 
     @Reducer(state: .equatable)
@@ -24,6 +27,7 @@ public struct StudyNavigationFeature {
         case studyDetail(StudyDetailFeature)
         case videoDetail(VideoDetailFeature)
         case videoUpload(VideoUploadFeature)
+        case memberManagement(MemberManagementFeature)
     }
 
     public init() {}
@@ -34,8 +38,12 @@ public struct StudyNavigationFeature {
         }
         Reduce { state, action in
             switch action {
+            case .showInviteCode(let code):
+                state.path.removeAll()
+                return .send(.studyList(.showJoinStudy(inviteCode: code)))
+
             case .studyList(.studyTapped(let study)):
-                state.path.append(.studyDetail(StudyDetailFeature.State(study: study)))
+                state.path.append(.studyDetail(StudyDetailFeature.State(study: study, currentUserID: state.currentUserID)))
                 return .none
 
             case .path(.element(_, action: .studyDetail(.videoTapped(let video)))):
@@ -44,6 +52,29 @@ public struct StudyNavigationFeature {
 
             case .path(.element(_, action: .studyDetail(.uploadVideoTapped(let studyID)))):
                 state.path.append(.videoUpload(VideoUploadFeature.State(studyID: studyID)))
+                return .none
+
+            case .path(.element(let id, action: .studyDetail(.memberManagementTapped))):
+                guard case .studyDetail(let detailState) = state.path[id: id] else { return .none }
+                state.path.append(
+                    .memberManagement(
+                        MemberManagementFeature.State(
+                            study: detailState.study,
+                            currentUserID: state.currentUserID
+                        )
+                    )
+                )
+                return .none
+
+            case .path(.element(_, action: .memberManagement(.memberRemoved(let removedUserID)))):
+                // Sync removed member back to StudyDetail
+                if let detailID = state.path.ids.first(where: { id in
+                    if case .studyDetail = state.path[id: id] { return true }
+                    return false
+                }), case .studyDetail(var detailState) = state.path[id: detailID] {
+                    detailState.study.members.removeAll { $0.userID == removedUserID }
+                    state.path[id: detailID] = .studyDetail(detailState)
+                }
                 return .none
 
             case .path(.element(_, action: .videoUpload(.uploadCompleted))):
@@ -56,7 +87,7 @@ public struct StudyNavigationFeature {
 
             case .navigateToVideo(let study, let video):
                 state.path.removeAll()
-                state.path.append(.studyDetail(StudyDetailFeature.State(study: study)))
+                state.path.append(.studyDetail(StudyDetailFeature.State(study: study, currentUserID: state.currentUserID)))
                 state.path.append(.videoDetail(VideoDetailFeature.State(video: video)))
                 return .none
 

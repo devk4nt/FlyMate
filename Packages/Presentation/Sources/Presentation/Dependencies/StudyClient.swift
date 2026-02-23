@@ -11,6 +11,7 @@ public struct StudyClient: Sendable {
     public var deleteStudy: @Sendable (UUID) async throws -> Void
     public var removeMember: @Sendable (UUID, UUID) async throws -> Void
     public var fetchInviteCodeInfo: @Sendable (String) async throws -> InviteCode
+    public var updateNotice: @Sendable (UUID, String?) async throws -> Void
 
     public init(
         fetchMyStudies: @escaping @Sendable () async throws -> [Study],
@@ -20,7 +21,8 @@ public struct StudyClient: Sendable {
         leaveStudy: @escaping @Sendable (UUID) async throws -> Void,
         deleteStudy: @escaping @Sendable (UUID) async throws -> Void,
         removeMember: @escaping @Sendable (UUID, UUID) async throws -> Void,
-        fetchInviteCodeInfo: @escaping @Sendable (String) async throws -> InviteCode
+        fetchInviteCodeInfo: @escaping @Sendable (String) async throws -> InviteCode,
+        updateNotice: @escaping @Sendable (UUID, String?) async throws -> Void
     ) {
         self.fetchMyStudies = fetchMyStudies
         self.fetchStudy = fetchStudy
@@ -30,6 +32,7 @@ public struct StudyClient: Sendable {
         self.deleteStudy = deleteStudy
         self.removeMember = removeMember
         self.fetchInviteCodeInfo = fetchInviteCodeInfo
+        self.updateNotice = updateNotice
     }
 }
 
@@ -42,7 +45,8 @@ extension StudyClient: TestDependencyKey {
         leaveStudy: unimplemented("\(Self.self).leaveStudy"),
         deleteStudy: unimplemented("\(Self.self).deleteStudy"),
         removeMember: unimplemented("\(Self.self).removeMember"),
-        fetchInviteCodeInfo: unimplemented("\(Self.self).fetchInviteCodeInfo")
+        fetchInviteCodeInfo: unimplemented("\(Self.self).fetchInviteCodeInfo"),
+        updateNotice: unimplemented("\(Self.self).updateNotice")
     )
 }
 

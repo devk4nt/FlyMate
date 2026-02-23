@@ -17,7 +17,14 @@ struct FlyMateApp: App {
         } withDependencies: {
             #if DEBUG
             if AppFeature.skipAuth {
-                Self.registerMockDependencies(&$0)
+                Self.registerLiveDependencies(&$0)
+                let supabaseClient = SupabaseClientProvider.shared.client
+                $0.authClient.debugSignIn = {
+                    _ = try await supabaseClient.auth.signIn(
+                        email: "test@flymate.app",
+                        password: "testpassword123"
+                    )
+                }
                 return
             }
             #endif
@@ -49,7 +56,8 @@ struct FlyMateApp: App {
             leaveStudy: { try await studyRepo.leaveStudy(id: $0) },
             deleteStudy: { try await studyRepo.deleteStudy(id: $0) },
             removeMember: { try await studyRepo.removeMember(studyID: $0, userID: $1) },
-            fetchInviteCodeInfo: { try await studyRepo.fetchInviteCodeInfo(code: $0) }
+            fetchInviteCodeInfo: { try await studyRepo.fetchInviteCodeInfo(code: $0) },
+            updateNotice: { try await studyRepo.updateNotice(studyID: $0, notice: $1) }
         )
 
         // Video
@@ -79,6 +87,23 @@ struct FlyMateApp: App {
             updateProfile: { try await userRepo.updateProfile($0) },
             registerDeviceToken: { try await userRepo.registerDeviceToken($0) },
             updateNotificationSettings: { try await userRepo.updateNotificationSettings(enabled: $0) }
+        )
+
+        // Notification
+        let notificationRepo = NotificationRepositoryImpl(client: supabaseClient)
+        dependencies.notificationClient = NotificationClient(
+            fetchNotifications: { try await notificationRepo.fetchNotifications(userID: $0, cursor: $1) },
+            fetchUnreadCount: { try await notificationRepo.fetchUnreadCount(userID: $0) },
+            markAsRead: { try await notificationRepo.markAsRead(id: $0) },
+            markAllAsRead: { try await notificationRepo.markAllAsRead(userID: $0) },
+            observeNotifications: { notificationRepo.observeNotifications(userID: $0) }
+        )
+
+        // Report
+        let reportRepo = ReportRepositoryImpl(client: supabaseClient)
+        dependencies.reportClient = ReportClient(
+            createReport: { try await reportRepo.createReport($0) },
+            checkAlreadyReported: { try await reportRepo.checkAlreadyReported(targetType: $0, targetID: $1) }
         )
     }
 
@@ -110,7 +135,8 @@ struct FlyMateApp: App {
                     joinedAt: Date()
                 )
             ],
-            createdAt: Date()
+            createdAt: Date(),
+            notice: "매주 월요일 오후 8시 모의 면접을 진행합니다."
         )
 
         // Auth
@@ -153,7 +179,8 @@ struct FlyMateApp: App {
             removeMember: { _, _ in },
             fetchInviteCodeInfo: { code in
                 InviteCode(code: code, studyID: mockStudyID, studyName: "iOS 면접 스터디", createdAt: Date())
-            }
+            },
+            updateNotice: { _, _ in }
         )
 
         // Video
@@ -292,6 +319,55 @@ struct FlyMateApp: App {
             registerDeviceToken: { _ in },
             updateNotificationSettings: { _ in }
         )
+
+        // Notification
+        let mockNotifications: [AppNotification] = [
+            AppNotification(
+                id: UUID(uuidString: "00000000-0000-0000-0000-000000000300")!,
+                recipientID: previewUserID,
+                type: .feedbackOnMyVideo,
+                title: "새 피드백이 달렸어요",
+                body: "김면접님이 \"자기소개 면접 연습\" 영상에 피드백을 남겼습니다.",
+                referenceVideoID: UUID(uuidString: "00000000-0000-0000-0000-000000000100")!,
+                referenceFeedbackID: UUID(uuidString: "00000000-0000-0000-0000-000000000200")!,
+                isRead: false,
+                createdAt: Date().addingTimeInterval(-1800)
+            ),
+            AppNotification(
+                id: UUID(uuidString: "00000000-0000-0000-0000-000000000301")!,
+                recipientID: previewUserID,
+                type: .mentionedInFeedback,
+                title: "피드백에서 태그되었어요",
+                body: "김면접님이 피드백에서 회원님을 태그했습니다.",
+                referenceVideoID: UUID(uuidString: "00000000-0000-0000-0000-000000000101")!,
+                referenceFeedbackID: UUID(uuidString: "00000000-0000-0000-0000-000000000202")!,
+                isRead: true,
+                createdAt: Date().addingTimeInterval(-7200)
+            ),
+        ]
+        dependencies.notificationClient = NotificationClient(
+            fetchNotifications: { _, _ in mockNotifications },
+            fetchUnreadCount: { _ in mockNotifications.filter { !$0.isRead }.count },
+            markAsRead: { _ in },
+            markAllAsRead: { _ in },
+            observeNotifications: { _ in AsyncStream { continuation in continuation.finish() } }
+        )
+
+        // Report
+        dependencies.reportClient = ReportClient(
+            createReport: { request in
+                Report(
+                    id: UUID(),
+                    reporterID: previewUserID,
+                    targetType: request.targetType,
+                    targetID: request.targetID,
+                    reason: request.reason,
+                    detail: request.detail,
+                    createdAt: Date()
+                )
+            },
+            checkAlreadyReported: { _, _ in false }
+        )
     }
 
     private final class MockFeedbackStore: @unchecked Sendable {
@@ -360,7 +436,13 @@ struct FlyMateApp: App {
         WindowGroup {
             AppView(store: store)
                 .onOpenURL { url in
-                    _ = KakaoSignInClient.handleOpenURL(url)
+                    if url.scheme == "flymate" {
+                        if let deepLink = DeepLinkParser.parse(url: url) {
+                            store.send(.deepLink(deepLink))
+                        }
+                    } else {
+                        _ = KakaoSignInClient.handleOpenURL(url)
+                    }
                 }
         }
     }

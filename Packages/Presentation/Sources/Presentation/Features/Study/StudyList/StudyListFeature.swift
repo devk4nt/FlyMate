@@ -8,9 +8,9 @@ public struct StudyListFeature {
     @ObservableState
     public struct State: Equatable {
         public var studies: LoadingState<[Study]> = .idle
+        public var unreadNotificationCount: Int = 0
         @Presents public var createStudy: StudyCreateFeature.State?
-        @Presents public var joinStudyAlert: AlertState<Action.JoinStudyAlert>?
-        public var inviteCodeInput = ""
+        @Presents public var joinStudy: JoinStudyFeature.State?
 
         public init() {}
     }
@@ -20,16 +20,12 @@ public struct StudyListFeature {
         case refresh
         case studiesResponse(Result<[Study], AppError>)
         case studyTapped(Study)
+        case notificationBellTapped
         case createStudyTapped
         case joinStudyTapped
+        case showJoinStudy(inviteCode: String)
         case createStudy(PresentationAction<StudyCreateFeature.Action>)
-        case joinStudyAlert(PresentationAction<JoinStudyAlert>)
-        case inviteCodeChanged(String)
-        case joinStudyResponse(Result<Study, AppError>)
-
-        public enum JoinStudyAlert: Equatable {
-            case confirmTapped
-        }
+        case joinStudy(PresentationAction<JoinStudyFeature.Action>)
     }
 
     @Dependency(\.studyClient) private var studyClient
@@ -77,59 +73,38 @@ public struct StudyListFeature {
             case .studyTapped:
                 return .none // Handled by parent
 
+            case .notificationBellTapped:
+                return .none // Handled by parent (TabFeature)
+
             case .createStudyTapped:
                 state.createStudy = StudyCreateFeature.State()
                 return .none
 
             case .joinStudyTapped:
-                state.joinStudyAlert = AlertState {
-                    TextState("스터디 참여")
-                } actions: {
-                    ButtonState(action: .confirmTapped) {
-                        TextState("참여하기")
-                    }
-                    ButtonState(role: .cancel) {
-                        TextState("취소")
-                    }
-                } message: {
-                    TextState("초대 코드를 입력해주세요.")
-                }
+                state.joinStudy = JoinStudyFeature.State()
                 return .none
 
-            case .inviteCodeChanged(let code):
-                state.inviteCodeInput = code.uppercased()
+            case .showJoinStudy(inviteCode: let code):
+                state.joinStudy = JoinStudyFeature.State(inviteCode: code)
                 return .none
 
-            case .joinStudyAlert(.presented(.confirmTapped)):
-                let code = state.inviteCodeInput
-                let client = studyClient
-                return .run { send in
-                    do {
-                        let study = try await client.joinStudy(code)
-                        await send(.joinStudyResponse(.success(study)))
-                    } catch {
-                        let appError = error as? AppError ?? .unexpected(error.localizedDescription)
-                        await send(.joinStudyResponse(.failure(appError)))
-                    }
-                }
-
-            case .joinStudyResponse(.success):
-                state.inviteCodeInput = ""
+            case .joinStudy(.presented(.delegate(.studyJoined))):
+                state.joinStudy = nil
                 return .send(.refresh)
-
-            case .joinStudyResponse(.failure):
-                return .none
 
             case .createStudy(.presented(.studyCreated)):
                 state.createStudy = nil
                 return .send(.refresh)
 
-            case .createStudy, .joinStudyAlert:
+            case .createStudy, .joinStudy:
                 return .none
             }
         }
         .ifLet(\.$createStudy, action: \.createStudy) {
             StudyCreateFeature()
+        }
+        .ifLet(\.$joinStudy, action: \.joinStudy) {
+            JoinStudyFeature()
         }
     }
 }

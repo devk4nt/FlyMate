@@ -5,17 +5,26 @@ public struct UploadVideoRequest: Equatable, Sendable {
     public let title: String
     public let videoData: Data
     public let thumbnailData: Data?
+    public let durationSeconds: TimeInterval
+    public let focusPoints: String?
+    public let feedbackRequest: String?
 
     public init(
         studyID: UUID,
         title: String,
         videoData: Data,
-        thumbnailData: Data? = nil
+        thumbnailData: Data? = nil,
+        durationSeconds: TimeInterval = 0,
+        focusPoints: String? = nil,
+        feedbackRequest: String? = nil
     ) {
         self.studyID = studyID
         self.title = title
         self.videoData = videoData
         self.thumbnailData = thumbnailData
+        self.durationSeconds = durationSeconds
+        self.focusPoints = focusPoints
+        self.feedbackRequest = feedbackRequest
     }
 }
 

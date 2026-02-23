@@ -36,7 +36,9 @@ enum DTOMapper {
             inviteCode: dto.inviteCode,
             maxMembers: dto.maxMembers,
             members: members.map(toDomain),
-            createdAt: parseDate(dto.createdAt)
+            createdAt: parseDate(dto.createdAt),
+            notice: dto.notice,
+            noticeUpdatedAt: dto.noticeUpdatedAt.map(parseDate)
         )
     }
 
@@ -64,6 +66,8 @@ enum DTOMapper {
             thumbnailURL: dto.thumbnailURL.flatMap(URL.init(string:)),
             durationSeconds: dto.durationSeconds,
             feedbackCount: dto.feedbackCount,
+            focusPoints: dto.focusPoints,
+            feedbackRequest: dto.feedbackRequest,
             createdAt: parseDate(dto.createdAt)
         )
     }
@@ -82,6 +86,36 @@ enum DTOMapper {
             timestampSeconds: dto.timestampSeconds,
             createdAt: parseDate(dto.createdAt),
             mentionedUserID: dto.mentionedUserID
+        )
+    }
+
+    // MARK: - Report
+
+    static func toDomain(_ dto: ReportDTO) -> Report {
+        Report(
+            id: dto.id,
+            reporterID: dto.reporterID,
+            targetType: ReportTargetType(rawValue: dto.targetType) ?? .feedback,
+            targetID: dto.targetID,
+            reason: ReportReason(rawValue: dto.reason) ?? .other,
+            detail: dto.detail,
+            createdAt: parseDate(dto.createdAt)
+        )
+    }
+
+    // MARK: - Notification
+
+    static func toDomain(_ dto: NotificationDTO) -> AppNotification {
+        AppNotification(
+            id: dto.id,
+            recipientID: dto.recipientID,
+            type: NotificationType(rawValue: dto.type) ?? .feedbackOnMyVideo,
+            title: dto.title,
+            body: dto.body,
+            referenceVideoID: dto.referenceVideoID,
+            referenceFeedbackID: dto.referenceFeedbackID,
+            isRead: dto.isRead,
+            createdAt: parseDate(dto.createdAt)
         )
     }
 }

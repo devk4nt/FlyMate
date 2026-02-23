@@ -11,6 +11,9 @@ public struct FeedbackListFeature {
         public let listType: ListType
         public var feedbacks = PaginatedState<Feedback>()
         public var loadingState: LoadingState<[Feedback]> = .idle
+        @Presents public var report: ReportFeature.State?
+        public var showToast = false
+        public var toastMessage = ""
 
         public init(userID: UUID, listType: ListType) {
             self.userID = userID
@@ -30,6 +33,10 @@ public struct FeedbackListFeature {
         case loadMore
         case loadMoreResponse(Result<[Feedback], AppError>)
         case feedbackTapped(Feedback)
+        case reportFeedbackTapped(Feedback)
+        case reportUserTapped(Feedback)
+        case report(PresentationAction<ReportFeature.Action>)
+        case dismissToast
     }
 
     @Dependency(\.feedbackClient) private var feedbackClient
@@ -97,7 +104,43 @@ public struct FeedbackListFeature {
 
             case .feedbackTapped:
                 return .none // Handled by parent
+
+            case .reportFeedbackTapped(let feedback):
+                state.report = ReportFeature.State(
+                    targetType: .feedback,
+                    targetID: feedback.id
+                )
+                return .none
+
+            case .reportUserTapped(let feedback):
+                state.report = ReportFeature.State(
+                    targetType: .user,
+                    targetID: feedback.authorID
+                )
+                return .none
+
+            case .report(.presented(.delegate(.reportSubmitted))):
+                state.report = nil
+                state.toastMessage = "신고가 접수되었습니다"
+                state.showToast = true
+                return .none
+
+            case .report(.presented(.delegate(.alreadyReported))):
+                state.report = nil
+                state.toastMessage = "이미 신고한 항목입니다"
+                state.showToast = true
+                return .none
+
+            case .report:
+                return .none
+
+            case .dismissToast:
+                state.showToast = false
+                return .none
             }
+        }
+        .ifLet(\.$report, action: \.report) {
+            ReportFeature()
         }
     }
 

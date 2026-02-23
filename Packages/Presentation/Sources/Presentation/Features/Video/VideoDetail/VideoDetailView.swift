@@ -15,6 +15,12 @@ public struct VideoDetailView: View {
             // 영상 플레이어 영역
             videoPlayerArea
 
+            // 플레이어 컨트롤
+            playerControls
+
+            // 촬영 포인트 & 피드백 요청
+            videoInfoSection
+
             // 피드백 목록
             feedbackSection
         }
@@ -40,40 +46,100 @@ public struct VideoDetailView: View {
     }
 
     private var videoPlayerArea: some View {
-        ZStack {
-            // 플레이어 placeholder
-            Rectangle()
-                .fill(Color.black)
-                .aspectRatio(16/9, contentMode: .fit)
-                .overlay {
-                    VStack(spacing: FMSpacing.xs) {
-                        Button {
-                            if store.player.isPlaying {
-                                store.send(.pause)
-                            } else {
-                                store.send(.play)
-                            }
-                        } label: {
-                            Image(systemName: store.player.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                                .font(.system(size: 50))
-                                .foregroundStyle(.white)
-                        }
+        VideoPlayerView(
+            url: store.video.videoURL,
+            isPlaying: store.player.isPlaying,
+            seekTime: store.player.currentTime,
+            isSeeking: store.player.isSeeking,
+            onCurrentTimeUpdate: { time in
+                store.send(.currentTimeUpdated(time))
+            },
+            onDurationUpdate: { duration in
+                store.send(.durationUpdated(duration))
+            },
+            onPlaybackEnded: {
+                store.send(.playerReachedEnd)
+            },
+            onSeekCompleted: {
+                store.send(.seekCompleted)
+            }
+        )
+        .aspectRatio(16 / 9, contentMode: .fit)
+        .background(Color.black)
+        .accessibilityLabel("영상 플레이어")
+        .accessibilityAddTraits(.startsMediaSession)
+    }
 
-                        // 타임라인
-                        HStack {
-                            Text(store.player.currentTime.minuteSecondFormatted)
-                                .font(FMTypography.caption2)
-                                .foregroundStyle(.white)
+    private var playerControls: some View {
+        VStack(spacing: FMSpacing.xxs) {
+            // 시크바
+            Slider(
+                value: Binding(
+                    get: { store.player.currentTime },
+                    set: { store.send(.seek(to: $0)) }
+                ),
+                in: 0...max(store.player.duration, 1)
+            )
+            .tint(FMColors.accent)
 
-                            Spacer()
+            // 재생 버튼 + 시간 표시
+            HStack {
+                Button {
+                    store.send(.playPauseTapped)
+                } label: {
+                    Image(systemName: store.player.isPlaying ? "pause.fill" : "play.fill")
+                        .font(.system(size: 20))
+                        .foregroundStyle(FMColors.label)
+                }
+                .accessibilityLabel(store.player.isPlaying ? "일시정지" : "재생")
 
-                            Text(store.player.duration.minuteSecondFormatted)
-                                .font(FMTypography.caption2)
-                                .foregroundStyle(.white)
-                        }
-                        .padding(.horizontal, FMSpacing.md)
+                Text(store.player.currentTime.minuteSecondFormatted)
+                    .font(FMTypography.caption2)
+                    .foregroundStyle(FMColors.secondaryLabel)
+                    .monospacedDigit()
+
+                Spacer()
+
+                Text(store.player.duration.minuteSecondFormatted)
+                    .font(FMTypography.caption2)
+                    .foregroundStyle(FMColors.secondaryLabel)
+                    .monospacedDigit()
+            }
+        }
+        .padding(.horizontal, FMSpacing.md)
+        .padding(.vertical, FMSpacing.xs)
+    }
+
+    @ViewBuilder
+    private var videoInfoSection: some View {
+        let hasInfo = store.video.focusPoints != nil || store.video.feedbackRequest != nil
+        if hasInfo {
+            VStack(alignment: .leading, spacing: FMSpacing.sm) {
+                if let focusPoints = store.video.focusPoints {
+                    VStack(alignment: .leading, spacing: FMSpacing.xxs) {
+                        Label("촬영 포인트", systemImage: "video.fill")
+                            .font(FMTypography.caption1)
+                            .foregroundStyle(FMColors.secondaryLabel)
+                        Text(focusPoints)
+                            .font(FMTypography.body)
+                            .foregroundStyle(FMColors.label)
                     }
                 }
+
+                if let feedbackRequest = store.video.feedbackRequest {
+                    VStack(alignment: .leading, spacing: FMSpacing.xxs) {
+                        Label("피드백 요청", systemImage: "text.bubble")
+                            .font(FMTypography.caption1)
+                            .foregroundStyle(FMColors.secondaryLabel)
+                        Text(feedbackRequest)
+                            .font(FMTypography.body)
+                            .foregroundStyle(FMColors.label)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(FMSpacing.md)
+            .background(FMColors.secondaryBackground)
         }
     }
 

@@ -4,7 +4,7 @@ import Core
 import Domain
 
 public struct FeedbackListView: View {
-    let store: StoreOf<FeedbackListFeature>
+    @Bindable var store: StoreOf<FeedbackListFeature>
 
     public init(store: StoreOf<FeedbackListFeature>) {
         self.store = store
@@ -42,15 +42,23 @@ public struct FeedbackListView: View {
                     ScrollView {
                         LazyVStack(spacing: FMSpacing.sm) {
                             ForEach(feedbacks) { feedback in
-                                FeedbackManagementRow(feedback: feedback)
-                                    .onTapGesture {
-                                        store.send(.feedbackTapped(feedback))
+                                FeedbackManagementRow(
+                                    feedback: feedback,
+                                    onReportFeedback: {
+                                        store.send(.reportFeedbackTapped(feedback))
+                                    },
+                                    onReportUser: {
+                                        store.send(.reportUserTapped(feedback))
                                     }
-                                    .onAppear {
-                                        if feedback == feedbacks.last {
-                                            store.send(.loadMore)
-                                        }
+                                )
+                                .onTapGesture {
+                                    store.send(.feedbackTapped(feedback))
+                                }
+                                .onAppear {
+                                    if feedback == feedbacks.last {
+                                        store.send(.loadMore)
                                     }
+                                }
                             }
 
                             if store.feedbacks.isLoadingMore {
@@ -72,6 +80,17 @@ public struct FeedbackListView: View {
             }
         }
         .onAppear { store.send(.onAppear) }
+        .sheet(item: $store.scope(state: \.report, action: \.report)) { reportStore in
+            ReportView(store: reportStore)
+        }
+        .fmToast(
+            isPresented: Binding(
+                get: { store.showToast },
+                set: { _ in store.send(.dismissToast) }
+            ),
+            message: store.toastMessage,
+            type: .info
+        )
     }
 }
 
@@ -79,6 +98,8 @@ public struct FeedbackListView: View {
 
 struct FeedbackManagementRow: View {
     let feedback: Domain.Feedback
+    var onReportFeedback: (() -> Void)?
+    var onReportUser: (() -> Void)?
 
     var body: some View {
         FMCard {
@@ -93,6 +114,32 @@ struct FeedbackManagementRow: View {
                     Text(feedback.createdAt.relativeString)
                         .font(FMTypography.caption2)
                         .foregroundStyle(FMColors.secondaryLabel)
+
+                    if onReportFeedback != nil || onReportUser != nil {
+                        Menu {
+                            if let onReportFeedback {
+                                Button(role: .destructive) {
+                                    onReportFeedback()
+                                } label: {
+                                    Label("피드백 신고", systemImage: "exclamationmark.bubble")
+                                }
+                            }
+                            if let onReportUser {
+                                Button(role: .destructive) {
+                                    onReportUser()
+                                } label: {
+                                    Label("사용자 신고", systemImage: "person.crop.circle.badge.exclamationmark")
+                                }
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis")
+                                .font(FMTypography.body)
+                                .foregroundStyle(FMColors.secondaryLabel)
+                                .frame(width: 28, height: 28)
+                                .contentShape(Rectangle())
+                        }
+                        .accessibilityLabel("신고 메뉴")
+                    }
                 }
 
                 Text(feedback.content)

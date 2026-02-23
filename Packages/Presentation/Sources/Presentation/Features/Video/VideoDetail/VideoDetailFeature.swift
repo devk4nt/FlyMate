@@ -30,10 +30,14 @@ public struct VideoDetailFeature {
         case feedbacksResponse(Result<[Feedback], AppError>)
         case feedbacksUpdated([Feedback])
         // Player actions
+        case playPauseTapped
         case play
         case pause
         case seek(to: TimeInterval)
+        case seekCompleted
         case currentTimeUpdated(TimeInterval)
+        case durationUpdated(TimeInterval)
+        case playerReachedEnd
         // Feedback actions
         case writeFeedbackTapped
         case feedbackTapped(Feedback)
@@ -73,6 +77,7 @@ public struct VideoDetailFeature {
                 )
 
             case .onDisappear:
+                state.player.isPlaying = false
                 return .cancel(id: CancelID.realtimeFeedback)
 
             case .feedbacksResponse(.success(let feedbacks)):
@@ -87,6 +92,13 @@ public struct VideoDetailFeature {
                 state.feedbacks = .loaded(feedbacks)
                 return .none
 
+            case .playPauseTapped:
+                if state.player.isPlaying {
+                    return .send(.pause)
+                } else {
+                    return .send(.play)
+                }
+
             case .play:
                 state.player.isPlaying = true
                 return .none
@@ -96,11 +108,26 @@ public struct VideoDetailFeature {
                 return .none
 
             case .seek(let time):
+                state.player.isSeeking = true
                 state.player.currentTime = time
                 return .none
 
+            case .seekCompleted:
+                state.player.isSeeking = false
+                return .none
+
             case .currentTimeUpdated(let time):
+                guard !state.player.isSeeking else { return .none }
                 state.player.currentTime = time
+                return .none
+
+            case .durationUpdated(let duration):
+                state.player.duration = duration
+                return .none
+
+            case .playerReachedEnd:
+                state.player.isPlaying = false
+                state.player.currentTime = 0
                 return .none
 
             case .writeFeedbackTapped:

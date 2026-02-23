@@ -49,6 +49,8 @@ public enum NetworkError: Equatable, Sendable {
 
 public enum BusinessError: Equatable, Sendable {
     case videoTooLong
+    case videoTooLarge
+    case invalidVideoFormat
     case studyFull
     case unauthorized
     case invalidInviteCode
@@ -59,6 +61,10 @@ public enum BusinessError: Equatable, Sendable {
         switch self {
         case .videoTooLong:
             return "영상 길이가 최대 허용 시간을 초과했습니다."
+        case .videoTooLarge:
+            return "영상 파일 크기가 너무 큽니다. 더 짧은 영상을 선택해주세요."
+        case .invalidVideoFormat:
+            return "지원하지 않는 영상 형식입니다."
         case .studyFull:
             return "스터디 인원이 가득 찼습니다."
         case .unauthorized:

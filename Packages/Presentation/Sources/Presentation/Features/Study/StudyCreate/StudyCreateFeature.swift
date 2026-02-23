@@ -28,6 +28,7 @@ public struct StudyCreateFeature {
         case createResponse(Result<Study, AppError>)
         case studyCreated
         case cancelTapped
+        case errorDismissed
     }
 
     @Dependency(\.studyClient) private var studyClient
@@ -51,7 +52,11 @@ public struct StudyCreateFeature {
                 return .none
 
             case .submitTapped:
-                guard state.isValid else { return .none }
+                print("🟡 [StudyCreate] submitTapped - isValid: \(state.isValid), name: '\(state.name)', desc: '\(state.description)'")
+                guard state.isValid else {
+                    print("🔴 [StudyCreate] isValid = false, returning")
+                    return .none
+                }
                 state.isSubmitting = true
                 let request = CreateStudyRequest(
                     name: state.name,
@@ -61,19 +66,24 @@ public struct StudyCreateFeature {
                 let client = studyClient
                 return .run { send in
                     do {
+                        print("🟡 [StudyCreate] Calling createStudy API...")
                         let study = try await client.createStudy(request)
+                        print("🟢 [StudyCreate] Success: \(study.name)")
                         await send(.createResponse(.success(study)))
                     } catch {
+                        print("🔴 [StudyCreate] Error: \(error)")
                         let appError = error as? AppError ?? .unexpected(error.localizedDescription)
                         await send(.createResponse(.failure(appError)))
                     }
                 }
 
             case .createResponse(.success):
+                print("🟢 [StudyCreate] createResponse success")
                 state.isSubmitting = false
                 return .send(.studyCreated)
 
             case .createResponse(.failure(let error)):
+                print("🔴 [StudyCreate] createResponse failure: \(error)")
                 state.isSubmitting = false
                 state.error = error
                 return .none
@@ -85,6 +95,10 @@ public struct StudyCreateFeature {
             case .cancelTapped:
                 let dismiss = dismiss
                 return .run { _ in await dismiss() }
+
+            case .errorDismissed:
+                state.error = nil
+                return .none
             }
         }
     }

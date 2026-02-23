@@ -4,6 +4,9 @@ public enum AppConstants {
     /// 영상 최대 길이 (초)
     public static let maxVideoDurationSeconds: TimeInterval = 240
 
+    /// 영상 최대 파일 크기 (bytes) — Supabase Storage 제한 50MB
+    public static let maxVideoFileSizeBytes = 50 * 1_024 * 1_024
+
     /// 스터디 최대 인원 수
     public static let maxStudyMembers = 8
 
@@ -24,4 +27,7 @@ public enum AppConstants {
 
     /// 디바운스 기본 대기 시간 (초)
     public static let defaultDebounceInterval: TimeInterval = 0.3
+
+    /// 신고 상세 내용 최대 글자 수
+    public static let maxReportDetailLength = 300
 }

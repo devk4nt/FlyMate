@@ -63,36 +63,37 @@ public struct StudyRepositoryImpl: StudyRepository {
 
     public func createStudy(_ request: CreateStudyRequest) async throws -> Study {
         let userID = try await client.auth.session.user.id
+        let studyID = UUID()
         let inviteCode = generateInviteCode()
 
         struct InsertStudy: Codable {
+            let id: UUID
             let name: String
             let description: String
             let ownerID: UUID
             let inviteCode: String
             let maxMembers: Int
             enum CodingKeys: String, CodingKey {
-                case name, description
+                case id, name, description
                 case ownerID = "owner_id"
                 case inviteCode = "invite_code"
                 case maxMembers = "max_members"
             }
         }
 
-        let dto: StudyDTO = try await client.from(SupabaseConfig.Table.studies)
+        // 1. 스터디 생성 (클라이언트 생성 UUID, RETURNING 없이)
+        try await client.from(SupabaseConfig.Table.studies)
             .insert(InsertStudy(
+                id: studyID,
                 name: request.name,
                 description: request.description,
                 ownerID: userID,
                 inviteCode: inviteCode,
                 maxMembers: request.maxMembers
             ))
-            .select()
-            .single()
             .execute()
-            .value
 
-        // 소유자를 멤버로 추가
+        // 2. 소유자를 멤버로 추가 (이후 SELECT 정책 통과 가능)
         struct InsertMember: Codable {
             let studyID: UUID
             let userID: UUID
@@ -100,10 +101,11 @@ public struct StudyRepositoryImpl: StudyRepository {
             enum CodingKeys: String, CodingKey { case studyID = "study_id"; case userID = "user_id"; case role }
         }
         try await client.from(SupabaseConfig.Table.studyMembers)
-            .insert(InsertMember(studyID: dto.id, userID: userID, role: "owner"))
+            .insert(InsertMember(studyID: studyID, userID: userID, role: "owner"))
             .execute()
 
-        return try await fetchStudy(id: dto.id)
+        // 3. 멤버 추가 후 조회 (이제 SELECT 정책 통과)
+        return try await fetchStudy(id: studyID)
     }
 
     public func joinStudy(inviteCode: String) async throws -> Study {
@@ -151,6 +153,23 @@ public struct StudyRepositoryImpl: StudyRepository {
             .delete()
             .eq("study_id", value: studyID)
             .eq("user_id", value: userID)
+            .execute()
+    }
+
+    public func updateNotice(studyID: UUID, notice: String?) async throws {
+        struct UpdateNotice: Codable {
+            let notice: String?
+            let noticeUpdatedAt: String?
+            enum CodingKeys: String, CodingKey {
+                case notice
+                case noticeUpdatedAt = "notice_updated_at"
+            }
+        }
+
+        let now = notice != nil ? ISO8601DateFormatter().string(from: Date()) : nil
+        try await client.from(SupabaseConfig.Table.studies)
+            .update(UpdateNotice(notice: notice, noticeUpdatedAt: now))
+            .eq("id", value: studyID)
             .execute()
     }
 

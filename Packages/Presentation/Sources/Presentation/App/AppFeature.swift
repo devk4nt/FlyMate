@@ -5,7 +5,7 @@ import Domain
 @Reducer
 public struct AppFeature {
     #if DEBUG
-    public static let skipAuth = false
+    public static let skipAuth = true
     #endif
 
     @ObservableState
@@ -13,6 +13,7 @@ public struct AppFeature {
         public var currentUser: User?
         public var destination: Destination
         public var toast: ToastState?
+        public var pendingDeepLink: DeepLink?
 
         public init() {
             #if DEBUG
@@ -62,13 +63,18 @@ public struct AppFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                #if DEBUG
-                if Self.skipAuth {
-                    return .none
-                }
-                #endif
                 let client = authClient
                 return .run { send in
+                    // 디버그 자동 로그인 (Supabase 세션 확보)
+                    if let debugSignIn = client.debugSignIn {
+                        do {
+                            try await debugSignIn()
+                            print("🟢 [Auth] debugSignIn 성공")
+                        } catch {
+                            print("🔴 [Auth] debugSignIn 실패: \(error)")
+                        }
+                    }
+
                     // 현재 인증 상태 확인
                     let user = try? await client.currentUser()
                     await send(.authStateChanged(user))
@@ -84,11 +90,12 @@ public struct AppFeature {
                 if let user {
                     if case .login = state.destination {
                         state.destination = .tab(TabFeature.State(currentUser: user))
+                        if let pendingDeepLink = state.pendingDeepLink {
+                            state.pendingDeepLink = nil
+                            return .send(.deepLink(pendingDeepLink))
+                        }
                     }
                 } else {
-                    #if DEBUG
-                    if Self.skipAuth { return .none }
-                    #endif
                     state.destination = .login(LoginFeature.State())
                 }
                 return .none
@@ -96,21 +103,28 @@ public struct AppFeature {
             case .deepLink(let deepLink):
                 switch deepLink {
                 case .inviteCode(let code):
-                    if case .tab(var tabState) = state.destination {
-                        tabState.selectedTab = .study
-                        tabState.study.pendingInviteCode = code
-                        state.destination = .tab(tabState)
+                    if case .tab = state.destination {
+                        return .send(.destination(.tab(.showInviteCode(code))))
+                    } else {
+                        state.pendingDeepLink = deepLink
                     }
-                case .videoDetail(let studyID, let videoID):
-                    if case .tab(var tabState) = state.destination {
-                        tabState.selectedTab = .study
-                        state.destination = .tab(tabState)
+                case .videoDetail:
+                    if case .tab = state.destination {
+                        // TODO: Implement video deep link navigation
+                    } else {
+                        state.pendingDeepLink = deepLink
                     }
                 }
                 return .none
 
             case .toastDismissed:
                 state.toast = nil
+                return .none
+
+            case .destination(.tab(.settings(.signOutCompleted))),
+                 .destination(.tab(.settings(.deleteAccountCompleted))):
+                state.currentUser = nil
+                state.destination = .login(LoginFeature.State())
                 return .none
 
             case .destination:
@@ -155,6 +169,25 @@ extension AppFeature.State {
 public enum DeepLink: Equatable {
     case inviteCode(String)
     case videoDetail(studyID: UUID, videoID: UUID)
+}
+
+public enum DeepLinkParser {
+    /// Parses `flymate://invite?code=ABC123` format URLs
+    public static func parse(url: URL) -> DeepLink? {
+        guard url.scheme == "flymate" else { return nil }
+
+        switch url.host {
+        case "invite":
+            guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+                  let code = components.queryItems?.first(where: { $0.name == "code" })?.value,
+                  !code.isEmpty else {
+                return nil
+            }
+            return .inviteCode(code)
+        default:
+            return nil
+        }
+    }
 }
 
 public struct ToastState: Equatable {

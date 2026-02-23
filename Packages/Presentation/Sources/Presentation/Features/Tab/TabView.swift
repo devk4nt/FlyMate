@@ -34,5 +34,29 @@ public struct MainTabView: View {
             }
             .tag(TabFeature.State.Tab.settings)
         }
+        .onAppear {
+            store.send(.onAppear)
+        }
+        .sheet(isPresented: Binding(
+            get: { store.isNotificationSheetPresented },
+            set: { newValue in
+                if !newValue {
+                    store.send(.dismissNotificationSheet)
+                }
+            }
+        )) {
+            NavigationStack {
+                NotificationListView(
+                    store: store.scope(state: \.notificationList, action: \.notificationList)
+                )
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("닫기") {
+                            store.send(.dismissNotificationSheet)
+                        }
+                    }
+                }
+            }
+        }
     }
 }

@@ -35,5 +35,9 @@ public protocol StudyRepository: Sendable {
     func removeMember(studyID: UUID, userID: UUID) async throws
 
     /// 초대 코드 정보를 조회한다.
+
+    /// 스터디 공지사항을 업데이트한다 (소유자만).
+    func updateNotice(studyID: UUID, notice: String?) async throws
+
     func fetchInviteCodeInfo(code: String) async throws -> InviteCode
 }

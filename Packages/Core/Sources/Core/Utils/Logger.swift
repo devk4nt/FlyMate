@@ -12,6 +12,7 @@ public enum FMLogger {
         case video
         case feedback
         case study
+        case notification
         case ui
         case general
     }

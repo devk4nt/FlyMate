@@ -9,6 +9,8 @@ public struct AuthClient: Sendable {
     public var signOut: @Sendable () async throws -> Void
     public var deleteAccount: @Sendable () async throws -> Void
     public var observeAuthState: @Sendable () -> AsyncStream<User?>
+    /// 디버그 자동 로그인 (skipAuth 모드에서 Supabase 세션 확보용)
+    public var debugSignIn: (@Sendable () async throws -> Void)?
 
     public init(
         currentUser: @escaping @Sendable () async throws -> User?,
@@ -16,7 +18,8 @@ public struct AuthClient: Sendable {
         signInWithKakao: @escaping @Sendable (String) async throws -> User,
         signOut: @escaping @Sendable () async throws -> Void,
         deleteAccount: @escaping @Sendable () async throws -> Void,
-        observeAuthState: @escaping @Sendable () -> AsyncStream<User?>
+        observeAuthState: @escaping @Sendable () -> AsyncStream<User?>,
+        debugSignIn: (@Sendable () async throws -> Void)? = nil
     ) {
         self.currentUser = currentUser
         self.signInWithApple = signInWithApple
@@ -24,6 +27,7 @@ public struct AuthClient: Sendable {
         self.signOut = signOut
         self.deleteAccount = deleteAccount
         self.observeAuthState = observeAuthState
+        self.debugSignIn = debugSignIn
     }
 }
 

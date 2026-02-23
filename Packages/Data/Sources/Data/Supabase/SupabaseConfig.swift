@@ -23,6 +23,8 @@ public enum SupabaseConfig {
         public static let studyMembers = "study_members"
         public static let videos = "videos"
         public static let feedbacks = "feedbacks"
+        public static let reports = "reports"
+        public static let notifications = "notifications"
     }
 
     public enum Bucket {
@@ -33,5 +35,6 @@ public enum SupabaseConfig {
 
     public enum RealtimeChannel {
         public static let feedbacks = "feedbacks"
+        public static let notifications = "notifications"
     }
 }

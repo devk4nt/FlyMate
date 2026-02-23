@@ -68,6 +68,31 @@ CREATE TABLE feedbacks (
     mentioned_user_id UUID REFERENCES users(id) ON DELETE SET NULL
 );
 
+-- Notifications
+CREATE TABLE notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    recipient_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type TEXT NOT NULL CHECK (type IN ('feedback_on_my_video', 'mentioned_in_feedback')),
+    title TEXT NOT NULL,
+    body TEXT NOT NULL,
+    reference_video_id UUID REFERENCES videos(id) ON DELETE CASCADE,
+    reference_feedback_id UUID REFERENCES feedbacks(id) ON DELETE CASCADE,
+    is_read BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Reports (feedback/user reports)
+CREATE TABLE reports (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    reporter_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    target_type TEXT NOT NULL CHECK (target_type IN ('feedback', 'user')),
+    target_id UUID NOT NULL,
+    reason TEXT NOT NULL,
+    detail TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(reporter_id, target_type, target_id)
+);
+
 -- ============================================================
 -- 2. INDEXES
 -- ============================================================
@@ -82,6 +107,11 @@ CREATE INDEX idx_videos_created_at ON videos(created_at DESC);
 CREATE INDEX idx_feedbacks_video_id ON feedbacks(video_id);
 CREATE INDEX idx_feedbacks_author_id ON feedbacks(author_id);
 CREATE INDEX idx_feedbacks_created_at ON feedbacks(created_at DESC);
+CREATE INDEX idx_notifications_recipient_id ON notifications(recipient_id);
+CREATE INDEX idx_notifications_created_at ON notifications(created_at DESC);
+CREATE INDEX idx_notifications_unread ON notifications(recipient_id) WHERE is_read = false;
+CREATE INDEX idx_reports_reporter_id ON reports(reporter_id);
+CREATE INDEX idx_reports_target ON reports(target_type, target_id);
 
 -- ============================================================
 -- 3. TRIGGERS - Auto-populate denormalized fields
@@ -162,7 +192,57 @@ CREATE TRIGGER on_feedback_insert
     BEFORE INSERT ON feedbacks
     FOR EACH ROW EXECUTE FUNCTION fill_feedback_info();
 
--- 3-5. Auto-update videos.feedback_count
+-- 3-5. Auto-create notifications on feedback insert
+CREATE OR REPLACE FUNCTION create_feedback_notification()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_video_owner_id UUID;
+    v_video_title TEXT;
+    v_author_name TEXT;
+BEGIN
+    -- Lookup video owner and title
+    SELECT uploader_id, title INTO v_video_owner_id, v_video_title
+    FROM videos WHERE id = NEW.video_id;
+
+    -- Lookup feedback author name
+    SELECT name INTO v_author_name
+    FROM users WHERE id = NEW.author_id;
+
+    -- Notify video owner (skip if author is the owner)
+    IF v_video_owner_id IS NOT NULL AND v_video_owner_id != NEW.author_id THEN
+        INSERT INTO notifications (recipient_id, type, title, body, reference_video_id, reference_feedback_id)
+        VALUES (
+            v_video_owner_id,
+            'feedback_on_my_video',
+            '새 피드백이 달렸어요',
+            v_author_name || '님이 "' || LEFT(v_video_title, 20) || '" 영상에 피드백을 남겼습니다.',
+            NEW.video_id,
+            NEW.id
+        );
+    END IF;
+
+    -- Notify mentioned user (skip if same as author or video owner already notified)
+    IF NEW.mentioned_user_id IS NOT NULL AND NEW.mentioned_user_id != NEW.author_id THEN
+        INSERT INTO notifications (recipient_id, type, title, body, reference_video_id, reference_feedback_id)
+        VALUES (
+            NEW.mentioned_user_id,
+            'mentioned_in_feedback',
+            '피드백에서 태그되었어요',
+            v_author_name || '님이 피드백에서 회원님을 태그했습니다.',
+            NEW.video_id,
+            NEW.id
+        );
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_feedback_notify
+    AFTER INSERT ON feedbacks
+    FOR EACH ROW EXECUTE FUNCTION create_feedback_notification();
+
+-- 3-6. Auto-update videos.feedback_count
 CREATE OR REPLACE FUNCTION update_feedback_count()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -190,6 +270,7 @@ ALTER TABLE studies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE study_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE videos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE feedbacks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
 -- Users: read own profile, update own profile
 CREATE POLICY "Users can read own profile"
@@ -281,8 +362,25 @@ CREATE POLICY "Study members can create feedbacks"
 CREATE POLICY "Author can delete own feedback"
     ON feedbacks FOR DELETE USING (auth.uid() = author_id);
 
+-- Notifications: read own, update own (mark as read)
+CREATE POLICY "Users can read own notifications"
+    ON notifications FOR SELECT USING (auth.uid() = recipient_id);
+
+CREATE POLICY "Users can update own notifications"
+    ON notifications FOR UPDATE USING (auth.uid() = recipient_id);
+
+-- Reports: insert own report, read own reports
+ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can create reports"
+    ON reports FOR INSERT WITH CHECK (auth.uid() = reporter_id);
+
+CREATE POLICY "Users can read own reports"
+    ON reports FOR SELECT USING (auth.uid() = reporter_id);
+
 -- ============================================================
 -- 5. REALTIME
 -- ============================================================
 
 ALTER PUBLICATION supabase_realtime ADD TABLE feedbacks;
+ALTER PUBLICATION supabase_realtime ADD TABLE notifications;

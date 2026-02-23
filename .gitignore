@@ -45,5 +45,8 @@ fastlane/test_output
 GoogleService-Info.plist
 .env
 
+# Supabase
+supabase/.temp/
+
 # Serena MCP
 .serena/

@@ -61,6 +61,11 @@ public struct StudyListView: View {
         .navigationTitle("스터디")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
+                FMNotificationBell(unreadCount: store.unreadNotificationCount) {
+                    store.send(.notificationBellTapped)
+                }
+            }
+            ToolbarItem(placement: .primaryAction) {
                 Menu {
                     Button("스터디 만들기", systemImage: "plus") {
                         store.send(.createStudyTapped)
@@ -80,6 +85,12 @@ public struct StudyListView: View {
             NavigationStack {
                 StudyCreateView(store: createStore)
             }
+        }
+        .sheet(item: $store.scope(state: \.joinStudy, action: \.joinStudy)) { joinStore in
+            NavigationStack {
+                JoinStudyView(store: joinStore)
+            }
+            .presentationDetents([.medium])
         }
     }
 }

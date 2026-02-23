@@ -7,8 +7,10 @@ public struct Study: Equatable, Identifiable, Sendable, Hashable {
     public let ownerID: UUID
     public let inviteCode: String
     public let maxMembers: Int
-    public let members: [StudyMember]
+    public var members: [StudyMember]
     public let createdAt: Date
+    public var notice: String?
+    public var noticeUpdatedAt: Date?
 
     public init(
         id: UUID,
@@ -18,7 +20,9 @@ public struct Study: Equatable, Identifiable, Sendable, Hashable {
         inviteCode: String,
         maxMembers: Int,
         members: [StudyMember],
-        createdAt: Date
+        createdAt: Date,
+        notice: String? = nil,
+        noticeUpdatedAt: Date? = nil
     ) {
         self.id = id
         self.name = name
@@ -28,6 +32,8 @@ public struct Study: Equatable, Identifiable, Sendable, Hashable {
         self.maxMembers = maxMembers
         self.members = members
         self.createdAt = createdAt
+        self.notice = notice
+        self.noticeUpdatedAt = noticeUpdatedAt
     }
 
     public var isFull: Bool {
