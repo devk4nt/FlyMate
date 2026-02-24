@@ -19,10 +19,13 @@ struct FlyMateApp: App {
             if AppFeature.skipAuth {
                 Self.registerLiveDependencies(&$0)
                 let supabaseClient = SupabaseClientProvider.shared.client
+                let testEmail = ProcessInfo.processInfo.environment["TEST_EMAIL"] ?? "test@flymate.app"
+                let testPassword = ProcessInfo.processInfo.environment["TEST_PASSWORD"] ?? "testpassword123"
                 $0.authClient.debugSignIn = {
+                    try? await supabaseClient.auth.signOut()
                     _ = try await supabaseClient.auth.signIn(
-                        email: "test@flymate.app",
-                        password: "testpassword123"
+                        email: testEmail,
+                        password: testPassword
                     )
                 }
                 return

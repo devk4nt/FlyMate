@@ -85,7 +85,7 @@ enum DTOMapper {
             content: dto.content,
             timestampSeconds: dto.timestampSeconds,
             createdAt: parseDate(dto.createdAt),
-            mentionedUserID: dto.mentionedUserID
+            mentionedUserIDs: dto.mentionedUserIDs ?? []
         )
     }
 

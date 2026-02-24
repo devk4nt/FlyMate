@@ -52,8 +52,7 @@ public struct VideoDetailFeature {
 
     public var body: some ReducerOf<Self> {
         Reduce { state, action in
-            switch action {
-            case .onAppear:
+            switch action {             case .onAppear:
                 let videoID = state.video.id
                 state.feedbacks = .loading
                 state.player.duration = state.video.durationSeconds
@@ -133,6 +132,7 @@ public struct VideoDetailFeature {
             case .writeFeedbackTapped:
                 state.feedbackWrite = FeedbackWriteFeature.State(
                     videoID: state.video.id,
+                    studyID: state.video.studyID,
                     timestampSeconds: state.player.currentTime
                 )
                 return .send(.pause)

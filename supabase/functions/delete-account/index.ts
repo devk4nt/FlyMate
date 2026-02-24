@@ -38,12 +38,24 @@ serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
+    // 모든 스터디의 콘텐츠 익명화 (videos, feedbacks의 FK CASCADE 제거됨 → 보존)
+    const { error: anonymizeError } = await supabaseAdmin.rpc(
+      "anonymize_user_all_studies",
+      { p_user_id: user.id }
+    );
+    if (anonymizeError) {
+      return new Response(
+        JSON.stringify({ error: anonymizeError.message }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Storage 파일 정리 (프로필 이미지)
     await supabaseAdmin.storage
       .from("profile-images")
       .remove([`${user.id}.jpg`]);
 
-    // Auth 사용자 삭제 (users 테이블은 CASCADE로 자동 삭제)
+    // Auth 사용자 삭제 (users, study_members, notifications는 CASCADE 삭제 — videos/feedbacks는 보존)
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
     if (deleteError) {
       return new Response(

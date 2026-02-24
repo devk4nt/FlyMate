@@ -16,23 +16,7 @@ public struct AppFeature {
         public var pendingDeepLink: DeepLink?
 
         public init() {
-            #if DEBUG
-            if AppFeature.skipAuth {
-                let previewUser = User(
-                    id: UUID(uuidString: "00000000-0000-0000-0000-000000000010")!,
-                    email: "preview@flymate.app",
-                    name: "Preview User",
-                    provider: .apple,
-                    createdAt: Date()
-                )
-                self.currentUser = previewUser
-                self.destination = .tab(TabFeature.State(currentUser: previewUser))
-            } else {
-                self.destination = .login(LoginFeature.State())
-            }
-            #else
             self.destination = .login(LoginFeature.State())
-            #endif
         }
 
         public enum Destination: Equatable {

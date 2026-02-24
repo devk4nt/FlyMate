@@ -10,7 +10,7 @@ struct FeedbackDTO: Codable, Sendable {
     let content: String
     let timestampSeconds: Double
     let createdAt: String
-    let mentionedUserID: UUID?
+    let mentionedUserIDs: [UUID]?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -22,6 +22,6 @@ struct FeedbackDTO: Codable, Sendable {
         case content
         case timestampSeconds = "timestamp_seconds"
         case createdAt = "created_at"
-        case mentionedUserID = "mentioned_user_id"
+        case mentionedUserIDs = "mentioned_user_ids"
     }
 }

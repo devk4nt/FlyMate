@@ -65,7 +65,7 @@ CREATE TABLE feedbacks (
     content TEXT NOT NULL,
     timestamp_seconds DOUBLE PRECISION NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    mentioned_user_id UUID REFERENCES users(id) ON DELETE SET NULL
+    mentioned_user_ids UUID[] NOT NULL DEFAULT '{}'
 );
 
 -- Notifications
@@ -199,6 +199,7 @@ DECLARE
     v_video_owner_id UUID;
     v_video_title TEXT;
     v_author_name TEXT;
+    v_mentioned_id UUID;
 BEGIN
     -- Lookup video owner and title
     SELECT uploader_id, title INTO v_video_owner_id, v_video_title
@@ -221,17 +222,22 @@ BEGIN
         );
     END IF;
 
-    -- Notify mentioned user (skip if same as author or video owner already notified)
-    IF NEW.mentioned_user_id IS NOT NULL AND NEW.mentioned_user_id != NEW.author_id THEN
-        INSERT INTO notifications (recipient_id, type, title, body, reference_video_id, reference_feedback_id)
-        VALUES (
-            NEW.mentioned_user_id,
-            'mentioned_in_feedback',
-            '피드백에서 태그되었어요',
-            v_author_name || '님이 피드백에서 회원님을 태그했습니다.',
-            NEW.video_id,
-            NEW.id
-        );
+    -- Notify each mentioned user (skip author)
+    IF array_length(NEW.mentioned_user_ids, 1) IS NOT NULL THEN
+        FOREACH v_mentioned_id IN ARRAY NEW.mentioned_user_ids
+        LOOP
+            IF v_mentioned_id != NEW.author_id THEN
+                INSERT INTO notifications (recipient_id, type, title, body, reference_video_id, reference_feedback_id)
+                VALUES (
+                    v_mentioned_id,
+                    'mentioned_in_feedback',
+                    '피드백에서 태그되었어요',
+                    v_author_name || '님이 피드백에서 회원님을 태그했습니다.',
+                    NEW.video_id,
+                    NEW.id
+                );
+            END IF;
+        END LOOP;
     END IF;
 
     RETURN NEW;
@@ -384,3 +390,92 @@ CREATE POLICY "Users can read own reports"
 
 ALTER PUBLICATION supabase_realtime ADD TABLE feedbacks;
 ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
+
+-- ============================================================
+-- 6. RPC FUNCTIONS (SECURITY DEFINER — bypass RLS)
+-- ============================================================
+
+-- 6-1. Join study by invite code (atomic: validate + insert member)
+CREATE OR REPLACE FUNCTION join_study_by_invite_code(p_invite_code TEXT)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_study_id UUID;
+    v_max_members INT;
+    v_current_count INT;
+    v_user_id UUID;
+BEGIN
+    -- 인증 확인
+    v_user_id := auth.uid();
+    IF v_user_id IS NULL THEN
+        RAISE EXCEPTION 'UNAUTHORIZED';
+    END IF;
+
+    -- invite_code로 스터디 조회 (RLS 우회)
+    SELECT id, max_members INTO v_study_id, v_max_members
+    FROM studies
+    WHERE invite_code = p_invite_code;
+
+    IF v_study_id IS NULL THEN
+        RAISE EXCEPTION 'INVALID_INVITE_CODE';
+    END IF;
+
+    -- 이미 멤버인지 확인
+    IF EXISTS (
+        SELECT 1 FROM study_members
+        WHERE study_id = v_study_id AND user_id = v_user_id
+    ) THEN
+        RAISE EXCEPTION 'ALREADY_MEMBER';
+    END IF;
+
+    -- 인원 초과 확인
+    SELECT COUNT(*) INTO v_current_count
+    FROM study_members
+    WHERE study_id = v_study_id;
+
+    IF v_current_count >= v_max_members THEN
+        RAISE EXCEPTION 'STUDY_FULL';
+    END IF;
+
+    -- 멤버 추가
+    INSERT INTO study_members (study_id, user_id, role)
+    VALUES (v_study_id, v_user_id, 'member');
+
+    RETURN v_study_id;
+END;
+$$;
+
+-- 6-2. Get study info by invite code (for preview before joining)
+CREATE OR REPLACE FUNCTION get_study_by_invite_code(p_invite_code TEXT)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_result JSON;
+BEGIN
+    -- 인증 확인
+    IF auth.uid() IS NULL THEN
+        RAISE EXCEPTION 'UNAUTHORIZED';
+    END IF;
+
+    SELECT json_build_object(
+        'code', s.invite_code,
+        'study_id', s.id,
+        'study_name', s.name,
+        'created_at', s.created_at
+    ) INTO v_result
+    FROM studies s
+    WHERE s.invite_code = p_invite_code;
+
+    IF v_result IS NULL THEN
+        RAISE EXCEPTION 'INVALID_INVITE_CODE';
+    END IF;
+
+    RETURN v_result;
+END;
+$$;

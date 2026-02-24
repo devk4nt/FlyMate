@@ -101,6 +101,39 @@ struct FeedbackManagementRow: View {
     var onReportFeedback: (() -> Void)?
     var onReportUser: (() -> Void)?
 
+    private func highlightedContent(_ content: String) -> Text {
+        let pattern = "@\\S+"
+        guard let regex = try? NSRegularExpression(pattern: pattern) else {
+            return Text(content)
+        }
+
+        let nsContent = content as NSString
+        let matches = regex.matches(in: content, range: NSRange(location: 0, length: nsContent.length))
+
+        guard !matches.isEmpty else { return Text(content) }
+
+        var result = Text("")
+        var currentIndex = content.startIndex
+
+        for match in matches {
+            guard let range = Range(match.range, in: content) else { continue }
+
+            if currentIndex < range.lowerBound {
+                result = result + Text(content[currentIndex..<range.lowerBound])
+            }
+            result = result + Text(content[range])
+                .foregroundColor(FMColors.accent)
+                .fontWeight(.semibold)
+            currentIndex = range.upperBound
+        }
+
+        if currentIndex < content.endIndex {
+            result = result + Text(content[currentIndex...])
+        }
+
+        return result
+    }
+
     var body: some View {
         FMCard {
             VStack(alignment: .leading, spacing: FMSpacing.xs) {
@@ -142,7 +175,7 @@ struct FeedbackManagementRow: View {
                     }
                 }
 
-                Text(feedback.content)
+                highlightedContent(feedback.content)
                     .font(FMTypography.callout)
                     .lineLimit(3)
 

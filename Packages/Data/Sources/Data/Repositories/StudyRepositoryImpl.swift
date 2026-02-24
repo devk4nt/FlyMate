@@ -1,4 +1,5 @@
 import Foundation
+import Core
 import Domain
 import Supabase
 
@@ -109,31 +110,30 @@ public struct StudyRepositoryImpl: StudyRepository {
     }
 
     public func joinStudy(inviteCode: String) async throws -> Study {
-        let userID = try await client.auth.session.user.id
-
-        let studyDTO: StudyDTO = try await client.from(SupabaseConfig.Table.studies)
-            .select()
-            .eq("invite_code", value: inviteCode)
+        do {
+            let response: UUID = try await client.rpc(
+                "join_study_by_invite_code",
+                params: ["p_invite_code": inviteCode]
+            )
             .single()
             .execute()
             .value
 
-        struct InsertMember: Codable {
-            let studyID: UUID
-            let userID: UUID
-            let role: String
-            enum CodingKeys: String, CodingKey { case studyID = "study_id"; case userID = "user_id"; case role }
+            return try await fetchStudy(id: response)
+        } catch {
+            throw mapRPCError(error)
         }
-
-        try await client.from(SupabaseConfig.Table.studyMembers)
-            .insert(InsertMember(studyID: studyDTO.id, userID: userID, role: "member"))
-            .execute()
-
-        return try await fetchStudy(id: studyDTO.id)
     }
 
     public func leaveStudy(id: UUID) async throws {
         let userID = try await client.auth.session.user.id
+
+        // 콘텐츠 익명화 (멤버 삭제 전에 실행)
+        try await client.rpc(
+            "anonymize_member_in_study",
+            params: ["p_study_id": id, "p_user_id": userID]
+        ).execute()
+
         try await client.from(SupabaseConfig.Table.studyMembers)
             .delete()
             .eq("study_id", value: id)
@@ -149,6 +149,12 @@ public struct StudyRepositoryImpl: StudyRepository {
     }
 
     public func removeMember(studyID: UUID, userID: UUID) async throws {
+        // 콘텐츠 익명화 (멤버 삭제 전에 실행)
+        try await client.rpc(
+            "anonymize_member_in_study",
+            params: ["p_study_id": studyID, "p_user_id": userID]
+        ).execute()
+
         try await client.from(SupabaseConfig.Table.studyMembers)
             .delete()
             .eq("study_id", value: studyID)
@@ -174,19 +180,24 @@ public struct StudyRepositoryImpl: StudyRepository {
     }
 
     public func fetchInviteCodeInfo(code: String) async throws -> InviteCode {
-        let dto: StudyDTO = try await client.from(SupabaseConfig.Table.studies)
-            .select()
-            .eq("invite_code", value: code)
+        do {
+            let response: InviteCodeResponse = try await client.rpc(
+                "get_study_by_invite_code",
+                params: ["p_invite_code": code]
+            )
             .single()
             .execute()
             .value
 
-        return InviteCode(
-            code: dto.inviteCode,
-            studyID: dto.id,
-            studyName: dto.name,
-            createdAt: Date()
-        )
+            return InviteCode(
+                code: response.code,
+                studyID: response.studyID,
+                studyName: response.studyName,
+                createdAt: response.createdAt
+            )
+        } catch {
+            throw mapRPCError(error)
+        }
     }
 
     // MARK: - Private
@@ -194,5 +205,35 @@ public struct StudyRepositoryImpl: StudyRepository {
     private func generateInviteCode() -> String {
         let characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
         return String((0..<6).map { _ in characters.randomElement()! })
+    }
+
+    private func mapRPCError(_ error: Error) -> Error {
+        let message = error.localizedDescription
+        if message.contains("INVALID_INVITE_CODE") {
+            return AppError.business(.invalidInviteCode)
+        } else if message.contains("ALREADY_MEMBER") {
+            return AppError.business(.alreadyJoined)
+        } else if message.contains("STUDY_FULL") {
+            return AppError.business(.studyFull)
+        } else if message.contains("UNAUTHORIZED") {
+            return AppError.business(.unauthorized)
+        }
+        return AppError.unexpected(message)
+    }
+}
+
+// MARK: - RPC Response DTOs
+
+private struct InviteCodeResponse: Codable, Sendable {
+    let code: String
+    let studyID: UUID
+    let studyName: String
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case code
+        case studyID = "study_id"
+        case studyName = "study_name"
+        case createdAt = "created_at"
     }
 }

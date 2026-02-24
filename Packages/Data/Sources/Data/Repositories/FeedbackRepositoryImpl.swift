@@ -30,13 +30,13 @@ public struct FeedbackRepositoryImpl: FeedbackRepository {
             let authorID: UUID
             let content: String
             let timestampSeconds: Double
-            let mentionedUserID: UUID?
+            let mentionedUserIDs: [UUID]
             enum CodingKeys: String, CodingKey {
                 case content
                 case videoID = "video_id"
                 case authorID = "author_id"
                 case timestampSeconds = "timestamp_seconds"
-                case mentionedUserID = "mentioned_user_id"
+                case mentionedUserIDs = "mentioned_user_ids"
             }
         }
 
@@ -46,7 +46,7 @@ public struct FeedbackRepositoryImpl: FeedbackRepository {
                 authorID: userID,
                 content: request.content,
                 timestampSeconds: request.timestampSeconds,
-                mentionedUserID: request.mentionedUserID
+                mentionedUserIDs: request.mentionedUserIDs
             ))
             .select()
             .single()

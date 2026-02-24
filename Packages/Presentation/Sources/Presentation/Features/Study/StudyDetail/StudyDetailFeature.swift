@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 import ComposableArchitecture
 import Core
 import Domain
@@ -14,6 +15,7 @@ public struct StudyDetailFeature {
         public var isEditingNotice: Bool = false
         public var editingNoticeText: String = ""
         public var noticeUpdateState: LoadingState<Bool> = .idle
+        public var isCopied: Bool = false
 
         public var isOwner: Bool {
             guard let currentUserID else { return false }
@@ -35,6 +37,7 @@ public struct StudyDetailFeature {
         case videoTapped(Video)
         case uploadVideoTapped(studyID: UUID)
         case copyInviteCode
+        case resetCopyFeedback
         case memberManagementTapped
         // Notice
         case noticeTapped
@@ -123,8 +126,20 @@ public struct StudyDetailFeature {
                 state.videosPagination.isLoadingMore = false
                 return .none
 
-            case .videoTapped, .uploadVideoTapped, .copyInviteCode, .memberManagementTapped:
+            case .videoTapped, .uploadVideoTapped, .memberManagementTapped:
                 return .none // Handled by parent
+
+            case .copyInviteCode:
+                UIPasteboard.general.string = state.study.inviteCode
+                state.isCopied = true
+                return .run { send in
+                    try await Task.sleep(for: .seconds(2))
+                    await send(.resetCopyFeedback)
+                }
+
+            case .resetCopyFeedback:
+                state.isCopied = false
+                return .none
 
             // MARK: - Notice
 

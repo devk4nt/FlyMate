@@ -263,9 +263,14 @@ public struct StudyDetailView: View {
                 Button {
                     store.send(.copyInviteCode)
                 } label: {
-                    Label("초대 코드 복사", systemImage: "doc.on.doc")
-                        .font(FMTypography.caption1)
+                    Label(
+                        store.isCopied ? "복사됨" : "초대 코드 복사",
+                        systemImage: store.isCopied ? "checkmark" : "doc.on.doc"
+                    )
+                    .font(FMTypography.caption1)
+                    .foregroundStyle(store.isCopied ? FMColors.success : FMColors.label)
                 }
+                .animation(.easeInOut(duration: 0.2), value: store.isCopied)
             }
         }
         .padding(FMSpacing.md)

@@ -10,7 +10,7 @@ public struct Feedback: Equatable, Identifiable, Sendable, Hashable {
     public let content: String
     public let timestampSeconds: TimeInterval
     public let createdAt: Date
-    public let mentionedUserID: UUID?
+    public let mentionedUserIDs: [UUID]
 
     public init(
         id: UUID,
@@ -22,7 +22,7 @@ public struct Feedback: Equatable, Identifiable, Sendable, Hashable {
         content: String,
         timestampSeconds: TimeInterval,
         createdAt: Date,
-        mentionedUserID: UUID? = nil
+        mentionedUserIDs: [UUID] = []
     ) {
         self.id = id
         self.videoID = videoID
@@ -33,7 +33,7 @@ public struct Feedback: Equatable, Identifiable, Sendable, Hashable {
         self.content = content
         self.timestampSeconds = timestampSeconds
         self.createdAt = createdAt
-        self.mentionedUserID = mentionedUserID
+        self.mentionedUserIDs = mentionedUserIDs
     }
 }
 
@@ -41,17 +41,17 @@ public struct CreateFeedbackRequest: Equatable, Sendable {
     public let videoID: UUID
     public let content: String
     public let timestampSeconds: TimeInterval
-    public let mentionedUserID: UUID?
+    public let mentionedUserIDs: [UUID]
 
     public init(
         videoID: UUID,
         content: String,
         timestampSeconds: TimeInterval,
-        mentionedUserID: UUID? = nil
+        mentionedUserIDs: [UUID] = []
     ) {
         self.videoID = videoID
         self.content = content
         self.timestampSeconds = timestampSeconds
-        self.mentionedUserID = mentionedUserID
+        self.mentionedUserIDs = mentionedUserIDs
     }
 }
