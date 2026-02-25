@@ -3,7 +3,7 @@ import ComposableArchitecture
 import Domain
 
 @Reducer
-public struct AppFeature {
+public struct AppFeature : Sendable {
     #if DEBUG
     public static let skipAuth = true
     #endif
@@ -14,6 +14,7 @@ public struct AppFeature {
         public var destination: Destination
         public var toast: ToastState?
         public var pendingDeepLink: DeepLink?
+        public var fcmToken: String?
 
         public init() {
             self.destination = .login(LoginFeature.State())
@@ -31,6 +32,11 @@ public struct AppFeature {
         case destination(Destination)
         case deepLink(DeepLink)
         case toastDismissed
+        case requestPushPermission
+        case pushPermissionResponse(Bool)
+        case fcmTokenReceived(String)
+        case registerTokenResponse
+        case pushNotificationTapped([String: String])
 
         @CasePathable
         public enum Destination {
@@ -39,7 +45,14 @@ public struct AppFeature {
         }
     }
 
+    private enum CancelID {
+        case fcmTokenObserver
+        case pushNotificationObserver
+    }
+
     @Dependency(\.authClient) private var authClient
+    @Dependency(\.userClient) private var userClient
+    @Dependency(\.pushNotificationClient) private var pushNotificationClient
 
     public init() {}
 
@@ -48,41 +61,104 @@ public struct AppFeature {
             switch action {
             case .onAppear:
                 let client = authClient
-                return .run { send in
-                    // 디버그 자동 로그인 (Supabase 세션 확보)
-                    if let debugSignIn = client.debugSignIn {
-                        do {
-                            try await debugSignIn()
-                            print("🟢 [Auth] debugSignIn 성공")
-                        } catch {
-                            print("🔴 [Auth] debugSignIn 실패: \(error)")
+                return .merge(
+                    .run { send in
+                        // 디버그 자동 로그인 (Supabase 세션 확보)
+                        if let debugSignIn = client.debugSignIn {
+                            do {
+                                try await debugSignIn()
+                                print("🟢 [Auth] debugSignIn 성공")
+                            } catch {
+                                print("🔴 [Auth] debugSignIn 실패: \(error)")
+                            }
+                        }
+
+                        // 현재 인증 상태 확인
+                        let user = try? await client.currentUser()
+                        await send(.authStateChanged(user))
+
+                        // 인증 상태 변경 구독
+                        for await user in client.observeAuthState() {
+                            await send(.authStateChanged(user))
+                        }
+                    },
+                    // 푸시 알림 탭 구독
+                    .run { send in
+                        let pushClient = pushNotificationClient
+                        for await payload in pushClient.observePushNotificationTapped() {
+                            await send(.pushNotificationTapped(payload))
                         }
                     }
-
-                    // 현재 인증 상태 확인
-                    let user = try? await client.currentUser()
-                    await send(.authStateChanged(user))
-
-                    // 인증 상태 변경 구독
-                    for await user in client.observeAuthState() {
-                        await send(.authStateChanged(user))
-                    }
-                }
+                    .cancellable(id: CancelID.pushNotificationObserver)
+                )
 
             case .authStateChanged(let user):
                 state.currentUser = user
                 if let user {
                     if case .login = state.destination {
                         state.destination = .tab(TabFeature.State(currentUser: user))
+                        var effects: [Effect<Action>] = [.send(.requestPushPermission)]
                         if let pendingDeepLink = state.pendingDeepLink {
                             state.pendingDeepLink = nil
-                            return .send(.deepLink(pendingDeepLink))
+                            effects.append(.send(.deepLink(pendingDeepLink)))
                         }
+                        return .merge(effects)
                     }
                 } else {
+                    // 로그아웃 시 FCM 토큰 제거
+                    let fcmToken = state.fcmToken
+                    state.fcmToken = nil
                     state.destination = .login(LoginFeature.State())
+                    return .merge(
+                        .cancel(id: CancelID.fcmTokenObserver),
+                        fcmToken.map { token in
+                            let client = userClient
+                            return Effect<Action>.run { _ in
+                                try? await client.removeDeviceToken(token)
+                            }
+                        } ?? .none
+                    )
                 }
                 return .none
+
+            case .requestPushPermission:
+                let pushClient = pushNotificationClient
+                return .run { send in
+                    let granted = try await pushClient.requestAuthorization()
+                    await send(.pushPermissionResponse(granted))
+                } catch: { _, send in
+                    await send(.pushPermissionResponse(false))
+                }
+
+            case .pushPermissionResponse(let granted):
+                guard granted else { return .none }
+                let pushClient = pushNotificationClient
+                return .run { send in
+                    await pushClient.registerForRemoteNotifications()
+                    for await token in pushClient.observeFCMToken() {
+                        await send(.fcmTokenReceived(token))
+                    }
+                }
+                .cancellable(id: CancelID.fcmTokenObserver)
+
+            case .fcmTokenReceived(let token):
+                state.fcmToken = token
+                let client = userClient
+                return .run { _ in
+                    try await client.registerDeviceToken(token)
+                } catch: { error, _ in
+                    print("🔴 [Push] Failed to register FCM token: \(error)")
+                }
+
+            case .registerTokenResponse:
+                return .none
+
+            case .pushNotificationTapped(let payload):
+                guard let videoIDString = payload["videoId"],
+                      let videoID = UUID(uuidString: videoIDString) else {
+                    return .none
+                }
+                return .send(.deepLink(.videoDetail(studyID: UUID(), videoID: videoID)))
 
             case .deepLink(let deepLink):
                 switch deepLink {
@@ -92,9 +168,9 @@ public struct AppFeature {
                     } else {
                         state.pendingDeepLink = deepLink
                     }
-                case .videoDetail:
+                case .videoDetail(_, let videoID):
                     if case .tab = state.destination {
-                        // TODO: Implement video deep link navigation
+                        return .send(.destination(.tab(.navigateToVideoByID(videoID))))
                     } else {
                         state.pendingDeepLink = deepLink
                     }
@@ -107,9 +183,19 @@ public struct AppFeature {
 
             case .destination(.tab(.settings(.signOutCompleted))),
                  .destination(.tab(.settings(.deleteAccountCompleted))):
+                let fcmToken = state.fcmToken
                 state.currentUser = nil
+                state.fcmToken = nil
                 state.destination = .login(LoginFeature.State())
-                return .none
+                return .merge(
+                    .cancel(id: CancelID.fcmTokenObserver),
+                    fcmToken.map { token in
+                        let client = userClient
+                        return Effect<Action>.run { _ in
+                            try? await client.removeDeviceToken(token)
+                        }
+                    } ?? .none
+                )
 
             case .destination:
                 return .none

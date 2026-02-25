@@ -23,6 +23,9 @@ packages:
     path: Packages/Data
   Presentation:
     path: Packages/Presentation
+  FirebaseSDK:
+    url: https://github.com/firebase/firebase-ios-sdk
+    version: "11.0.0"
 
 targets:
   FlyMate:
@@ -40,6 +43,7 @@ targets:
       properties:
         com.apple.developer.applesignin:
           - Default
+        aps-environment: development
     info:
       path: FlyMate/Info.plist
       properties:
@@ -69,6 +73,8 @@ targets:
       - package: Domain
       - package: Data
       - package: Presentation
+      - package: FirebaseSDK
+        product: FirebaseMessaging
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.flymate.app
@@ -113,3 +119,23 @@ schemes:
       config: Debug
     archive:
       config: Release
+
+  FlyMate-Test1:
+    build:
+      targets:
+        FlyMate: all
+    run:
+      config: Debug
+      environmentVariables:
+        TEST_EMAIL: test@flymate.app
+        TEST_PASSWORD: testpassword123
+
+  FlyMate-Test2:
+    build:
+      targets:
+        FlyMate: all
+    run:
+      config: Debug
+      environmentVariables:
+        TEST_EMAIL: test2@flymate.app
+        TEST_PASSWORD: testpassword123

@@ -41,11 +41,13 @@ CREATE TABLE study_members (
 );
 
 -- Videos
+-- NOTE: uploader_id FK has no ON DELETE CASCADE (dropped in migration 20260225000000).
+--       Account deletion preserves videos; content is anonymized via RPC before deletion.
 CREATE TABLE videos (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     study_id UUID NOT NULL REFERENCES studies(id) ON DELETE CASCADE,
-    uploader_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    uploader_name TEXT NOT NULL DEFAULT '',
+    uploader_id UUID NOT NULL,  -- FK constraint removed to preserve rows on account deletion
+    uploader_name TEXT NOT NULL DEFAULT '',  -- DENORMALIZED, set to '탈퇴한 멤버' on departure
     title TEXT NOT NULL,
     video_url TEXT NOT NULL,
     thumbnail_url TEXT,
@@ -55,17 +57,19 @@ CREATE TABLE videos (
 );
 
 -- Feedbacks
+-- NOTE: author_id FK has no ON DELETE CASCADE (dropped in migration 20260225000000).
+--       Account deletion preserves feedbacks; content is anonymized via RPC before deletion.
 CREATE TABLE feedbacks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     video_id UUID NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
     study_id UUID NOT NULL REFERENCES studies(id) ON DELETE CASCADE,
-    author_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    author_name TEXT NOT NULL DEFAULT '',
-    author_profile_url TEXT,
+    author_id UUID NOT NULL,  -- FK constraint removed to preserve rows on account deletion
+    author_name TEXT NOT NULL DEFAULT '',  -- DENORMALIZED, set to '탈퇴한 멤버' on departure
+    author_profile_url TEXT,               -- DENORMALIZED, set to NULL on departure
     content TEXT NOT NULL,
     timestamp_seconds DOUBLE PRECISION NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    mentioned_user_ids UUID[] NOT NULL DEFAULT '{}'
+    mentioned_user_ids UUID[] NOT NULL DEFAULT '{}'  -- departed user is removed via array_remove
 );
 
 -- Notifications
@@ -79,6 +83,16 @@ CREATE TABLE notifications (
     reference_feedback_id UUID REFERENCES feedbacks(id) ON DELETE CASCADE,
     is_read BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Device Tokens (FCM push notifications)
+CREATE TABLE device_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    fcm_token TEXT NOT NULL UNIQUE,
+    platform TEXT NOT NULL DEFAULT 'ios',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- Reports (feedback/user reports)
@@ -110,6 +124,7 @@ CREATE INDEX idx_feedbacks_created_at ON feedbacks(created_at DESC);
 CREATE INDEX idx_notifications_recipient_id ON notifications(recipient_id);
 CREATE INDEX idx_notifications_created_at ON notifications(created_at DESC);
 CREATE INDEX idx_notifications_unread ON notifications(recipient_id) WHERE is_read = false;
+CREATE INDEX idx_device_tokens_user_id ON device_tokens(user_id);
 CREATE INDEX idx_reports_reporter_id ON reports(reporter_id);
 CREATE INDEX idx_reports_target ON reports(target_type, target_id);
 
@@ -375,6 +390,21 @@ CREATE POLICY "Users can read own notifications"
 CREATE POLICY "Users can update own notifications"
     ON notifications FOR UPDATE USING (auth.uid() = recipient_id);
 
+-- Device Tokens: CRUD own tokens
+ALTER TABLE device_tokens ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own device tokens"
+    ON device_tokens FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own device tokens"
+    ON device_tokens FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own device tokens"
+    ON device_tokens FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own device tokens"
+    ON device_tokens FOR DELETE USING (auth.uid() = user_id);
+
 -- Reports: insert own report, read own reports
 ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
 
@@ -477,5 +507,72 @@ BEGIN
     END IF;
 
     RETURN v_result;
+END;
+$$;
+
+-- 6-3. Anonymize member content within a specific study (leave / removal)
+-- Caller must be the departing user or the study owner.
+CREATE OR REPLACE FUNCTION anonymize_member_in_study(
+    p_study_id UUID,
+    p_user_id UUID
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_caller_id UUID;
+BEGIN
+    v_caller_id := auth.uid();
+    IF v_caller_id IS NULL THEN
+        RAISE EXCEPTION 'UNAUTHORIZED';
+    END IF;
+
+    IF v_caller_id != p_user_id
+       AND NOT EXISTS (
+           SELECT 1 FROM studies
+           WHERE id = p_study_id AND owner_id = v_caller_id
+       )
+    THEN
+        RAISE EXCEPTION 'UNAUTHORIZED';
+    END IF;
+
+    UPDATE videos
+    SET uploader_name = '탈퇴한 멤버'
+    WHERE study_id = p_study_id AND uploader_id = p_user_id;
+
+    UPDATE feedbacks
+    SET author_name = '탈퇴한 멤버', author_profile_url = NULL
+    WHERE study_id = p_study_id AND author_id = p_user_id;
+
+    UPDATE feedbacks
+    SET mentioned_user_ids = array_remove(mentioned_user_ids, p_user_id)
+    WHERE study_id = p_study_id AND p_user_id = ANY(mentioned_user_ids);
+END;
+$$;
+
+-- 6-4. Anonymize user content across ALL studies (account deletion)
+-- Called from delete-account Edge Function with service_role key.
+CREATE OR REPLACE FUNCTION anonymize_user_all_studies(
+    p_user_id UUID
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    UPDATE videos
+    SET uploader_name = '탈퇴한 멤버'
+    WHERE uploader_id = p_user_id;
+
+    UPDATE feedbacks
+    SET author_name = '탈퇴한 멤버', author_profile_url = NULL
+    WHERE author_id = p_user_id;
+
+    UPDATE feedbacks
+    SET mentioned_user_ids = array_remove(mentioned_user_ids, p_user_id)
+    WHERE p_user_id = ANY(mentioned_user_ids);
 END;
 $$;

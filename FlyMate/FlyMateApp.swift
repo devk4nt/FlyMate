@@ -4,6 +4,8 @@ import Domain
 import Presentation
 import Data
 import Foundation
+import UserNotifications
+import FirebaseMessaging
 
 @main
 struct FlyMateApp: App {
@@ -89,7 +91,65 @@ struct FlyMateApp: App {
             fetchUser: { try await userRepo.fetchUser(id: $0) },
             updateProfile: { try await userRepo.updateProfile($0) },
             registerDeviceToken: { try await userRepo.registerDeviceToken($0) },
+            removeDeviceToken: { try await userRepo.removeDeviceToken($0) },
             updateNotificationSettings: { try await userRepo.updateNotificationSettings(enabled: $0) }
+        )
+
+        // Push Notification
+        dependencies.pushNotificationClient = PushNotificationClient(
+            requestAuthorization: {
+                try await UNUserNotificationCenter.current().requestAuthorization(
+                    options: [.alert, .badge, .sound]
+                )
+            },
+            getAuthorizationStatus: {
+                await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+            },
+            registerForRemoteNotifications: {
+                await UIApplication.shared.registerForRemoteNotifications()
+            },
+            observeFCMToken: {
+                AsyncStream { continuation in
+                    // 이미 발급된 토큰이 있으면 즉시 방출
+                    if let existingToken = Messaging.messaging().fcmToken {
+                        continuation.yield(existingToken)
+                    }
+                    let observer = NotificationCenter.default.addObserver(
+                        forName: .fcmTokenReceived,
+                        object: nil,
+                        queue: .main
+                    ) { notification in
+                        if let token = notification.userInfo?["token"] as? String {
+                            continuation.yield(token)
+                        }
+                    }
+                    continuation.onTermination = { @Sendable _ in
+                        NotificationCenter.default.removeObserver(observer)
+                    }
+                }
+            },
+            observePushNotificationTapped: {
+                AsyncStream { continuation in
+                    // Cold start 시 옵저버 등록 전에 유실된 페이로드를 즉시 방출
+                    if let pending = AppDelegate.pendingPushPayload {
+                        AppDelegate.pendingPushPayload = nil
+                        continuation.yield(pending)
+                    }
+                    let observer = NotificationCenter.default.addObserver(
+                        forName: .pushNotificationTapped,
+                        object: nil,
+                        queue: .main
+                    ) { notification in
+                        if let payload = notification.userInfo?["payload"] as? [String: String] {
+                            AppDelegate.pendingPushPayload = nil
+                            continuation.yield(payload)
+                        }
+                    }
+                    continuation.onTermination = { @Sendable _ in
+                        NotificationCenter.default.removeObserver(observer)
+                    }
+                }
+            }
         )
 
         // Notification
@@ -320,7 +380,17 @@ struct FlyMateApp: App {
             fetchUser: { _ in previewUser },
             updateProfile: { _ in previewUser },
             registerDeviceToken: { _ in },
+            removeDeviceToken: { _ in },
             updateNotificationSettings: { _ in }
+        )
+
+        // Push Notification
+        dependencies.pushNotificationClient = PushNotificationClient(
+            requestAuthorization: { true },
+            getAuthorizationStatus: { .authorized },
+            registerForRemoteNotifications: {},
+            observeFCMToken: { AsyncStream { continuation in continuation.finish() } },
+            observePushNotificationTapped: { AsyncStream { continuation in continuation.finish() } }
         )
 
         // Notification

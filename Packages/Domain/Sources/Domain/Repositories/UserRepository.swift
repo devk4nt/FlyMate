@@ -20,6 +20,9 @@ public protocol UserRepository: Sendable {
     /// FCM 디바이스 토큰을 등록한다.
     func registerDeviceToken(_ token: String) async throws
 
+    /// FCM 디바이스 토큰을 삭제한다 (로그아웃 시).
+    func removeDeviceToken(_ token: String) async throws
+
     /// 알림 설정을 업데이트한다.
     func updateNotificationSettings(enabled: Bool) async throws
 }

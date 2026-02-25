@@ -1,6 +1,7 @@
 import Foundation
 import ComposableArchitecture
 import Domain
+import UserNotifications
 
 @Reducer
 public struct TabFeature {
@@ -40,6 +41,7 @@ public struct TabFeature {
         case notificationList(NotificationListFeature.Action)
         case settings(SettingsFeature.Action)
         case navigateToVideo(Study, Video)
+        case navigateToVideoByID(UUID)
         case navigationFailed
         case showInviteCode(String)
         case newNotificationReceived(AppNotification)
@@ -107,12 +109,12 @@ public struct TabFeature {
                 if case .loaded = state.notificationList.loadingState {
                     state.notificationList.loadingState = .loaded(state.notificationList.notifications.items)
                 }
-                return .none
+                return updateBadgeCount(state.unreadNotificationCount)
 
             case .unreadCountResponse(let count):
                 state.unreadNotificationCount = count
                 syncUnreadCount(&state)
-                return .none
+                return updateBadgeCount(count)
 
             case .notificationList(.delegate(.navigateToVideo(let videoID))):
                 state.isNotificationSheetPresented = false
@@ -131,7 +133,7 @@ public struct TabFeature {
             case .notificationList(.markAllAsReadTapped):
                 state.unreadNotificationCount = 0
                 syncUnreadCount(&state)
-                return .none
+                return updateBadgeCount(0)
 
             case .notificationList(.markAllAsReadResponse(.failure)):
                 let client = notificationClient
@@ -145,6 +147,7 @@ public struct TabFeature {
                 if !notification.isRead, state.unreadNotificationCount > 0 {
                     state.unreadNotificationCount -= 1
                     syncUnreadCount(&state)
+                    return updateBadgeCount(state.unreadNotificationCount)
                 }
                 return .none
 
@@ -156,6 +159,17 @@ public struct TabFeature {
                 return .run { send in
                     let study = try await studyClient.fetchStudy(feedback.studyID)
                     let video = try await videoClient.fetchVideo(feedback.videoID)
+                    await send(.navigateToVideo(study, video))
+                } catch: { _, send in
+                    await send(.navigationFailed)
+                }
+
+            case .navigateToVideoByID(let videoID):
+                let studyClient = studyClient
+                let videoClient = videoClient
+                return .run { send in
+                    let video = try await videoClient.fetchVideo(videoID)
+                    let study = try await studyClient.fetchStudy(video.studyID)
                     await send(.navigateToVideo(study, video))
                 } catch: { _, send in
                     await send(.navigationFailed)
@@ -179,5 +193,11 @@ public struct TabFeature {
 
     private func syncUnreadCount(_ state: inout State) {
         state.study.studyList.unreadNotificationCount = state.unreadNotificationCount
+    }
+
+    private func updateBadgeCount(_ count: Int) -> Effect<Action> {
+        .run { _ in
+            try? await UNUserNotificationCenter.current().setBadgeCount(count)
+        }
     }
 }

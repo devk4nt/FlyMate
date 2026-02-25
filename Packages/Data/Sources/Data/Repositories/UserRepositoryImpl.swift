@@ -55,12 +55,27 @@ public struct UserRepositoryImpl: UserRepository {
 
         struct DeviceToken: Codable {
             let userID: UUID
-            let token: String
-            enum CodingKeys: String, CodingKey { case userID = "user_id"; case token }
+            let fcmToken: String
+            let platform: String
+            enum CodingKeys: String, CodingKey {
+                case userID = "user_id"
+                case fcmToken = "fcm_token"
+                case platform
+            }
         }
 
-        try await client.from("device_tokens")
-            .upsert(DeviceToken(userID: userID, token: token))
+        try await client.from(SupabaseConfig.Table.deviceTokens)
+            .upsert(
+                DeviceToken(userID: userID, fcmToken: token, platform: "ios"),
+                onConflict: "fcm_token"
+            )
+            .execute()
+    }
+
+    public func removeDeviceToken(_ token: String) async throws {
+        try await client.from(SupabaseConfig.Table.deviceTokens)
+            .delete()
+            .eq("fcm_token", value: token)
             .execute()
     }
 
