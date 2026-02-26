@@ -54,8 +54,15 @@ public enum BusinessError: Equatable, Sendable {
     case studyFull
     case unauthorized
     case invalidInviteCode
+    case inviteCodeExpired
+    case inviteCodeInactive
     case alreadyJoined
+    case alreadyRequested
+    case requestAlreadyHandled
+    case requestNotFound
     case notFound
+    case maxOwnedStudiesReached
+    case maxJoinedStudiesReached
 
     public var userMessage: String {
         switch self {
@@ -71,10 +78,24 @@ public enum BusinessError: Equatable, Sendable {
             return "권한이 없습니다. 다시 로그인해주세요."
         case .invalidInviteCode:
             return "유효하지 않은 초대 코드입니다."
+        case .inviteCodeExpired:
+            return "만료된 초대 코드입니다. 스터디장에게 새 코드를 요청해주세요."
+        case .inviteCodeInactive:
+            return "비활성화된 초대 코드입니다."
         case .alreadyJoined:
             return "이미 참여 중인 스터디입니다."
+        case .alreadyRequested:
+            return "이미 참여 요청을 보낸 스터디입니다."
+        case .requestAlreadyHandled:
+            return "이미 처리된 요청입니다."
+        case .requestNotFound:
+            return "참여 요청을 찾을 수 없습니다."
         case .notFound:
             return "요청한 항목을 찾을 수 없습니다."
+        case .maxOwnedStudiesReached:
+            return "스터디는 최대 \(AppConstants.maxOwnedStudies)개까지 만들 수 있습니다."
+        case .maxJoinedStudiesReached:
+            return "스터디는 최대 \(AppConstants.maxJoinedStudies)개까지 참여할 수 있습니다."
         }
     }
 }

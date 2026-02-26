@@ -5,24 +5,30 @@ public struct InviteCode: Equatable, Sendable {
     public let studyID: UUID
     public let studyName: String
     public let createdAt: Date
-    public let expiresAt: Date?
+    public let expiresAt: Date
+    public let isActive: Bool
 
     public init(
         code: String,
         studyID: UUID,
         studyName: String,
         createdAt: Date,
-        expiresAt: Date? = nil
+        expiresAt: Date,
+        isActive: Bool
     ) {
         self.code = code
         self.studyID = studyID
         self.studyName = studyName
         self.createdAt = createdAt
         self.expiresAt = expiresAt
+        self.isActive = isActive
     }
 
     public var isExpired: Bool {
-        guard let expiresAt else { return false }
-        return Date.now > expiresAt
+        Date.now > expiresAt
+    }
+
+    public var isValid: Bool {
+        isActive && !isExpired
     }
 }

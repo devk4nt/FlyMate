@@ -58,28 +58,39 @@ struct JoinStudyFeatureTests {
     }
 
     @Test
-    func 스터디_참여_성공() async {
+    func 참여_요청_성공() async {
         let store = TestStore(
             initialState: JoinStudyFeature.State(inviteCode: "ABC123")
         ) {
             JoinStudyFeature()
         } withDependencies: {
-            $0.studyClient.joinStudy = { _ in Study.mock }
+            $0.studyClient.requestJoinStudy = { _ in JoinRequest.mock }
         }
 
         await store.send(.joinTapped) {
             $0.joinState = .loading
         }
 
-        await store.receive(\.joinResponse.success) {
-            $0.joinState = .loaded(Study.mock)
+        await store.receive(\.requestResponse.success) {
+            $0.joinState = .loaded(JoinRequest.mock)
         }
-
-        await store.receive(\.delegate.studyJoined)
     }
 
     @Test
-    func 스터디_참여_실패_유효하지_않은_코드() async {
+    func 참여_요청_성공후_확인_탭시_delegate() async {
+        var state = JoinStudyFeature.State(inviteCode: "ABC123")
+        state.joinState = .loaded(JoinRequest.mock)
+
+        let store = TestStore(initialState: state) {
+            JoinStudyFeature()
+        }
+
+        await store.send(.confirmTapped)
+        await store.receive(\.delegate.joinRequested)
+    }
+
+    @Test
+    func 참여_요청_실패_유효하지_않은_코드() async {
         let error = AppError.business(.invalidInviteCode)
 
         let store = TestStore(
@@ -87,21 +98,21 @@ struct JoinStudyFeatureTests {
         ) {
             JoinStudyFeature()
         } withDependencies: {
-            $0.studyClient.joinStudy = { _ in throw error }
+            $0.studyClient.requestJoinStudy = { _ in throw error }
         }
 
         await store.send(.joinTapped) {
             $0.joinState = .loading
         }
 
-        await store.receive(\.joinResponse.failure) {
+        await store.receive(\.requestResponse.failure) {
             $0.joinState = .failed(error)
             $0.errorMessage = "유효하지 않은 초대 코드입니다."
         }
     }
 
     @Test
-    func 스터디_참여_실패_이미_참여중() async {
+    func 참여_요청_실패_이미_참여중() async {
         let error = AppError.business(.alreadyJoined)
 
         let store = TestStore(
@@ -109,21 +120,43 @@ struct JoinStudyFeatureTests {
         ) {
             JoinStudyFeature()
         } withDependencies: {
-            $0.studyClient.joinStudy = { _ in throw error }
+            $0.studyClient.requestJoinStudy = { _ in throw error }
         }
 
         await store.send(.joinTapped) {
             $0.joinState = .loading
         }
 
-        await store.receive(\.joinResponse.failure) {
+        await store.receive(\.requestResponse.failure) {
             $0.joinState = .failed(error)
             $0.errorMessage = "이미 참여 중인 스터디입니다."
         }
     }
 
     @Test
-    func 스터디_참여_실패_인원_초과() async {
+    func 참여_요청_실패_이미_요청함() async {
+        let error = AppError.business(.alreadyRequested)
+
+        let store = TestStore(
+            initialState: JoinStudyFeature.State(inviteCode: "ABC123")
+        ) {
+            JoinStudyFeature()
+        } withDependencies: {
+            $0.studyClient.requestJoinStudy = { _ in throw error }
+        }
+
+        await store.send(.joinTapped) {
+            $0.joinState = .loading
+        }
+
+        await store.receive(\.requestResponse.failure) {
+            $0.joinState = .failed(error)
+            $0.errorMessage = "이미 참여 요청을 보낸 스터디입니다."
+        }
+    }
+
+    @Test
+    func 참여_요청_실패_인원_초과() async {
         let error = AppError.business(.studyFull)
 
         let store = TestStore(
@@ -131,14 +164,14 @@ struct JoinStudyFeatureTests {
         ) {
             JoinStudyFeature()
         } withDependencies: {
-            $0.studyClient.joinStudy = { _ in throw error }
+            $0.studyClient.requestJoinStudy = { _ in throw error }
         }
 
         await store.send(.joinTapped) {
             $0.joinState = .loading
         }
 
-        await store.receive(\.joinResponse.failure) {
+        await store.receive(\.requestResponse.failure) {
             $0.joinState = .failed(error)
             $0.errorMessage = "스터디 인원이 가득 찼습니다."
         }
@@ -167,4 +200,18 @@ struct JoinStudyFeatureTests {
         #expect(store.state.inviteCode == "TEST01")
         #expect(store.state.isCodeValid == true)
     }
+}
+
+// MARK: - Mock Data
+
+extension JoinRequest {
+    static let mock = JoinRequest(
+        id: UUID(uuidString: "00000000-0000-0000-0000-000000000050")!,
+        studyID: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+        studyName: "iOS 면접 스터디",
+        userID: UUID(uuidString: "00000000-0000-0000-0000-000000000010")!,
+        userName: "테스트 유저",
+        status: .pending,
+        createdAt: Date(timeIntervalSince1970: 1_700_000_000)
+    )
 }

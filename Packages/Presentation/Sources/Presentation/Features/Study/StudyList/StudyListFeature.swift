@@ -88,9 +88,9 @@ public struct StudyListFeature {
                 state.joinStudy = JoinStudyFeature.State(inviteCode: code)
                 return .none
 
-            case .joinStudy(.presented(.delegate(.studyJoined))):
+            case .joinStudy(.presented(.delegate(.joinRequested))):
                 state.joinStudy = nil
-                return .send(.refresh)
+                return .none
 
             case .createStudy(.presented(.studyCreated)):
                 state.createStudy = nil

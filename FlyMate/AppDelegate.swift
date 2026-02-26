@@ -49,6 +49,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     ) {
         FMLogger.error("Failed to register for remote notifications: \(error)", category: .general)
     }
+
 }
 
 // MARK: - MessagingDelegate

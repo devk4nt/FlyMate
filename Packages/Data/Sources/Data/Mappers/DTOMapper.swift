@@ -53,6 +53,22 @@ enum DTOMapper {
         )
     }
 
+    // MARK: - JoinRequest
+
+    static func toDomain(_ dto: JoinRequestDTO) -> JoinRequest {
+        JoinRequest(
+            id: dto.id,
+            studyID: dto.studyID,
+            studyName: dto.studyName,
+            userID: dto.userID,
+            userName: dto.userName,
+            profileImageURL: dto.profileImageURL.flatMap(URL.init(string:)),
+            status: JoinRequestStatus(rawValue: dto.status) ?? .pending,
+            createdAt: parseDate(dto.createdAt),
+            respondedAt: dto.respondedAt.map(parseDate)
+        )
+    }
+
     // MARK: - Video
 
     static func toDomain(_ dto: VideoDTO) -> Video {

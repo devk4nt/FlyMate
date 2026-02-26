@@ -25,6 +25,7 @@ public enum SupabaseConfig {
         public static let feedbacks = "feedbacks"
         public static let reports = "reports"
         public static let notifications = "notifications"
+        public static let joinRequests = "study_join_requests"
         public static let deviceTokens = "device_tokens"
     }
 

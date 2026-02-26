@@ -19,6 +19,12 @@ public enum AppConstants {
     /// 스터디 이름 최대 글자 수
     public static let maxStudyNameLength = 30
 
+    /// 방장으로 생성 가능한 최대 스터디 수
+    public static let maxOwnedStudies = 3
+
+    /// 총 참여 가능한 최대 스터디 수 (방장 + 멤버 합산)
+    public static let maxJoinedStudies = 5
+
     /// 초대 코드 길이
     public static let inviteCodeLength = 6
 

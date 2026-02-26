@@ -576,3 +576,212 @@ BEGIN
     WHERE p_user_id = ANY(mentioned_user_ids);
 END;
 $$;
+
+-- ============================================================
+-- 8. STUDY JOIN REQUESTS (Approval-based join flow)
+-- ============================================================
+
+-- 8.1 Table
+CREATE TABLE study_join_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    study_id UUID NOT NULL REFERENCES studies(id) ON DELETE CASCADE,
+    study_name TEXT NOT NULL DEFAULT '',
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_name TEXT NOT NULL DEFAULT '',
+    profile_image_url TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    responded_at TIMESTAMPTZ,
+    UNIQUE(study_id, user_id)
+);
+
+CREATE INDEX idx_join_requests_study_id ON study_join_requests(study_id);
+CREATE INDEX idx_join_requests_user_id ON study_join_requests(user_id);
+CREATE INDEX idx_join_requests_pending ON study_join_requests(study_id) WHERE status = 'pending';
+
+-- 8.2 Auto-fill trigger (populate user_name, profile_image_url, study_name on INSERT)
+CREATE OR REPLACE FUNCTION fill_join_request_fields()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    SELECT name, profile_image_url INTO NEW.user_name, NEW.profile_image_url
+    FROM users WHERE id = NEW.user_id;
+
+    SELECT name INTO NEW.study_name
+    FROM studies WHERE id = NEW.study_id;
+
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_fill_join_request_fields
+    BEFORE INSERT ON study_join_requests
+    FOR EACH ROW
+    EXECUTE FUNCTION fill_join_request_fields();
+
+-- 8.3 RLS Policies
+ALTER TABLE study_join_requests ENABLE ROW LEVEL SECURITY;
+
+-- 요청자 본인은 자신의 요청을 SELECT/DELETE 가능
+CREATE POLICY "Users can view own requests"
+    ON study_join_requests FOR SELECT
+    USING (user_id = auth.uid());
+
+CREATE POLICY "Users can delete own pending requests"
+    ON study_join_requests FOR DELETE
+    USING (user_id = auth.uid() AND status = 'pending');
+
+-- 스터디 owner는 해당 스터디의 요청을 SELECT/UPDATE 가능
+CREATE POLICY "Study owners can view study requests"
+    ON study_join_requests FOR SELECT
+    USING (study_id IN (SELECT id FROM studies WHERE owner_id = auth.uid()));
+
+CREATE POLICY "Study owners can update study requests"
+    ON study_join_requests FOR UPDATE
+    USING (study_id IN (SELECT id FROM studies WHERE owner_id = auth.uid()));
+
+-- INSERT는 RPC를 통해서만 (SECURITY DEFINER)
+CREATE POLICY "Allow insert via RPC"
+    ON study_join_requests FOR INSERT
+    WITH CHECK (user_id = auth.uid());
+
+-- 8.4 request_join_study RPC (replaces join_study_by_invite_code)
+CREATE OR REPLACE FUNCTION request_join_study(p_invite_code TEXT)
+RETURNS SETOF study_join_requests
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_study_id UUID;
+    v_user_id UUID := auth.uid();
+    v_existing_status TEXT;
+    v_request_id UUID;
+BEGIN
+    -- 1. 초대 코드로 스터디 찾기
+    SELECT id INTO v_study_id
+    FROM studies
+    WHERE invite_code = p_invite_code;
+
+    IF v_study_id IS NULL THEN
+        RAISE EXCEPTION 'INVALID_INVITE_CODE';
+    END IF;
+
+    -- 2. 이미 멤버인지 확인
+    IF EXISTS (SELECT 1 FROM study_members WHERE study_id = v_study_id AND user_id = v_user_id) THEN
+        RAISE EXCEPTION 'ALREADY_MEMBER';
+    END IF;
+
+    -- 3. 기존 요청 확인
+    SELECT status INTO v_existing_status
+    FROM study_join_requests
+    WHERE study_id = v_study_id AND user_id = v_user_id;
+
+    IF v_existing_status = 'pending' THEN
+        RAISE EXCEPTION 'ALREADY_REQUESTED';
+    END IF;
+
+    -- 4. rejected 상태면 삭제 후 재요청 허용
+    IF v_existing_status = 'rejected' THEN
+        DELETE FROM study_join_requests
+        WHERE study_id = v_study_id AND user_id = v_user_id;
+    END IF;
+
+    -- 5. 새 pending 요청 삽입
+    INSERT INTO study_join_requests (study_id, user_id, status)
+    VALUES (v_study_id, v_user_id, 'pending')
+    RETURNING id INTO v_request_id;
+
+    RETURN QUERY SELECT * FROM study_join_requests WHERE id = v_request_id;
+END;
+$$;
+
+-- 8.5 approve_join_request RPC
+CREATE OR REPLACE FUNCTION approve_join_request(p_request_id UUID)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_study_id UUID;
+    v_user_id UUID;
+    v_status TEXT;
+    v_max_members INT;
+    v_current_members INT;
+BEGIN
+    -- 요청 정보 조회
+    SELECT study_id, user_id, status
+    INTO v_study_id, v_user_id, v_status
+    FROM study_join_requests
+    WHERE id = p_request_id;
+
+    IF v_study_id IS NULL THEN
+        RAISE EXCEPTION 'REQUEST_NOT_FOUND';
+    END IF;
+
+    -- 호출자가 스터디 owner인지 확인
+    IF NOT EXISTS (SELECT 1 FROM studies WHERE id = v_study_id AND owner_id = auth.uid()) THEN
+        RAISE EXCEPTION 'UNAUTHORIZED';
+    END IF;
+
+    -- pending 상태 확인
+    IF v_status != 'pending' THEN
+        RAISE EXCEPTION 'REQUEST_ALREADY_HANDLED';
+    END IF;
+
+    -- 정원 확인
+    SELECT max_members INTO v_max_members FROM studies WHERE id = v_study_id;
+    SELECT COUNT(*) INTO v_current_members FROM study_members WHERE study_id = v_study_id;
+
+    IF v_current_members >= v_max_members THEN
+        RAISE EXCEPTION 'STUDY_FULL';
+    END IF;
+
+    -- 승인 처리
+    UPDATE study_join_requests
+    SET status = 'approved', responded_at = now()
+    WHERE id = p_request_id;
+
+    -- 멤버 추가
+    INSERT INTO study_members (study_id, user_id, role)
+    VALUES (v_study_id, v_user_id, 'member');
+END;
+$$;
+
+-- 8.6 reject_join_request RPC
+CREATE OR REPLACE FUNCTION reject_join_request(p_request_id UUID)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_study_id UUID;
+    v_status TEXT;
+BEGIN
+    SELECT study_id, status
+    INTO v_study_id, v_status
+    FROM study_join_requests
+    WHERE id = p_request_id;
+
+    IF v_study_id IS NULL THEN
+        RAISE EXCEPTION 'REQUEST_NOT_FOUND';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM studies WHERE id = v_study_id AND owner_id = auth.uid()) THEN
+        RAISE EXCEPTION 'UNAUTHORIZED';
+    END IF;
+
+    IF v_status != 'pending' THEN
+        RAISE EXCEPTION 'REQUEST_ALREADY_HANDLED';
+    END IF;
+
+    UPDATE study_join_requests
+    SET status = 'rejected', responded_at = now()
+    WHERE id = p_request_id;
+END;
+$$;

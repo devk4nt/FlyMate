@@ -40,8 +40,8 @@ public struct TabFeature {
         case feedbackManagement(FeedbackManagementFeature.Action)
         case notificationList(NotificationListFeature.Action)
         case settings(SettingsFeature.Action)
-        case navigateToVideo(Study, Video)
-        case navigateToVideoByID(UUID)
+        case navigateToVideo(Study, Video, feedbackID: UUID? = nil)
+        case navigateToVideoByID(UUID, feedbackID: UUID? = nil)
         case navigationFailed
         case showInviteCode(String)
         case newNotificationReceived(AppNotification)
@@ -116,7 +116,7 @@ public struct TabFeature {
                 syncUnreadCount(&state)
                 return updateBadgeCount(count)
 
-            case .notificationList(.delegate(.navigateToVideo(let videoID))):
+            case .notificationList(.delegate(.navigateToVideo(let videoID, let feedbackID))):
                 state.isNotificationSheetPresented = false
                 state.selectedTab = .study
                 let studyClient = studyClient
@@ -125,7 +125,7 @@ public struct TabFeature {
                     try await Task.sleep(for: .milliseconds(350))
                     let video = try await videoClient.fetchVideo(videoID)
                     let study = try await studyClient.fetchStudy(video.studyID)
-                    await send(.navigateToVideo(study, video))
+                    await send(.navigateToVideo(study, video, feedbackID: feedbackID))
                 } catch: { _, send in
                     await send(.navigationFailed)
                 }
@@ -164,13 +164,13 @@ public struct TabFeature {
                     await send(.navigationFailed)
                 }
 
-            case .navigateToVideoByID(let videoID):
+            case .navigateToVideoByID(let videoID, let feedbackID):
                 let studyClient = studyClient
                 let videoClient = videoClient
                 return .run { send in
                     let video = try await videoClient.fetchVideo(videoID)
                     let study = try await studyClient.fetchStudy(video.studyID)
-                    await send(.navigateToVideo(study, video))
+                    await send(.navigateToVideo(study, video, feedbackID: feedbackID))
                 } catch: { _, send in
                     await send(.navigationFailed)
                 }
@@ -179,8 +179,8 @@ public struct TabFeature {
                 state.selectedTab = .study
                 return .send(.study(.showInviteCode(code)))
 
-            case .navigateToVideo(let study, let video):
-                return .send(.study(.navigateToVideo(study, video)))
+            case .navigateToVideo(let study, let video, let feedbackID):
+                return .send(.study(.navigateToVideo(study, video, feedbackID: feedbackID)))
 
             case .navigationFailed:
                 return .none

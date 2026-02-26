@@ -48,3 +48,27 @@ struct StudyWithMembersDTO: Codable, Sendable {
     let study: StudyDTO
     let members: [StudyMemberDTO]
 }
+
+struct JoinRequestDTO: Codable, Sendable {
+    let id: UUID
+    let studyID: UUID
+    let studyName: String
+    let userID: UUID
+    let userName: String
+    let profileImageURL: String?
+    let status: String
+    let createdAt: String
+    let respondedAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case studyID = "study_id"
+        case studyName = "study_name"
+        case userID = "user_id"
+        case userName = "user_name"
+        case profileImageURL = "profile_image_url"
+        case status
+        case createdAt = "created_at"
+        case respondedAt = "responded_at"
+    }
+}

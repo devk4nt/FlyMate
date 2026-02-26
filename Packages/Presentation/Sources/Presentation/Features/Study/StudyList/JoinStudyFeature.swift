@@ -8,7 +8,7 @@ public struct JoinStudyFeature {
     @ObservableState
     public struct State: Equatable {
         public var inviteCode: String
-        public var joinState: LoadingState<Study> = .idle
+        public var joinState: LoadingState<JoinRequest> = .idle
         public var errorMessage: String?
 
         public init(inviteCode: String = "") {
@@ -23,17 +23,23 @@ public struct JoinStudyFeature {
             if case .loading = joinState { return true }
             return false
         }
+
+        public var isRequestSent: Bool {
+            if case .loaded = joinState { return true }
+            return false
+        }
     }
 
     public enum Action: Equatable {
         case inviteCodeChanged(String)
         case joinTapped
-        case joinResponse(Result<Study, AppError>)
+        case requestResponse(Result<JoinRequest, AppError>)
+        case confirmTapped
         case cancelTapped
         case delegate(Delegate)
 
         public enum Delegate: Equatable {
-            case studyJoined(Study)
+            case joinRequested
         }
     }
 
@@ -58,22 +64,25 @@ public struct JoinStudyFeature {
                 let client = studyClient
                 return .run { send in
                     do {
-                        let study = try await client.joinStudy(code)
-                        await send(.joinResponse(.success(study)))
+                        let request = try await client.requestJoinStudy(code)
+                        await send(.requestResponse(.success(request)))
                     } catch {
                         let appError = error as? AppError ?? .unexpected(error.localizedDescription)
-                        await send(.joinResponse(.failure(appError)))
+                        await send(.requestResponse(.failure(appError)))
                     }
                 }
 
-            case .joinResponse(.success(let study)):
-                state.joinState = .loaded(study)
-                return .send(.delegate(.studyJoined(study)))
+            case .requestResponse(.success(let joinRequest)):
+                state.joinState = .loaded(joinRequest)
+                return .none
 
-            case .joinResponse(.failure(let error)):
+            case .requestResponse(.failure(let error)):
                 state.joinState = .failed(error)
                 state.errorMessage = error.errorDescription ?? "알 수 없는 오류가 발생했습니다."
                 return .none
+
+            case .confirmTapped:
+                return .send(.delegate(.joinRequested))
 
             case .cancelTapped:
                 let dismiss = dismiss

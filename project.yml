@@ -139,3 +139,13 @@ schemes:
       environmentVariables:
         TEST_EMAIL: test2@flymate.app
         TEST_PASSWORD: testpassword123
+
+  FlyMate-Test3:
+    build:
+      targets:
+        FlyMate: all
+    run:
+      config: Debug
+      environmentVariables:
+        TEST_EMAIL: test3@flymate.app
+        TEST_PASSWORD: testpassword123

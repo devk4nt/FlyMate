@@ -25,6 +25,8 @@ public struct StudyNavigationView: View {
                 VideoUploadView(store: uploadStore)
             case .memberManagement(let memberStore):
                 MemberManagementView(store: memberStore)
+            case .joinRequestManagement(let requestStore):
+                JoinRequestManagementView(store: requestStore)
             }
         }
     }

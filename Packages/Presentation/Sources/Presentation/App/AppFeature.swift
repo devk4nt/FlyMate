@@ -158,7 +158,8 @@ public struct AppFeature : Sendable {
                       let videoID = UUID(uuidString: videoIDString) else {
                     return .none
                 }
-                return .send(.deepLink(.videoDetail(studyID: UUID(), videoID: videoID)))
+                let feedbackID = payload["feedbackId"].flatMap(UUID.init(uuidString:))
+                return .send(.deepLink(.videoDetail(studyID: UUID(), videoID: videoID, feedbackID: feedbackID)))
 
             case .deepLink(let deepLink):
                 switch deepLink {
@@ -168,9 +169,9 @@ public struct AppFeature : Sendable {
                     } else {
                         state.pendingDeepLink = deepLink
                     }
-                case .videoDetail(_, let videoID):
+                case .videoDetail(_, let videoID, let feedbackID):
                     if case .tab = state.destination {
-                        return .send(.destination(.tab(.navigateToVideoByID(videoID))))
+                        return .send(.destination(.tab(.navigateToVideoByID(videoID, feedbackID: feedbackID))))
                     } else {
                         state.pendingDeepLink = deepLink
                     }
@@ -238,7 +239,7 @@ extension AppFeature.State {
 
 public enum DeepLink: Equatable {
     case inviteCode(String)
-    case videoDetail(studyID: UUID, videoID: UUID)
+    case videoDetail(studyID: UUID, videoID: UUID, feedbackID: UUID? = nil)
 }
 
 public enum DeepLinkParser {

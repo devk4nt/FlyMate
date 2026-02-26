@@ -33,7 +33,7 @@ public struct NotificationListFeature {
         case delegate(Delegate)
 
         public enum Delegate: Equatable {
-            case navigateToVideo(videoID: UUID)
+            case navigateToVideo(videoID: UUID, feedbackID: UUID?)
         }
     }
 
@@ -109,13 +109,13 @@ public struct NotificationListFeature {
                             }
                         },
                         notification.referenceVideoID.map { videoID in
-                            Effect<Action>.send(.delegate(.navigateToVideo(videoID: videoID)))
+                            Effect<Action>.send(.delegate(.navigateToVideo(videoID: videoID, feedbackID: notification.referenceFeedbackID)))
                         } ?? .none
                     )
                 }
                 // Already read — just navigate
                 if let videoID = notification.referenceVideoID {
-                    return .send(.delegate(.navigateToVideo(videoID: videoID)))
+                    return .send(.delegate(.navigateToVideo(videoID: videoID, feedbackID: notification.referenceFeedbackID)))
                 }
                 return .none
 

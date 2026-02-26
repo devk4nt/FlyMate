@@ -57,12 +57,16 @@ struct FlyMateApp: App {
             fetchMyStudies: { try await studyRepo.fetchMyStudies() },
             fetchStudy: { try await studyRepo.fetchStudy(id: $0) },
             createStudy: { try await studyRepo.createStudy($0) },
-            joinStudy: { try await studyRepo.joinStudy(inviteCode: $0) },
+            requestJoinStudy: { try await studyRepo.requestJoinStudy(inviteCode: $0) },
             leaveStudy: { try await studyRepo.leaveStudy(id: $0) },
             deleteStudy: { try await studyRepo.deleteStudy(id: $0) },
             removeMember: { try await studyRepo.removeMember(studyID: $0, userID: $1) },
             fetchInviteCodeInfo: { try await studyRepo.fetchInviteCodeInfo(code: $0) },
-            updateNotice: { try await studyRepo.updateNotice(studyID: $0, notice: $1) }
+            updateNotice: { try await studyRepo.updateNotice(studyID: $0, notice: $1) },
+            fetchPendingRequests: { try await studyRepo.fetchPendingRequests(studyID: $0) },
+            approveJoinRequest: { try await studyRepo.approveJoinRequest(requestID: $0) },
+            rejectJoinRequest: { try await studyRepo.rejectJoinRequest(requestID: $0) },
+            cancelJoinRequest: { try await studyRepo.cancelJoinRequest(requestID: $0) }
         )
 
         // Video
@@ -236,14 +240,35 @@ struct FlyMateApp: App {
                     createdAt: Date()
                 )
             },
-            joinStudy: { _ in mockStudy },
+            requestJoinStudy: { _ in
+                JoinRequest(
+                    id: UUID(),
+                    studyID: mockStudyID,
+                    studyName: "iOS 면접 스터디",
+                    userID: previewUserID,
+                    userName: "Preview User",
+                    status: .pending,
+                    createdAt: Date()
+                )
+            },
             leaveStudy: { _ in },
             deleteStudy: { _ in },
             removeMember: { _, _ in },
             fetchInviteCodeInfo: { code in
-                InviteCode(code: code, studyID: mockStudyID, studyName: "iOS 면접 스터디", createdAt: Date())
+                InviteCode(
+                    code: code,
+                    studyID: mockStudyID,
+                    studyName: "iOS 면접 스터디",
+                    createdAt: Date(),
+                    expiresAt: Date().addingTimeInterval(7 * 24 * 60 * 60),
+                    isActive: true
+                )
             },
-            updateNotice: { _, _ in }
+            updateNotice: { _, _ in },
+            fetchPendingRequests: { _ in [] },
+            approveJoinRequest: { _ in },
+            rejectJoinRequest: { _ in },
+            cancelJoinRequest: { _ in }
         )
 
         // Video

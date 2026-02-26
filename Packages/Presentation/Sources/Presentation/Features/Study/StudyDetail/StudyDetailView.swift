@@ -2,6 +2,7 @@ import SwiftUI
 import ComposableArchitecture
 import Core
 import Domain
+import Kingfisher
 
 public struct StudyDetailView: View {
     @Bindable var store: StoreOf<StudyDetailFeature>
@@ -258,7 +259,42 @@ public struct StudyDetailView: View {
                 }
                 .buttonStyle(.plain)
 
+                if store.isOwner && store.pendingRequestCount > 0 {
+                    Button {
+                        store.send(.joinRequestManagementTapped)
+                    } label: {
+                        HStack(spacing: FMSpacing.xxs) {
+                            Label("대기", systemImage: "person.badge.clock")
+                                .font(FMTypography.caption1)
+                                .foregroundStyle(FMColors.primary)
+
+                            FMBadge(count: store.pendingRequestCount)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+
                 Spacer()
+
+                Button {
+                    store.send(.inviteCodeInfoTapped)
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(FMTypography.caption1)
+                        .foregroundStyle(FMColors.secondaryLabel)
+                }
+                .popover(
+                    isPresented: Binding(
+                        get: { store.isInviteCodePopoverPresented },
+                        set: { newValue in
+                            if !newValue { store.send(.dismissInviteCodePopover) }
+                        }
+                    ),
+                    arrowEdge: .bottom
+                ) {
+                    inviteCodeInfoPopoverContent
+                        .presentationCompactAdaptation(.popover)
+                }
 
                 Button {
                     store.send(.copyInviteCode)
@@ -278,20 +314,107 @@ public struct StudyDetailView: View {
         .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md))
     }
 
+    // MARK: - Invite Code Info Popover
+
+    @ViewBuilder
+    private var inviteCodeInfoPopoverContent: some View {
+        switch store.inviteCodeInfo {
+        case .idle, .loading:
+            ProgressView()
+                .frame(width: 180, height: 80)
+
+        case .loaded(let info):
+            VStack(alignment: .leading, spacing: FMSpacing.sm) {
+                inviteCodeStatusBadge(info)
+
+                if !info.isExpired {
+                    Label(expirationText(info.expiresAt), systemImage: "calendar")
+                        .font(FMTypography.caption1)
+                        .foregroundStyle(FMColors.secondaryLabel)
+                } else {
+                    Label("만료됨", systemImage: "calendar.badge.exclamationmark")
+                        .font(FMTypography.caption1)
+                        .foregroundStyle(FMColors.destructive)
+                }
+            }
+            .padding(FMSpacing.md)
+
+        case .failed:
+            VStack(spacing: FMSpacing.sm) {
+                Text("정보를 불러올 수 없습니다")
+                    .font(FMTypography.caption1)
+                    .foregroundStyle(FMColors.secondaryLabel)
+
+                Button {
+                    store.send(.inviteCodeInfoTapped)
+                } label: {
+                    Text("다시 시도")
+                        .font(FMTypography.caption1)
+                        .foregroundStyle(FMColors.accent)
+                }
+            }
+            .padding(FMSpacing.md)
+        }
+    }
+
+    private func inviteCodeStatusBadge(_ info: InviteCode) -> some View {
+        let (text, color): (String, Color) = if info.isValid {
+            ("활성", FMColors.success)
+        } else if info.isExpired {
+            ("만료됨", FMColors.destructive)
+        } else {
+            ("비활성", FMColors.secondaryLabel)
+        }
+
+        return Text(text)
+            .font(FMTypography.caption2)
+            .foregroundStyle(color)
+            .padding(.horizontal, FMSpacing.xs)
+            .padding(.vertical, FMSpacing.xxs)
+            .background(color.opacity(0.12))
+            .clipShape(Capsule())
+    }
+
+    private func expirationText(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ko_KR")
+        formatter.dateFormat = "M월 d일까지"
+        return formatter.string(from: date)
+    }
+
     // MARK: - Video Card
 
     private func videoCard(_ video: Domain.Video) -> some View {
         FMCard {
             VStack(alignment: .leading, spacing: FMSpacing.xs) {
                 // 썸네일 영역
-                RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm)
-                    .fill(FMColors.secondaryBackground)
-                    .frame(height: 160)
-                    .overlay {
-                        Image(systemName: "play.circle.fill")
-                            .font(.system(size: 40))
-                            .foregroundStyle(.white.opacity(0.8))
+                ZStack {
+                    if let thumbnailURL = video.thumbnailURL {
+                        KFImage(thumbnailURL)
+                            .resizable()
+                            .placeholder {
+                                RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm)
+                                    .fill(FMColors.secondaryBackground)
+                                    .overlay {
+                                        ProgressView()
+                                    }
+                            }
+                            .aspectRatio(contentMode: .fill)
+                            .frame(height: 160)
+                            .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm))
+                    } else {
+                        RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm)
+                            .fill(FMColors.secondaryBackground)
+                            .frame(height: 160)
                     }
+
+                    Image(systemName: "play.circle.fill")
+                        .font(.system(size: 40))
+                        .foregroundStyle(.white.opacity(0.8))
+                        .shadow(radius: 4)
+                }
+                .frame(height: 160)
+                .clipped()
 
                 Text(video.title)
                     .font(FMTypography.headline)

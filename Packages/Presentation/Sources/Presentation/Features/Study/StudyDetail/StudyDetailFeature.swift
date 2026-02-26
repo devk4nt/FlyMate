@@ -16,6 +16,9 @@ public struct StudyDetailFeature {
         public var editingNoticeText: String = ""
         public var noticeUpdateState: LoadingState<Bool> = .idle
         public var isCopied: Bool = false
+        public var inviteCodeInfo: LoadingState<InviteCode> = .idle
+        public var isInviteCodePopoverPresented: Bool = false
+        public var pendingRequestCount: Int = 0
 
         public var isOwner: Bool {
             guard let currentUserID else { return false }
@@ -39,6 +42,12 @@ public struct StudyDetailFeature {
         case copyInviteCode
         case resetCopyFeedback
         case memberManagementTapped
+        case joinRequestManagementTapped
+        case pendingRequestCountResponse(Result<Int, AppError>)
+        // Invite Code Info
+        case inviteCodeInfoTapped
+        case inviteCodeInfoResponse(Result<InviteCode, AppError>)
+        case dismissInviteCodePopover
         // Notice
         case noticeTapped
         case editNoticeTapped
@@ -61,28 +70,51 @@ public struct StudyDetailFeature {
                 guard case .idle = state.videos else { return .none }
                 state.videos = .loading
                 let studyID = state.study.id
-                let client = videoClient
+                let isOwner = state.isOwner
+                let videoClient = videoClient
+                let studyClient = studyClient
                 return .run { send in
                     do {
-                        let videos = try await client.fetchVideos(studyID, nil)
+                        let videos = try await videoClient.fetchVideos(studyID, nil)
                         await send(.videosResponse(.success(videos)))
                     } catch {
                         let appError = error as? AppError ?? .unexpected(error.localizedDescription)
                         await send(.videosResponse(.failure(appError)))
                     }
+                    if isOwner {
+                        do {
+                            let requests = try await studyClient.fetchPendingRequests(studyID)
+                            await send(.pendingRequestCountResponse(.success(requests.count)))
+                        } catch {
+                            let appError = error as? AppError ?? .unexpected(error.localizedDescription)
+                            await send(.pendingRequestCountResponse(.failure(appError)))
+                        }
+                    }
                 }
 
             case .refresh:
                 state.videos = .loading
+                state.inviteCodeInfo = .idle
                 let studyID = state.study.id
-                let client = videoClient
+                let isOwner = state.isOwner
+                let videoClient = videoClient
+                let studyClient = studyClient
                 return .run { send in
                     do {
-                        let videos = try await client.fetchVideos(studyID, nil)
+                        let videos = try await videoClient.fetchVideos(studyID, nil)
                         await send(.videosResponse(.success(videos)))
                     } catch {
                         let appError = error as? AppError ?? .unexpected(error.localizedDescription)
                         await send(.videosResponse(.failure(appError)))
+                    }
+                    if isOwner {
+                        do {
+                            let requests = try await studyClient.fetchPendingRequests(studyID)
+                            await send(.pendingRequestCountResponse(.success(requests.count)))
+                        } catch {
+                            let appError = error as? AppError ?? .unexpected(error.localizedDescription)
+                            await send(.pendingRequestCountResponse(.failure(appError)))
+                        }
                     }
                 }
 
@@ -126,8 +158,15 @@ public struct StudyDetailFeature {
                 state.videosPagination.isLoadingMore = false
                 return .none
 
-            case .videoTapped, .uploadVideoTapped, .memberManagementTapped:
+            case .videoTapped, .uploadVideoTapped, .memberManagementTapped, .joinRequestManagementTapped:
                 return .none // Handled by parent
+
+            case .pendingRequestCountResponse(.success(let count)):
+                state.pendingRequestCount = count
+                return .none
+
+            case .pendingRequestCountResponse(.failure):
+                return .none
 
             case .copyInviteCode:
                 UIPasteboard.general.string = state.study.inviteCode
@@ -139,6 +178,37 @@ public struct StudyDetailFeature {
 
             case .resetCopyFeedback:
                 state.isCopied = false
+                return .none
+
+            // MARK: - Invite Code Info
+
+            case .inviteCodeInfoTapped:
+                state.isInviteCodePopoverPresented = true
+                if case .loading = state.inviteCodeInfo { return .none }
+                if case .loaded = state.inviteCodeInfo { return .none }
+                state.inviteCodeInfo = .loading
+                let inviteCode = state.study.inviteCode
+                let client = studyClient
+                return .run { send in
+                    do {
+                        let info = try await client.fetchInviteCodeInfo(inviteCode)
+                        await send(.inviteCodeInfoResponse(.success(info)))
+                    } catch {
+                        let appError = error as? AppError ?? .unexpected(error.localizedDescription)
+                        await send(.inviteCodeInfoResponse(.failure(appError)))
+                    }
+                }
+
+            case .inviteCodeInfoResponse(.success(let info)):
+                state.inviteCodeInfo = .loaded(info)
+                return .none
+
+            case .inviteCodeInfoResponse(.failure(let error)):
+                state.inviteCodeInfo = .failed(error)
+                return .none
+
+            case .dismissInviteCodePopover:
+                state.isInviteCodePopoverPresented = false
                 return .none
 
             // MARK: - Notice

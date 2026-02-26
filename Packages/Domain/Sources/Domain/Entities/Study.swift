@@ -74,3 +74,43 @@ public enum MemberRole: String, Equatable, Sendable, Codable {
     case owner
     case member
 }
+
+// MARK: - Join Request
+
+public enum JoinRequestStatus: String, Equatable, Sendable, Codable, Hashable {
+    case pending, approved, rejected
+}
+
+public struct JoinRequest: Equatable, Identifiable, Sendable, Hashable {
+    public let id: UUID
+    public let studyID: UUID
+    public let studyName: String
+    public let userID: UUID
+    public let userName: String
+    public let profileImageURL: URL?
+    public let status: JoinRequestStatus
+    public let createdAt: Date
+    public let respondedAt: Date?
+
+    public init(
+        id: UUID,
+        studyID: UUID,
+        studyName: String,
+        userID: UUID,
+        userName: String,
+        profileImageURL: URL? = nil,
+        status: JoinRequestStatus,
+        createdAt: Date,
+        respondedAt: Date? = nil
+    ) {
+        self.id = id
+        self.studyID = studyID
+        self.studyName = studyName
+        self.userID = userID
+        self.userName = userName
+        self.profileImageURL = profileImageURL
+        self.status = status
+        self.createdAt = createdAt
+        self.respondedAt = respondedAt
+    }
+}

@@ -63,66 +63,90 @@ public struct StudyRepositoryImpl: StudyRepository {
     }
 
     public func createStudy(_ request: CreateStudyRequest) async throws -> Study {
-        let userID = try await client.auth.session.user.id
-        let studyID = UUID()
         let inviteCode = generateInviteCode()
 
-        struct InsertStudy: Codable {
-            let id: UUID
-            let name: String
-            let description: String
-            let ownerID: UUID
-            let inviteCode: String
-            let maxMembers: Int
-            enum CodingKeys: String, CodingKey {
-                case id, name, description
-                case ownerID = "owner_id"
-                case inviteCode = "invite_code"
-                case maxMembers = "max_members"
-            }
+        struct CreateStudyParams: Encodable {
+            let p_name: String
+            let p_description: String
+            let p_max_members: Int
+            let p_invite_code: String
         }
 
-        // 1. 스터디 생성 (클라이언트 생성 UUID, RETURNING 없이)
-        try await client.from(SupabaseConfig.Table.studies)
-            .insert(InsertStudy(
-                id: studyID,
-                name: request.name,
-                description: request.description,
-                ownerID: userID,
-                inviteCode: inviteCode,
-                maxMembers: request.maxMembers
-            ))
+        do {
+            let studyID: UUID = try await client.rpc(
+                "create_study_with_limits",
+                params: CreateStudyParams(
+                    p_name: request.name,
+                    p_description: request.description,
+                    p_max_members: request.maxMembers,
+                    p_invite_code: inviteCode
+                )
+            )
+            .single()
             .execute()
+            .value
 
-        // 2. 소유자를 멤버로 추가 (이후 SELECT 정책 통과 가능)
-        struct InsertMember: Codable {
-            let studyID: UUID
-            let userID: UUID
-            let role: String
-            enum CodingKeys: String, CodingKey { case studyID = "study_id"; case userID = "user_id"; case role }
+            return try await fetchStudy(id: studyID)
+        } catch {
+            throw mapRPCError(error)
         }
-        try await client.from(SupabaseConfig.Table.studyMembers)
-            .insert(InsertMember(studyID: studyID, userID: userID, role: "owner"))
-            .execute()
-
-        // 3. 멤버 추가 후 조회 (이제 SELECT 정책 통과)
-        return try await fetchStudy(id: studyID)
     }
 
-    public func joinStudy(inviteCode: String) async throws -> Study {
+    public func requestJoinStudy(inviteCode: String) async throws -> JoinRequest {
         do {
-            let response: UUID = try await client.rpc(
-                "join_study_by_invite_code",
+            let dto: JoinRequestDTO = try await client.rpc(
+                "request_join_study",
                 params: ["p_invite_code": inviteCode]
             )
             .single()
             .execute()
             .value
 
-            return try await fetchStudy(id: response)
+            return DTOMapper.toDomain(dto)
         } catch {
             throw mapRPCError(error)
         }
+    }
+
+    public func fetchPendingRequests(studyID: UUID) async throws -> [JoinRequest] {
+        let dtos: [JoinRequestDTO] = try await client.from(SupabaseConfig.Table.joinRequests)
+            .select()
+            .eq("study_id", value: studyID)
+            .eq("status", value: "pending")
+            .order("created_at", ascending: true)
+            .execute()
+            .value
+
+        return dtos.map(DTOMapper.toDomain)
+    }
+
+    public func approveJoinRequest(requestID: UUID) async throws {
+        do {
+            try await client.rpc(
+                "approve_join_request",
+                params: ["p_request_id": requestID]
+            ).execute()
+        } catch {
+            throw mapRPCError(error)
+        }
+    }
+
+    public func rejectJoinRequest(requestID: UUID) async throws {
+        do {
+            try await client.rpc(
+                "reject_join_request",
+                params: ["p_request_id": requestID]
+            ).execute()
+        } catch {
+            throw mapRPCError(error)
+        }
+    }
+
+    public func cancelJoinRequest(requestID: UUID) async throws {
+        try await client.from(SupabaseConfig.Table.joinRequests)
+            .delete()
+            .eq("id", value: requestID)
+            .execute()
     }
 
     public func leaveStudy(id: UUID) async throws {
@@ -193,7 +217,9 @@ public struct StudyRepositoryImpl: StudyRepository {
                 code: response.code,
                 studyID: response.studyID,
                 studyName: response.studyName,
-                createdAt: response.createdAt
+                createdAt: response.createdAt,
+                expiresAt: response.expiresAt,
+                isActive: response.isActive
             )
         } catch {
             throw mapRPCError(error)
@@ -211,10 +237,24 @@ public struct StudyRepositoryImpl: StudyRepository {
         let message = error.localizedDescription
         if message.contains("INVALID_INVITE_CODE") {
             return AppError.business(.invalidInviteCode)
+        } else if message.contains("INVITE_CODE_EXPIRED") {
+            return AppError.business(.inviteCodeExpired)
+        } else if message.contains("INVITE_CODE_INACTIVE") {
+            return AppError.business(.inviteCodeInactive)
+        } else if message.contains("ALREADY_REQUESTED") {
+            return AppError.business(.alreadyRequested)
+        } else if message.contains("REQUEST_NOT_FOUND") {
+            return AppError.business(.requestNotFound)
+        } else if message.contains("REQUEST_ALREADY_HANDLED") {
+            return AppError.business(.requestAlreadyHandled)
         } else if message.contains("ALREADY_MEMBER") {
             return AppError.business(.alreadyJoined)
         } else if message.contains("STUDY_FULL") {
             return AppError.business(.studyFull)
+        } else if message.contains("MAX_OWNED_STUDIES_REACHED") {
+            return AppError.business(.maxOwnedStudiesReached)
+        } else if message.contains("MAX_JOINED_STUDIES_REACHED") {
+            return AppError.business(.maxJoinedStudiesReached)
         } else if message.contains("UNAUTHORIZED") {
             return AppError.business(.unauthorized)
         }
@@ -229,11 +269,15 @@ private struct InviteCodeResponse: Codable, Sendable {
     let studyID: UUID
     let studyName: String
     let createdAt: Date
+    let expiresAt: Date
+    let isActive: Bool
 
     enum CodingKeys: String, CodingKey {
         case code
         case studyID = "study_id"
         case studyName = "study_name"
         case createdAt = "created_at"
+        case expiresAt = "expires_at"
+        case isActive = "is_active"
     }
 }

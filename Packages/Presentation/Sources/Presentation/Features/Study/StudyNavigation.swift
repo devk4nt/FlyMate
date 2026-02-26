@@ -18,7 +18,7 @@ public struct StudyNavigationFeature {
     public enum Action {
         case studyList(StudyListFeature.Action)
         case path(StackActionOf<Path>)
-        case navigateToVideo(Study, Video)
+        case navigateToVideo(Study, Video, feedbackID: UUID? = nil)
         case showInviteCode(String)
     }
 
@@ -28,6 +28,7 @@ public struct StudyNavigationFeature {
         case videoDetail(VideoDetailFeature)
         case videoUpload(VideoUploadFeature)
         case memberManagement(MemberManagementFeature)
+        case joinRequestManagement(JoinRequestManagementFeature)
     }
 
     public init() {}
@@ -66,6 +67,25 @@ public struct StudyNavigationFeature {
                 )
                 return .none
 
+            case .path(.element(let id, action: .studyDetail(.joinRequestManagementTapped))):
+                guard case .studyDetail(let detailState) = state.path[id: id] else { return .none }
+                state.path.append(
+                    .joinRequestManagement(
+                        JoinRequestManagementFeature.State(studyID: detailState.study.id)
+                    )
+                )
+                return .none
+
+            case .path(.element(_, action: .joinRequestManagement(.delegate(.memberApproved)))):
+                // Refresh StudyDetail's study data and pending count
+                if let detailID = state.path.ids.first(where: { id in
+                    if case .studyDetail = state.path[id: id] { return true }
+                    return false
+                }) {
+                    return .send(.path(.element(id: detailID, action: .studyDetail(.refresh))))
+                }
+                return .none
+
             case .path(.element(_, action: .memberManagement(.memberRemoved(let removedUserID)))):
                 // Sync removed member back to StudyDetail
                 if let detailID = state.path.ids.first(where: { id in
@@ -85,10 +105,10 @@ public struct StudyNavigationFeature {
                 }
                 return .none
 
-            case .navigateToVideo(let study, let video):
+            case .navigateToVideo(let study, let video, let feedbackID):
                 state.path.removeAll()
                 state.path.append(.studyDetail(StudyDetailFeature.State(study: study, currentUserID: state.currentUserID)))
-                state.path.append(.videoDetail(VideoDetailFeature.State(video: video)))
+                state.path.append(.videoDetail(VideoDetailFeature.State(video: video, focusedFeedbackID: feedbackID)))
                 return .none
 
             case .studyList, .path:
