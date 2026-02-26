@@ -7,6 +7,7 @@ struct VideoPlayerView: UIViewRepresentable {
     let isPlaying: Bool
     let seekTime: TimeInterval
     let isSeeking: Bool
+    let isMuted: Bool
     let onCurrentTimeUpdate: (TimeInterval) -> Void
     let onDurationUpdate: (TimeInterval) -> Void
     let onPlaybackEnded: () -> Void
@@ -19,7 +20,7 @@ struct VideoPlayerView: UIViewRepresentable {
     func makeUIView(context: Context) -> PlayerUIView {
         let view = PlayerUIView()
         let coordinator = context.coordinator
-        coordinator.setupPlayer(url: url, in: view)
+        coordinator.setupPlayer(url: url, initialTime: seekTime, in: view)
         return view
     }
 
@@ -36,6 +37,8 @@ struct VideoPlayerView: UIViewRepresentable {
                 player.pause()
             }
         }
+
+        player.isMuted = isMuted
 
         if isSeeking {
             let target = CMTime(seconds: seekTime, preferredTimescale: 600)
@@ -69,7 +72,7 @@ struct VideoPlayerView: UIViewRepresentable {
             self.parent = parent
         }
 
-        func setupPlayer(url: URL, in view: PlayerUIView) {
+        func setupPlayer(url: URL, initialTime: TimeInterval, in view: PlayerUIView) {
             try? AVAudioSession.sharedInstance().setCategory(.playback)
             try? AVAudioSession.sharedInstance().setActive(true)
 
@@ -79,6 +82,8 @@ struct VideoPlayerView: UIViewRepresentable {
 
             view.playerLayer.player = player
             view.playerLayer.videoGravity = .resizeAspect
+
+            player.isMuted = parent.isMuted
 
             // Periodic time observer (0.25s interval)
             let interval = CMTime(seconds: 0.25, preferredTimescale: 600)
@@ -92,13 +97,17 @@ struct VideoPlayerView: UIViewRepresentable {
                 self.parent.onCurrentTimeUpdate(seconds)
             }
 
-            // Observe player item status for duration
+            // Observe player item status for duration + initial seek
             statusObservation = playerItem.observe(\.status, options: [.new]) { [weak self] item, _ in
                 guard let self, item.status == .readyToPlay else { return }
                 let duration = CMTimeGetSeconds(item.duration)
                 guard duration.isFinite else { return }
                 Task { @MainActor in
                     self.parent.onDurationUpdate(duration)
+                    if initialTime > 0 {
+                        let target = CMTime(seconds: initialTime, preferredTimescale: 600)
+                        self.player?.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero)
+                    }
                 }
             }
 
