@@ -101,7 +101,25 @@ enum DTOMapper {
             content: dto.content,
             timestampSeconds: dto.timestampSeconds,
             createdAt: parseDate(dto.createdAt),
-            mentionedUserIDs: dto.mentionedUserIDs ?? []
+            mentionedUserIDs: dto.mentionedUserIDs ?? [],
+            commentCount: dto.commentCount ?? 0
+        )
+    }
+
+
+    // MARK: - FeedbackComment
+
+    static func toDomain(_ dto: FeedbackCommentDTO) -> FeedbackComment {
+        FeedbackComment(
+            id: dto.id,
+            feedbackID: dto.feedbackID,
+            studyID: dto.studyID,
+            authorID: dto.authorID,
+            authorName: dto.authorName,
+            authorProfileURL: dto.authorProfileURL.flatMap(URL.init(string:)),
+            content: dto.content,
+            mentionedUserIDs: dto.mentionedUserIDs ?? [],
+            createdAt: parseDate(dto.createdAt)
         )
     }
 

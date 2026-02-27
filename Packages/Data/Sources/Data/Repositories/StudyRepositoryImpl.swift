@@ -226,6 +226,29 @@ public struct StudyRepositoryImpl: StudyRepository {
         }
     }
 
+    public func fetchMemberStats(studyID: UUID, userID: UUID) async throws -> MemberStats {
+        do {
+            let response: MemberStatsResponse = try await client.rpc(
+                "get_member_stats",
+                params: ["p_study_id": studyID, "p_user_id": userID]
+            )
+            .single()
+            .execute()
+            .value
+
+            return MemberStats(
+                userID: response.userID,
+                studyID: response.studyID,
+                feedbackGivenCount: response.feedbackGivenCount,
+                feedbackReceivedCount: response.feedbackReceivedCount,
+                videosUploadedCount: response.videosUploadedCount,
+                joinedAt: response.joinedAt
+            )
+        } catch {
+            throw mapRPCError(error)
+        }
+    }
+
     // MARK: - Private
 
     private func generateInviteCode() -> String {
@@ -279,5 +302,23 @@ private struct InviteCodeResponse: Codable, Sendable {
         case createdAt = "created_at"
         case expiresAt = "expires_at"
         case isActive = "is_active"
+    }
+}
+
+private struct MemberStatsResponse: Codable, Sendable {
+    let userID: UUID
+    let studyID: UUID
+    let feedbackGivenCount: Int
+    let feedbackReceivedCount: Int
+    let videosUploadedCount: Int
+    let joinedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case userID = "user_id"
+        case studyID = "study_id"
+        case feedbackGivenCount = "feedback_given_count"
+        case feedbackReceivedCount = "feedback_received_count"
+        case videosUploadedCount = "videos_uploaded_count"
+        case joinedAt = "joined_at"
     }
 }

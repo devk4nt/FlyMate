@@ -139,6 +139,10 @@ private struct NotificationRow: View {
             return "bubble.left.fill"
         case .mentionedInFeedback:
             return "at"
+        case .replyOnMyFeedback:
+            return "arrowshape.turn.up.left.fill"
+        case .mentionedInFeedbackComment:
+            return "at"
         }
     }
 
@@ -147,6 +151,10 @@ private struct NotificationRow: View {
         case .feedbackOnMyVideo:
             return FMColors.primary
         case .mentionedInFeedback:
+            return FMColors.accent
+        case .replyOnMyFeedback:
+            return FMColors.primary
+        case .mentionedInFeedbackComment:
             return FMColors.accent
         }
     }

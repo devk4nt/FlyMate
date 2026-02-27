@@ -66,7 +66,8 @@ struct FlyMateApp: App {
             fetchPendingRequests: { try await studyRepo.fetchPendingRequests(studyID: $0) },
             approveJoinRequest: { try await studyRepo.approveJoinRequest(requestID: $0) },
             rejectJoinRequest: { try await studyRepo.rejectJoinRequest(requestID: $0) },
-            cancelJoinRequest: { try await studyRepo.cancelJoinRequest(requestID: $0) }
+            cancelJoinRequest: { try await studyRepo.cancelJoinRequest(requestID: $0) },
+            fetchMemberStats: { try await studyRepo.fetchMemberStats(studyID: $0, userID: $1) }
         )
 
         // Video
@@ -87,6 +88,15 @@ struct FlyMateApp: App {
             fetchGiven: { try await feedbackRepo.fetchGivenFeedbacks(userID: $0, cursor: $1) },
             observeFeedbacks: { feedbackRepo.observeFeedbacks(videoID: $0) },
             deleteFeedback: { try await feedbackRepo.deleteFeedback(id: $0) }
+        )
+
+        // Feedback Comment
+        let feedbackCommentRepo = FeedbackCommentRepositoryImpl(client: supabaseClient)
+        dependencies.feedbackCommentClient = FeedbackCommentClient(
+            fetchComments: { try await feedbackCommentRepo.fetchComments(feedbackID: $0) },
+            fetchLatestComments: { try await feedbackCommentRepo.fetchLatestComments(feedbackIDs: $0) },
+            createComment: { try await feedbackCommentRepo.createComment($0) },
+            deleteComment: { try await feedbackCommentRepo.deleteComment(id: $0) }
         )
 
         // User
@@ -268,7 +278,17 @@ struct FlyMateApp: App {
             fetchPendingRequests: { _ in [] },
             approveJoinRequest: { _ in },
             rejectJoinRequest: { _ in },
-            cancelJoinRequest: { _ in }
+            cancelJoinRequest: { _ in },
+            fetchMemberStats: { studyID, userID in
+                MemberStats(
+                    userID: userID,
+                    studyID: studyID,
+                    feedbackGivenCount: 12,
+                    feedbackReceivedCount: 8,
+                    videosUploadedCount: 5,
+                    joinedAt: Date().addingTimeInterval(-30 * 24 * 60 * 60)
+                )
+            }
         )
 
         // Video
@@ -398,6 +418,25 @@ struct FlyMateApp: App {
             deleteFeedback: { id in
                 feedbackStore.delete(id: id)
             }
+        )
+
+        // Feedback Comment (Mock)
+        dependencies.feedbackCommentClient = FeedbackCommentClient(
+            fetchComments: { _ in [] },
+            fetchLatestComments: { _ in [:] },
+            createComment: { request in
+                FeedbackComment(
+                    id: UUID(),
+                    feedbackID: request.feedbackID,
+                    studyID: mockStudyID,
+                    authorID: previewUserID,
+                    authorName: "Preview User",
+                    content: request.content,
+                    mentionedUserIDs: request.mentionedUserIDs,
+                    createdAt: Date()
+                )
+            },
+            deleteComment: { _ in }
         )
 
         // User

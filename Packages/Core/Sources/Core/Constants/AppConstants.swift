@@ -17,6 +17,10 @@ public enum AppConstants {
     public static let maxFeedbackLength = 500
 
     /// 스터디 이름 최대 글자 수
+
+    /// 피드백 댓글 최대 글자 수
+    public static let maxCommentLength = 300
+
     public static let maxStudyNameLength = 30
 
     /// 방장으로 생성 가능한 최대 스터디 수

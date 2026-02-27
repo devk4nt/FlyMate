@@ -16,6 +16,7 @@ public struct StudyClient: Sendable {
     public var approveJoinRequest: @Sendable (UUID) async throws -> Void
     public var rejectJoinRequest: @Sendable (UUID) async throws -> Void
     public var cancelJoinRequest: @Sendable (UUID) async throws -> Void
+    public var fetchMemberStats: @Sendable (UUID, UUID) async throws -> MemberStats
 
     public init(
         fetchMyStudies: @escaping @Sendable () async throws -> [Study],
@@ -30,7 +31,8 @@ public struct StudyClient: Sendable {
         fetchPendingRequests: @escaping @Sendable (UUID) async throws -> [JoinRequest],
         approveJoinRequest: @escaping @Sendable (UUID) async throws -> Void,
         rejectJoinRequest: @escaping @Sendable (UUID) async throws -> Void,
-        cancelJoinRequest: @escaping @Sendable (UUID) async throws -> Void
+        cancelJoinRequest: @escaping @Sendable (UUID) async throws -> Void,
+        fetchMemberStats: @escaping @Sendable (UUID, UUID) async throws -> MemberStats
     ) {
         self.fetchMyStudies = fetchMyStudies
         self.fetchStudy = fetchStudy
@@ -45,6 +47,7 @@ public struct StudyClient: Sendable {
         self.approveJoinRequest = approveJoinRequest
         self.rejectJoinRequest = rejectJoinRequest
         self.cancelJoinRequest = cancelJoinRequest
+        self.fetchMemberStats = fetchMemberStats
     }
 }
 
@@ -62,7 +65,8 @@ extension StudyClient: TestDependencyKey {
         fetchPendingRequests: unimplemented("\(Self.self).fetchPendingRequests"),
         approveJoinRequest: unimplemented("\(Self.self).approveJoinRequest"),
         rejectJoinRequest: unimplemented("\(Self.self).rejectJoinRequest"),
-        cancelJoinRequest: unimplemented("\(Self.self).cancelJoinRequest")
+        cancelJoinRequest: unimplemented("\(Self.self).cancelJoinRequest"),
+        fetchMemberStats: unimplemented("\(Self.self).fetchMemberStats")
     )
 }
 

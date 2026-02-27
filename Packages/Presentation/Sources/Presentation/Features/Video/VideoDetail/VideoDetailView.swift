@@ -97,6 +97,7 @@ public struct VideoDetailView: View {
         .clipped()
         .contentShape(Rectangle())
         .onTapGesture { toggleControls() }
+        .screenCaptureGuarded()
         .accessibilityLabel("영상 플레이어")
         .accessibilityAddTraits(.startsMediaSession)
     }
@@ -287,8 +288,13 @@ public struct VideoDetailView: View {
                                     FeedbackRow(
                                         feedback: feedback,
                                         isHighlighted: store.focusedFeedbackID == feedback.id,
+                                        latestComment: store.latestComments[feedback.id],
+                                        commentCount: feedback.commentCount,
                                         onTimestampTapped: {
                                             store.send(.feedbackTapped(feedback))
+                                        },
+                                        onCommentTapped: {
+                                            store.send(.commentListTapped(feedback))
                                         }
                                     )
                                     .id(feedback.id)
@@ -327,37 +333,53 @@ public struct VideoDetailView: View {
 private struct FeedbackRow: View {
     let feedback: Domain.Feedback
     var isHighlighted: Bool = false
+    var latestComment: FeedbackComment?
+    var commentCount: Int = 0
     var onTimestampTapped: (() -> Void)?
+    var onCommentTapped: (() -> Void)?
 
     var body: some View {
-        HStack(alignment: .top, spacing: FMSpacing.sm) {
-            // 타임스탬프 뱃지
-            Text(feedback.timestampSeconds.minuteSecondFormatted)
-                .font(FMTypography.caption1)
-                .padding(.horizontal, FMSpacing.xs)
-                .padding(.vertical, FMSpacing.xxxs)
-                .background(FMColors.accent.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm))
-                .onTapGesture {
-                    onTimestampTapped?()
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top, spacing: FMSpacing.sm) {
+                // 타임스탬프 뱃지
+                Text(feedback.timestampSeconds.minuteSecondFormatted)
+                    .font(FMTypography.caption1)
+                    .padding(.horizontal, FMSpacing.xs)
+                    .padding(.vertical, FMSpacing.xxxs)
+                    .background(FMColors.accent.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm))
+                    .onTapGesture {
+                        onTimestampTapped?()
+                    }
+
+                VStack(alignment: .leading, spacing: FMSpacing.xxxs) {
+                    HStack {
+                        Text(feedback.authorName)
+                            .font(FMTypography.caption1)
+                            .fontWeight(.semibold)
+                        Text(feedback.createdAt.relativeString)
+                            .font(FMTypography.caption2)
+                            .foregroundStyle(FMColors.secondaryLabel)
+                    }
+                    Text(feedback.content)
+                        .font(FMTypography.callout)
                 }
 
-            VStack(alignment: .leading, spacing: FMSpacing.xxxs) {
-                HStack {
-                    Text(feedback.authorName)
-                        .font(FMTypography.caption1)
-                        .fontWeight(.semibold)
-                    Text(feedback.createdAt.relativeString)
-                        .font(FMTypography.caption2)
-                        .foregroundStyle(FMColors.secondaryLabel)
-                }
-                Text(feedback.content)
-                    .font(FMTypography.callout)
+                Spacer(minLength: 0)
+            }
+            .padding(FMSpacing.sm)
+
+            // 댓글 프리뷰 영역
+            if commentCount > 0, let comment = latestComment {
+                Divider()
+                    .padding(.horizontal, FMSpacing.sm)
+
+                commentPreview(comment: comment)
             }
 
-            Spacer(minLength: 0)
+            // 댓글 액션 버튼
+            commentActionButton
         }
-        .padding(FMSpacing.sm)
         .background(
             isHighlighted
                 ? FMColors.accent.opacity(0.15)
@@ -365,6 +387,66 @@ private struct FeedbackRow: View {
         )
         .animation(.easeInOut(duration: 0.6), value: isHighlighted)
         .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm))
+    }
+
+    @ViewBuilder
+    private func commentPreview(comment: FeedbackComment) -> some View {
+        HStack(alignment: .top, spacing: FMSpacing.xs) {
+            Image(systemName: "arrowshape.turn.up.left.fill")
+                .font(.system(size: 10))
+                .foregroundStyle(FMColors.secondaryLabel)
+                .padding(.top, 3)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(comment.authorName)
+                    .font(FMTypography.caption2)
+                    .fontWeight(.medium)
+                    .foregroundStyle(FMColors.secondaryLabel)
+                Text(comment.content)
+                    .font(FMTypography.caption1)
+                    .foregroundStyle(FMColors.label)
+                    .lineLimit(2)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, FMSpacing.sm)
+        .padding(.vertical, FMSpacing.xs)
+        .contentShape(Rectangle())
+        .onTapGesture { onCommentTapped?() }
+    }
+
+    @ViewBuilder
+    private var commentActionButton: some View {
+        if commentCount >= 2 {
+            Button {
+                onCommentTapped?()
+            } label: {
+                HStack(spacing: FMSpacing.xxxs) {
+                    Image(systemName: "bubble.left")
+                        .font(.system(size: 11))
+                    Text("댓글 \(commentCount)개 보기")
+                        .font(FMTypography.caption2)
+                }
+                .foregroundStyle(FMColors.accent)
+                .padding(.horizontal, FMSpacing.sm)
+                .padding(.vertical, FMSpacing.xs)
+            }
+        } else if commentCount == 0 {
+            Button {
+                onCommentTapped?()
+            } label: {
+                HStack(spacing: FMSpacing.xxxs) {
+                    Image(systemName: "bubble.left")
+                        .font(.system(size: 11))
+                    Text("댓글 달기")
+                        .font(FMTypography.caption2)
+                }
+                .foregroundStyle(FMColors.secondaryLabel)
+                .padding(.horizontal, FMSpacing.sm)
+                .padding(.vertical, FMSpacing.xs)
+            }
+        }
     }
 }
 
@@ -412,6 +494,7 @@ private struct FullscreenVideoView: View {
         }
         .contentShape(Rectangle())
         .onTapGesture { toggleControls() }
+        .screenCaptureGuarded()
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
         .onAppear { scheduleHideControls() }

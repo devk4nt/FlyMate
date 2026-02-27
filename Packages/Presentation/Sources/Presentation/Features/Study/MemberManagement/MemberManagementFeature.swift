@@ -10,6 +10,7 @@ public struct MemberManagementFeature {
         public var study: Study
         public var currentUserID: UUID?
         @Presents public var confirmAlert: AlertState<Action.ConfirmAlert>?
+        @Presents public var memberStats: MemberStatsFeature.State?
         public var removeMemberState: LoadingState<Bool> = .idle
         fileprivate var selectedMemberUserID: UUID?
 
@@ -33,6 +34,8 @@ public struct MemberManagementFeature {
     }
 
     public enum Action {
+        case memberTapped(StudyMember)
+        case memberStats(PresentationAction<MemberStatsFeature.Action>)
         case removeMemberTapped(StudyMember)
         case confirmAlert(PresentationAction<ConfirmAlert>)
         case removeMemberResponse(Result<UUID, AppError>)
@@ -50,6 +53,16 @@ public struct MemberManagementFeature {
     public var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
+            case .memberTapped(let member):
+                state.memberStats = MemberStatsFeature.State(
+                    member: member,
+                    studyID: state.study.id
+                )
+                return .none
+
+            case .memberStats:
+                return .none
+
             case .removeMemberTapped(let member):
                 state.selectedMemberUserID = member.userID
                 state.confirmAlert = AlertState {
@@ -100,5 +113,8 @@ public struct MemberManagementFeature {
             }
         }
         .ifLet(\.$confirmAlert, action: \.confirmAlert)
+        .ifLet(\.$memberStats, action: \.memberStats) {
+            MemberStatsFeature()
+        }
     }
 }

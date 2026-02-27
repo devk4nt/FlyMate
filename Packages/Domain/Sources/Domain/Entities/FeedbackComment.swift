@@ -1,60 +1,51 @@
 import Foundation
 
-public struct Feedback: Equatable, Identifiable, Sendable, Hashable {
+public struct FeedbackComment: Equatable, Identifiable, Sendable, Hashable {
     public let id: UUID
-    public let videoID: UUID
+    public let feedbackID: UUID
     public let studyID: UUID
     public let authorID: UUID
     public let authorName: String
     public let authorProfileURL: URL?
     public let content: String
-    public let timestampSeconds: TimeInterval
-    public let createdAt: Date
     public let mentionedUserIDs: [UUID]
-    public let commentCount: Int
+    public let createdAt: Date
 
     public init(
         id: UUID,
-        videoID: UUID,
+        feedbackID: UUID,
         studyID: UUID,
         authorID: UUID,
         authorName: String,
         authorProfileURL: URL? = nil,
         content: String,
-        timestampSeconds: TimeInterval,
-        createdAt: Date,
         mentionedUserIDs: [UUID] = [],
-        commentCount: Int = 0
+        createdAt: Date
     ) {
         self.id = id
-        self.videoID = videoID
+        self.feedbackID = feedbackID
         self.studyID = studyID
         self.authorID = authorID
         self.authorName = authorName
         self.authorProfileURL = authorProfileURL
         self.content = content
-        self.timestampSeconds = timestampSeconds
-        self.createdAt = createdAt
         self.mentionedUserIDs = mentionedUserIDs
-        self.commentCount = commentCount
+        self.createdAt = createdAt
     }
 }
 
-public struct CreateFeedbackRequest: Equatable, Sendable {
-    public let videoID: UUID
+public struct CreateFeedbackCommentRequest: Equatable, Sendable {
+    public let feedbackID: UUID
     public let content: String
-    public let timestampSeconds: TimeInterval
     public let mentionedUserIDs: [UUID]
 
     public init(
-        videoID: UUID,
+        feedbackID: UUID,
         content: String,
-        timestampSeconds: TimeInterval,
         mentionedUserIDs: [UUID] = []
     ) {
-        self.videoID = videoID
+        self.feedbackID = feedbackID
         self.content = content
-        self.timestampSeconds = timestampSeconds
         self.mentionedUserIDs = mentionedUserIDs
     }
 }

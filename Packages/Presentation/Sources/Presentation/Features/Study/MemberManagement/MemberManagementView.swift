@@ -13,7 +13,12 @@ public struct MemberManagementView: View {
         List {
             Section {
                 ForEach(store.sortedMembers) { member in
-                    memberRow(member)
+                    Button {
+                        store.send(.memberTapped(member))
+                    } label: {
+                        memberRow(member)
+                    }
+                    .buttonStyle(.plain)
                 }
             } header: {
                 Text("멤버 \(store.study.memberCount)명")
@@ -24,6 +29,11 @@ public struct MemberManagementView: View {
         .navigationTitle("스터디원 관리")
         .navigationBarTitleDisplayMode(.inline)
         .alert($store.scope(state: \.confirmAlert, action: \.confirmAlert))
+        .sheet(
+            item: $store.scope(state: \.memberStats, action: \.memberStats)
+        ) { memberStatsStore in
+            MemberStatsSheet(store: memberStatsStore)
+        }
         .overlay {
             if store.removeMemberState.isLoading {
                 Color.black.opacity(0.1)
@@ -75,6 +85,10 @@ public struct MemberManagementView: View {
             }
         }
         .padding(.vertical, FMSpacing.xxs)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(member.userName)\(member.role == .owner ? ", 방장" : "")")
+        .accessibilityHint("활동 현황 보기")
     }
 
     // MARK: - Profile Image
@@ -181,6 +195,16 @@ private enum PreviewData {
                 MemberManagementFeature()
             } withDependencies: {
                 $0.studyClient.removeMember = { _, _ in }
+                $0.studyClient.fetchMemberStats = { studyID, userID in
+                    MemberStats(
+                        userID: userID,
+                        studyID: studyID,
+                        feedbackGivenCount: 12,
+                        feedbackReceivedCount: 8,
+                        videosUploadedCount: 5,
+                        joinedAt: Date().addingTimeInterval(-30 * 24 * 60 * 60)
+                    )
+                }
             }
         )
     }
@@ -196,6 +220,17 @@ private enum PreviewData {
                 )
             ) {
                 MemberManagementFeature()
+            } withDependencies: {
+                $0.studyClient.fetchMemberStats = { studyID, userID in
+                    MemberStats(
+                        userID: userID,
+                        studyID: studyID,
+                        feedbackGivenCount: 3,
+                        feedbackReceivedCount: 5,
+                        videosUploadedCount: 2,
+                        joinedAt: Date().addingTimeInterval(-25 * 24 * 60 * 60)
+                    )
+                }
             }
         )
     }

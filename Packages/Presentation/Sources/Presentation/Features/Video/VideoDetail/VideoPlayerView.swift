@@ -145,6 +145,66 @@ struct VideoPlayerView: UIViewRepresentable {
 // MARK: - PlayerUIView
 
 final class PlayerUIView: UIView {
+    private let secureTextField: UITextField = {
+        let textField = UITextField()
+        textField.isSecureTextEntry = true
+        textField.isUserInteractionEnabled = false
+        return textField
+    }()
+
+    private let avPlayerView = AVPlayerContainerView()
+
+    var playerLayer: AVPlayerLayer {
+        avPlayerView.playerLayer
+    }
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setupSecureContainer()
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    private func setupSecureContainer() {
+        addSubview(secureTextField)
+        secureTextField.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            secureTextField.topAnchor.constraint(equalTo: topAnchor),
+            secureTextField.bottomAnchor.constraint(equalTo: bottomAnchor),
+            secureTextField.leadingAnchor.constraint(equalTo: leadingAnchor),
+            secureTextField.trailingAnchor.constraint(equalTo: trailingAnchor),
+        ])
+
+        let targetView: UIView
+        if let secureView = secureTextField.subviews.first {
+            secureView.isUserInteractionEnabled = true
+            secureView.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                secureView.topAnchor.constraint(equalTo: topAnchor),
+                secureView.bottomAnchor.constraint(equalTo: bottomAnchor),
+                secureView.leadingAnchor.constraint(equalTo: leadingAnchor),
+                secureView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            ])
+            targetView = secureView
+        } else {
+            targetView = self
+        }
+
+        targetView.addSubview(avPlayerView)
+        avPlayerView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            avPlayerView.topAnchor.constraint(equalTo: targetView.topAnchor),
+            avPlayerView.bottomAnchor.constraint(equalTo: targetView.bottomAnchor),
+            avPlayerView.leadingAnchor.constraint(equalTo: targetView.leadingAnchor),
+            avPlayerView.trailingAnchor.constraint(equalTo: targetView.trailingAnchor),
+        ])
+    }
+}
+
+private final class AVPlayerContainerView: UIView {
     override static var layerClass: AnyClass { AVPlayerLayer.self }
 
     var playerLayer: AVPlayerLayer {

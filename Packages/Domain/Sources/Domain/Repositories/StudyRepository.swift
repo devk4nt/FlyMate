@@ -52,4 +52,7 @@ public protocol StudyRepository: Sendable {
     func updateNotice(studyID: UUID, notice: String?) async throws
 
     func fetchInviteCodeInfo(code: String) async throws -> InviteCode
+
+    /// 스터디 멤버의 활동 통계를 조회한다.
+    func fetchMemberStats(studyID: UUID, userID: UUID) async throws -> MemberStats
 }

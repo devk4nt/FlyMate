@@ -75,6 +75,31 @@ public enum MemberRole: String, Equatable, Sendable, Codable {
     case member
 }
 
+public struct MemberStats: Equatable, Sendable {
+    public let userID: UUID
+    public let studyID: UUID
+    public let feedbackGivenCount: Int
+    public let feedbackReceivedCount: Int
+    public let videosUploadedCount: Int
+    public let joinedAt: Date
+
+    public init(
+        userID: UUID,
+        studyID: UUID,
+        feedbackGivenCount: Int,
+        feedbackReceivedCount: Int,
+        videosUploadedCount: Int,
+        joinedAt: Date
+    ) {
+        self.userID = userID
+        self.studyID = studyID
+        self.feedbackGivenCount = feedbackGivenCount
+        self.feedbackReceivedCount = feedbackReceivedCount
+        self.videosUploadedCount = videosUploadedCount
+        self.joinedAt = joinedAt
+    }
+}
+
 // MARK: - Join Request
 
 public enum JoinRequestStatus: String, Equatable, Sendable, Codable, Hashable {

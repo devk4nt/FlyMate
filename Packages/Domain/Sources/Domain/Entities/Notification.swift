@@ -37,4 +37,6 @@ public struct AppNotification: Equatable, Identifiable, Sendable, Hashable {
 public enum NotificationType: String, Equatable, Sendable, Hashable {
     case feedbackOnMyVideo = "feedback_on_my_video"
     case mentionedInFeedback = "mentioned_in_feedback"
+    case replyOnMyFeedback = "reply_on_my_feedback"
+    case mentionedInFeedbackComment = "mentioned_in_feedback_comment"
 }

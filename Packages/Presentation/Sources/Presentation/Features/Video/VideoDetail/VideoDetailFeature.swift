@@ -11,6 +11,7 @@ public struct VideoDetailFeature {
         public var feedbacks: LoadingState<[Feedback]> = .idle
         public var player = VideoPlayerState()
         public var focusedFeedbackID: UUID?
+        public var latestComments: [UUID: FeedbackComment] = [:]
         @Presents public var feedbackWrite: FeedbackWriteFeature.State?
 
         public init(video: Video, focusedFeedbackID: UUID? = nil) {
@@ -50,11 +51,15 @@ public struct VideoDetailFeature {
         case writeFeedbackTapped
         case feedbackTapped(Feedback)
         case feedbackWrite(PresentationAction<FeedbackWriteFeature.Action>)
+        // Comment actions
+        case latestCommentsResponse(Result<[UUID: FeedbackComment], AppError>)
+        case commentListTapped(Feedback)
     }
 
     private enum CancelID { case realtimeFeedback }
 
     @Dependency(\.feedbackClient) private var feedbackClient
+    @Dependency(\.feedbackCommentClient) private var feedbackCommentClient
 
     public init() {}
 
@@ -90,18 +95,34 @@ public struct VideoDetailFeature {
 
             case .feedbacksResponse(.success(let feedbacks)):
                 state.feedbacks = .loaded(feedbacks)
+                let commentClient = feedbackCommentClient
+                let feedbackIDs = feedbacks.map(\.id)
                 // 포커스된 피드백이 있으면 해당 타임스탬프로 seek
+                let seekEffect: Effect<Action>
                 if let focusedID = state.focusedFeedbackID,
                    let feedback = feedbacks.first(where: { $0.id == focusedID }) {
-                    return .merge(
+                    seekEffect = .merge(
                         .send(.seek(to: feedback.timestampSeconds)),
                         .run { send in
                             try await Task.sleep(for: .seconds(2))
                             await send(.clearFocusedFeedback)
                         }
                     )
+                } else {
+                    seekEffect = .none
                 }
-                return .none
+                return .merge(
+                    seekEffect,
+                    .run { send in
+                        do {
+                            let latest = try await commentClient.fetchLatestComments(feedbackIDs)
+                            await send(.latestCommentsResponse(.success(latest)))
+                        } catch {
+                            let appError = error as? AppError ?? .unexpected(error.localizedDescription)
+                            await send(.latestCommentsResponse(.failure(appError)))
+                        }
+                    }
+                )
 
             case .feedbacksResponse(.failure(let error)):
                 state.feedbacks = .failed(error)
@@ -109,6 +130,23 @@ public struct VideoDetailFeature {
 
             case .feedbacksUpdated(let feedbacks):
                 state.feedbacks = .loaded(feedbacks)
+                let commentClient = feedbackCommentClient
+                let feedbackIDs = feedbacks.map(\.id)
+                return .run { send in
+                    do {
+                        let latest = try await commentClient.fetchLatestComments(feedbackIDs)
+                        await send(.latestCommentsResponse(.success(latest)))
+                    } catch {
+                        let appError = error as? AppError ?? .unexpected(error.localizedDescription)
+                        await send(.latestCommentsResponse(.failure(appError)))
+                    }
+                }
+
+            case .latestCommentsResponse(.success(let comments)):
+                state.latestComments = comments
+                return .none
+
+            case .latestCommentsResponse(.failure):
                 return .none
 
             case .clearFocusedFeedback:
@@ -181,6 +219,10 @@ public struct VideoDetailFeature {
                 return .none
 
             case .feedbackWrite:
+                return .none
+
+            case .commentListTapped:
+                // 부모(StudyNavigationFeature)가 처리
                 return .none
             }
         }
