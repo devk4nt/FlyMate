@@ -29,7 +29,6 @@ public struct StudyNavigationFeature {
         case videoUpload(VideoUploadFeature)
         case memberManagement(MemberManagementFeature)
         case joinRequestManagement(JoinRequestManagementFeature)
-        case feedbackCommentList(FeedbackCommentListFeature)
     }
 
     public init() {}
@@ -49,7 +48,7 @@ public struct StudyNavigationFeature {
                 return .none
 
             case .path(.element(_, action: .studyDetail(.videoTapped(let video)))):
-                state.path.append(.videoDetail(VideoDetailFeature.State(video: video)))
+                state.path.append(.videoDetail(VideoDetailFeature.State(video: video, currentUserID: state.currentUserID)))
                 return .none
 
             case .path(.element(_, action: .studyDetail(.uploadVideoTapped(let studyID)))):
@@ -98,19 +97,6 @@ public struct StudyNavigationFeature {
                 }
                 return .none
 
-            case .path(.element(let id, action: .videoDetail(.commentListTapped(let feedback)))):
-                guard case .videoDetail(let videoState) = state.path[id: id] else { return .none }
-                state.path.append(
-                    .feedbackCommentList(
-                        FeedbackCommentListFeature.State(
-                            feedback: feedback,
-                            studyID: videoState.video.studyID,
-                            currentUserID: state.currentUserID
-                        )
-                    )
-                )
-                return .none
-
             case .path(.element(_, action: .videoUpload(.uploadCompleted))):
                 _ = state.path.popLast()
                 if let lastID = state.path.ids.last,
@@ -122,7 +108,7 @@ public struct StudyNavigationFeature {
             case .navigateToVideo(let study, let video, let feedbackID):
                 state.path.removeAll()
                 state.path.append(.studyDetail(StudyDetailFeature.State(study: study, currentUserID: state.currentUserID)))
-                state.path.append(.videoDetail(VideoDetailFeature.State(video: video, focusedFeedbackID: feedbackID)))
+                state.path.append(.videoDetail(VideoDetailFeature.State(video: video, focusedFeedbackID: feedbackID, currentUserID: state.currentUserID)))
                 return .none
 
             case .studyList, .path:

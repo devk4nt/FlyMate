@@ -63,6 +63,9 @@ public enum BusinessError: Equatable, Sendable {
     case notFound
     case maxOwnedStudiesReached
     case maxJoinedStudiesReached
+    case subscriptionRequired
+    case purchaseFailed(String)
+    case receiptVerificationFailed
 
     public var userMessage: String {
         switch self {
@@ -96,6 +99,12 @@ public enum BusinessError: Equatable, Sendable {
             return "스터디는 최대 \(AppConstants.maxOwnedStudies)개까지 만들 수 있습니다."
         case .maxJoinedStudiesReached:
             return "스터디는 최대 \(AppConstants.maxJoinedStudies)개까지 참여할 수 있습니다."
+        case .subscriptionRequired:
+            return "프리미엄 구독이 필요한 기능입니다."
+        case .purchaseFailed(let reason):
+            return "구매에 실패했습니다. \(reason)"
+        case .receiptVerificationFailed:
+            return "영수증 검증에 실패했습니다. 잠시 후 다시 시도해주세요."
         }
     }
 }

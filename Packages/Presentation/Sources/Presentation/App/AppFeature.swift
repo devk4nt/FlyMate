@@ -15,6 +15,7 @@ public struct AppFeature : Sendable {
         public var toast: ToastState?
         public var pendingDeepLink: DeepLink?
         public var fcmToken: String?
+        public var entitlement: Entitlement?
 
         public init() {
             self.destination = .login(LoginFeature.State())
@@ -37,6 +38,8 @@ public struct AppFeature : Sendable {
         case fcmTokenReceived(String)
         case registerTokenResponse
         case pushNotificationTapped([String: String])
+        case entitlementLoaded(Entitlement)
+        case transactionUpdated
 
         @CasePathable
         public enum Destination {
@@ -48,11 +51,13 @@ public struct AppFeature : Sendable {
     private enum CancelID {
         case fcmTokenObserver
         case pushNotificationObserver
+        case transactionUpdates
     }
 
     @Dependency(\.authClient) private var authClient
     @Dependency(\.userClient) private var userClient
     @Dependency(\.pushNotificationClient) private var pushNotificationClient
+    @Dependency(\.subscriptionClient) private var subscriptionClient
 
     public init() {}
 
@@ -97,7 +102,25 @@ public struct AppFeature : Sendable {
                 if let user {
                     if case .login = state.destination {
                         state.destination = .tab(TabFeature.State(currentUser: user))
-                        var effects: [Effect<Action>] = [.send(.requestPushPermission)]
+                        let subClient = subscriptionClient
+                        let userID = user.id
+                        var effects: [Effect<Action>] = [
+                            .send(.requestPushPermission),
+                            // 로그인 후 entitlement 조회
+                            .run { send in
+                                let entitlement = try? await subClient.fetchEntitlements(userID)
+                                if let entitlement {
+                                    await send(.entitlementLoaded(entitlement))
+                                }
+                            },
+                            // Transaction.updates 구독
+                            .run { send in
+                                for await _ in subClient.observeTransactionUpdates() {
+                                    await send(.transactionUpdated)
+                                }
+                            }
+                            .cancellable(id: CancelID.transactionUpdates)
+                        ]
                         if let pendingDeepLink = state.pendingDeepLink {
                             state.pendingDeepLink = nil
                             effects.append(.send(.deepLink(pendingDeepLink)))
@@ -105,12 +128,14 @@ public struct AppFeature : Sendable {
                         return .merge(effects)
                     }
                 } else {
-                    // 로그아웃 시 FCM 토큰 제거
+                    // 로그아웃 시 FCM 토큰 제거 + 구독 상태 초기화
                     let fcmToken = state.fcmToken
                     state.fcmToken = nil
+                    state.entitlement = nil
                     state.destination = .login(LoginFeature.State())
                     return .merge(
                         .cancel(id: CancelID.fcmTokenObserver),
+                        .cancel(id: CancelID.transactionUpdates),
                         fcmToken.map { token in
                             let client = userClient
                             return Effect<Action>.run { _ in
@@ -182,14 +207,30 @@ public struct AppFeature : Sendable {
                 state.toast = nil
                 return .none
 
+            case .entitlementLoaded(let entitlement):
+                state.entitlement = entitlement
+                return .none
+
+            case .transactionUpdated:
+                guard let userID = state.currentUser?.id else { return .none }
+                let subClient = subscriptionClient
+                return .run { send in
+                    let entitlement = try? await subClient.fetchEntitlements(userID)
+                    if let entitlement {
+                        await send(.entitlementLoaded(entitlement))
+                    }
+                }
+
             case .destination(.tab(.settings(.signOutCompleted))),
                  .destination(.tab(.settings(.deleteAccountCompleted))):
                 let fcmToken = state.fcmToken
                 state.currentUser = nil
                 state.fcmToken = nil
+                state.entitlement = nil
                 state.destination = .login(LoginFeature.State())
                 return .merge(
                     .cancel(id: CancelID.fcmTokenObserver),
+                    .cancel(id: CancelID.transactionUpdates),
                     fcmToken.map { token in
                         let client = userClient
                         return Effect<Action>.run { _ in

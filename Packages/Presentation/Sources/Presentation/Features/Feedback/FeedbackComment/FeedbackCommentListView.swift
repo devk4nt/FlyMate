@@ -75,6 +75,7 @@ public struct FeedbackCommentListView: View {
                     }
                 }
             }
+            .scrollDismissesKeyboard(.interactively)
         }
     }
 
@@ -124,7 +125,7 @@ public struct FeedbackCommentListView: View {
                             .padding(.horizontal, FMSpacing.xs)
                     }
 
-                    MentionTextEditor(
+                    FMMentionTextEditor(
                         text: $store.commentText.sending(\.commentTextChanged)
                     )
                     .frame(minHeight: 36, maxHeight: 100)
@@ -304,98 +305,3 @@ private struct CommentRow: View {
     }
 }
 
-// MARK: - MentionTextEditor (재사용)
-
-private struct MentionTextEditor: UIViewRepresentable {
-    @Binding var text: String
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(text: $text)
-    }
-
-    func makeUIView(context: Context) -> UITextView {
-        let textView = UITextView()
-        textView.delegate = context.coordinator
-        textView.backgroundColor = .clear
-        textView.textContainerInset = UIEdgeInsets(top: 8, left: 4, bottom: 8, right: 4)
-        textView.font = .systemFont(ofSize: 16, weight: .regular)
-        textView.tintColor = .systemBlue
-        textView.typingAttributes = [
-            .font: UIFont.systemFont(ofSize: 16, weight: .regular),
-            .foregroundColor: UIColor.label
-        ]
-        return textView
-    }
-
-    func updateUIView(_ textView: UITextView, context: Context) {
-        if textView.text != text {
-            applyHighlighting(to: textView, with: text)
-            let endPosition = textView.text.count
-            textView.selectedRange = NSRange(location: endPosition, length: 0)
-        }
-    }
-
-    private func applyHighlighting(to textView: UITextView, with text: String) {
-        let baseAttributes: [NSAttributedString.Key: Any] = [
-            .font: UIFont.systemFont(ofSize: 16, weight: .regular),
-            .foregroundColor: UIColor.label
-        ]
-        let attributed = NSMutableAttributedString(string: text, attributes: baseAttributes)
-
-        let mentionAttributes: [NSAttributedString.Key: Any] = [
-            .foregroundColor: UIColor.systemBlue,
-            .font: UIFont.systemFont(ofSize: 16, weight: .semibold)
-        ]
-
-        if let regex = try? NSRegularExpression(pattern: "@\\S+") {
-            let matches = regex.matches(in: text, range: NSRange(location: 0, length: (text as NSString).length))
-            for match in matches {
-                attributed.addAttributes(mentionAttributes, range: match.range)
-            }
-        }
-
-        textView.attributedText = attributed
-    }
-
-    final class Coordinator: NSObject, UITextViewDelegate {
-        @Binding var text: String
-
-        init(text: Binding<String>) {
-            _text = text
-        }
-
-        func textViewDidChange(_ textView: UITextView) {
-            let newText = textView.text ?? ""
-            let selectedRange = textView.selectedRange
-
-            text = newText
-
-            let baseAttributes: [NSAttributedString.Key: Any] = [
-                .font: UIFont.systemFont(ofSize: 16, weight: .regular),
-                .foregroundColor: UIColor.label
-            ]
-            let attributed = NSMutableAttributedString(string: newText, attributes: baseAttributes)
-
-            let mentionAttributes: [NSAttributedString.Key: Any] = [
-                .foregroundColor: UIColor.systemBlue,
-                .font: UIFont.systemFont(ofSize: 16, weight: .semibold)
-            ]
-
-            if let regex = try? NSRegularExpression(pattern: "@\\S+") {
-                let matches = regex.matches(
-                    in: newText,
-                    range: NSRange(location: 0, length: (newText as NSString).length)
-                )
-                for match in matches {
-                    attributed.addAttributes(mentionAttributes, range: match.range)
-                }
-            }
-
-            textView.attributedText = attributed
-
-            let safeLocation = min(selectedRange.location, newText.count)
-            let safeLength = min(selectedRange.length, newText.count - safeLocation)
-            textView.selectedRange = NSRange(location: safeLocation, length: safeLength)
-        }
-    }
-}

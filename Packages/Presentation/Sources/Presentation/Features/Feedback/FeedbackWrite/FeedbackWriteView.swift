@@ -25,7 +25,7 @@ public struct FeedbackWriteView: View {
             // 피드백 입력
             VStack(alignment: .trailing, spacing: FMSpacing.xxs) {
                 ZStack(alignment: .bottom) {
-                    MentionTextEditor(
+                    FMMentionTextEditor(
                         text: $store.content.sending(\.contentChanged)
                     )
                     .frame(minHeight: 120)
@@ -159,104 +159,3 @@ public struct FeedbackWriteView: View {
     }
 }
 
-// MARK: - MentionTextEditor (UIViewRepresentable)
-
-private struct MentionTextEditor: UIViewRepresentable {
-    @Binding var text: String
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(text: $text)
-    }
-
-    func makeUIView(context: Context) -> UITextView {
-        let textView = UITextView()
-        textView.delegate = context.coordinator
-        textView.backgroundColor = .clear
-        textView.textContainerInset = UIEdgeInsets(top: 8, left: 4, bottom: 8, right: 4)
-        textView.font = .systemFont(ofSize: 16, weight: .regular)
-        textView.tintColor = .systemBlue
-        textView.typingAttributes = [
-            .font: UIFont.systemFont(ofSize: 16, weight: .regular),
-            .foregroundColor: UIColor.label
-        ]
-        return textView
-    }
-
-    func updateUIView(_ textView: UITextView, context: Context) {
-        // 외부(TCA)에서 text가 변경된 경우에만 업데이트
-        if textView.text != text {
-            applyHighlighting(to: textView, with: text)
-            // 외부 변경(멘션 선택 등)이므로 커서를 텍스트 끝으로 이동
-            let endPosition = textView.text.count
-            textView.selectedRange = NSRange(location: endPosition, length: 0)
-        }
-    }
-
-    private func applyHighlighting(to textView: UITextView, with text: String) {
-        let baseAttributes: [NSAttributedString.Key: Any] = [
-            .font: UIFont.systemFont(ofSize: 16, weight: .regular),
-            .foregroundColor: UIColor.label
-        ]
-        let attributed = NSMutableAttributedString(string: text, attributes: baseAttributes)
-
-        let mentionAttributes: [NSAttributedString.Key: Any] = [
-            .foregroundColor: UIColor.systemBlue,
-            .font: UIFont.systemFont(ofSize: 16, weight: .semibold)
-        ]
-
-        if let regex = try? NSRegularExpression(pattern: "@\\S+") {
-            let matches = regex.matches(in: text, range: NSRange(location: 0, length: (text as NSString).length))
-            for match in matches {
-                attributed.addAttributes(mentionAttributes, range: match.range)
-            }
-        }
-
-        textView.attributedText = attributed
-    }
-
-    final class Coordinator: NSObject, UITextViewDelegate {
-        @Binding var text: String
-
-        init(text: Binding<String>) {
-            _text = text
-        }
-
-        func textViewDidChange(_ textView: UITextView) {
-            let newText = textView.text ?? ""
-            // 커서 위치 저장
-            let selectedRange = textView.selectedRange
-
-            // Binding 업데이트 (TCA contentChanged 트리거)
-            text = newText
-
-            // 하이라이팅 재적용
-            let baseAttributes: [NSAttributedString.Key: Any] = [
-                .font: UIFont.systemFont(ofSize: 16, weight: .regular),
-                .foregroundColor: UIColor.label
-            ]
-            let attributed = NSMutableAttributedString(string: newText, attributes: baseAttributes)
-
-            let mentionAttributes: [NSAttributedString.Key: Any] = [
-                .foregroundColor: UIColor.systemBlue,
-                .font: UIFont.systemFont(ofSize: 16, weight: .semibold)
-            ]
-
-            if let regex = try? NSRegularExpression(pattern: "@\\S+") {
-                let matches = regex.matches(
-                    in: newText,
-                    range: NSRange(location: 0, length: (newText as NSString).length)
-                )
-                for match in matches {
-                    attributed.addAttributes(mentionAttributes, range: match.range)
-                }
-            }
-
-            textView.attributedText = attributed
-
-            // 커서 위치 복원
-            let safeLocation = min(selectedRange.location, newText.count)
-            let safeLength = min(selectedRange.length, newText.count - safeLocation)
-            textView.selectedRange = NSRange(location: safeLocation, length: safeLength)
-        }
-    }
-}

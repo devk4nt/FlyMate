@@ -14,7 +14,7 @@ public struct FeedbackCommentRepositoryImpl: FeedbackCommentRepository {
             .from(SupabaseConfig.Table.feedbackComments)
             .select()
             .eq("feedback_id", value: feedbackID)
-            .order("created_at")
+            .order("created_at", ascending: false)
             .execute()
             .value
         return dtos.map(DTOMapper.toDomain)

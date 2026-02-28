@@ -1,4 +1,5 @@
 import SwiftUI
+import StoreKit
 import ComposableArchitecture
 import Domain
 import Presentation
@@ -181,6 +182,21 @@ struct FlyMateApp: App {
         dependencies.reportClient = ReportClient(
             createReport: { try await reportRepo.createReport($0) },
             checkAlreadyReported: { try await reportRepo.checkAlreadyReported(targetType: $0, targetID: $1) }
+        )
+
+        // Subscription
+        let subscriptionRepo = SubscriptionRepositoryImpl(client: supabaseClient)
+        let storeKitService = StoreKitService()
+        dependencies.subscriptionClient = SubscriptionClient(
+            fetchEntitlements: { try await subscriptionRepo.fetchEntitlements(userID: $0) },
+            fetchPlans: { try await subscriptionRepo.fetchPlans() },
+            verifyReceipt: { try await subscriptionRepo.verifyReceipt($0) },
+            checkFeatureLimit: { try await subscriptionRepo.checkFeatureLimit(userID: $0, feature: $1) },
+            fetchProducts: { try await storeKitService.fetchProducts() },
+            purchase: { try await storeKitService.purchase($0) },
+            currentEntitlement: { await storeKitService.currentEntitlement() },
+            observeTransactionUpdates: { storeKitService.observeTransactionUpdates() },
+            restorePurchases: { try await storeKitService.restorePurchases() }
         )
     }
 
@@ -504,6 +520,25 @@ struct FlyMateApp: App {
                 )
             },
             checkAlreadyReported: { _, _ in false }
+        )
+
+        // Subscription
+        dependencies.subscriptionClient = SubscriptionClient(
+            fetchEntitlements: { _ in .free },
+            fetchPlans: {
+                [
+                    SubscriptionPlan(id: "free", name: "무료", maxOwnedStudies: 1, maxJoinedStudies: 1, maxVideoDurationSeconds: 60, maxStudyMembers: 3),
+                    SubscriptionPlan(id: "premium_monthly", name: "프리미엄 (월간)", maxOwnedStudies: 5, maxJoinedStudies: 5, maxVideoDurationSeconds: 600, maxStudyMembers: 8),
+                    SubscriptionPlan(id: "premium_yearly", name: "프리미엄 (연간)", maxOwnedStudies: 5, maxJoinedStudies: 5, maxVideoDurationSeconds: 600, maxStudyMembers: 8),
+                ]
+            },
+            verifyReceipt: { _ in .free },
+            checkFeatureLimit: { _, _ in FeatureLimit(allowed: true, current: 0, max: 1, feature: "create_study") },
+            fetchProducts: { [] },
+            purchase: { _ in fatalError("Mock: purchase not available") },
+            currentEntitlement: { nil },
+            observeTransactionUpdates: { AsyncStream { continuation in continuation.finish() } },
+            restorePurchases: {}
         )
     }
 

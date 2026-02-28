@@ -27,8 +27,6 @@ public struct StudyNavigationView: View {
                 MemberManagementView(store: memberStore)
             case .joinRequestManagement(let requestStore):
                 JoinRequestManagementView(store: requestStore)
-            case .feedbackCommentList(let commentStore):
-                FeedbackCommentListView(store: commentStore)
             }
         }
     }

@@ -25,18 +25,31 @@ public struct VideoDetailView: View {
             // 피드백 목록
             feedbackSection
         }
-        .navigationTitle(store.video.title)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.visible, for: .navigationBar)
+        .safeAreaInset(edge: .bottom) {
+            CommentInputBar(
+                store: store.scope(state: \.commentInput, action: \.commentInput),
+                currentTimestamp: store.player.currentTime
+            )
+        }
+        .fmToast(
+            isPresented: Binding(
+                get: { store.showToast },
+                set: { _ in store.send(.toastDismissed) }
+            ),
+            message: store.toastMessage,
+            type: store.toastType
+        )
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    store.send(.writeFeedbackTapped)
-                } label: {
-                    Image(systemName: "square.and.pencil")
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("완료") {
+                    store.send(.commentInput(.focusChanged(false)))
                 }
             }
         }
+        .navigationTitle(store.video.title)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.visible, for: .navigationBar)
         .onAppear {
             store.send(.onAppear)
             scheduleHideControls()
@@ -45,11 +58,13 @@ public struct VideoDetailView: View {
             hideControlsTask?.cancel()
             store.send(.onDisappear)
         }
-        .sheet(item: $store.scope(state: \.feedbackWrite, action: \.feedbackWrite)) { writeStore in
+        .sheet(item: $store.scope(state: \.feedbackCommentList, action: \.feedbackCommentList)) { commentStore in
             NavigationStack {
-                FeedbackWriteView(store: writeStore)
+                FeedbackCommentListView(store: commentStore)
             }
             .presentationDetents([.medium])
+            .presentationBackgroundInteraction(.enabled(upThrough: .medium))
+            .interactiveDismissDisabled(false)
         }
         .fullScreenCover(isPresented: Binding(
             get: { store.player.isFullscreen },
@@ -67,7 +82,7 @@ public struct VideoDetailView: View {
         ZStack {
             VideoPlayerView(
                 url: store.video.videoURL,
-                isPlaying: store.player.isPlaying,
+                isPlaying: store.player.isPlaying && !store.player.isFullscreen,
                 seekTime: store.player.currentTime,
                 isSeeking: store.player.isSeeking,
                 isMuted: store.player.isMuted,
@@ -273,13 +288,19 @@ public struct VideoDetailView: View {
 
             case .loaded(let feedbacks):
                 if feedbacks.isEmpty {
-                    FMEmptyState(
-                        systemImage: "bubble.left",
-                        title: "아직 피드백이 없습니다",
-                        description: "첫 번째 피드백을 남겨보세요."
-                    ) {
-                        store.send(.writeFeedbackTapped)
+                    VStack(spacing: FMSpacing.sm) {
+                        Image(systemName: "bubble.left")
+                            .font(.system(size: 32))
+                            .foregroundStyle(FMColors.secondaryLabel)
+                        Text("아직 피드백이 없습니다")
+                            .font(FMTypography.callout)
+                            .foregroundStyle(FMColors.secondaryLabel)
+                        Text("첫 번째 댓글을 남겨보세요")
+                            .font(FMTypography.caption1)
+                            .foregroundStyle(FMColors.secondaryLabel.opacity(0.7))
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(FMSpacing.xl)
                 } else {
                     ScrollViewReader { proxy in
                         ScrollView {
@@ -288,13 +309,20 @@ public struct VideoDetailView: View {
                                     FeedbackRow(
                                         feedback: feedback,
                                         isHighlighted: store.focusedFeedbackID == feedback.id,
-                                        latestComment: store.latestComments[feedback.id],
-                                        commentCount: feedback.commentCount,
+                                        isExpanded: store.expandedFeedbackIDs.contains(feedback.id),
+                                        replies: store.repliesByFeedback[feedback.id],
+                                        currentUserID: store.currentUserID,
                                         onTimestampTapped: {
                                             store.send(.feedbackTapped(feedback))
                                         },
-                                        onCommentTapped: {
-                                            store.send(.commentListTapped(feedback))
+                                        onReplyTapped: {
+                                            store.send(.replyTapped(feedback))
+                                        },
+                                        onToggleReplies: {
+                                            store.send(.toggleRepliesTapped(feedback))
+                                        },
+                                        onDeleteReply: { comment in
+                                            store.send(.deleteReplyTapped(comment))
                                         }
                                     )
                                     .id(feedback.id)
@@ -302,6 +330,7 @@ public struct VideoDetailView: View {
                             }
                             .padding(FMSpacing.md)
                         }
+                        .scrollDismissesKeyboard(.interactively)
                         .onChange(of: store.focusedFeedbackID) { _, focusedID in
                             if let focusedID {
                                 withAnimation {
@@ -333,13 +362,17 @@ public struct VideoDetailView: View {
 private struct FeedbackRow: View {
     let feedback: Domain.Feedback
     var isHighlighted: Bool = false
-    var latestComment: FeedbackComment?
-    var commentCount: Int = 0
+    var isExpanded: Bool = false
+    var replies: LoadingState<[FeedbackComment]>?
+    var currentUserID: UUID?
     var onTimestampTapped: (() -> Void)?
-    var onCommentTapped: (() -> Void)?
+    var onReplyTapped: (() -> Void)?
+    var onToggleReplies: (() -> Void)?
+    var onDeleteReply: ((FeedbackComment) -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            // 메인 피드백 콘텐츠
             HStack(alignment: .top, spacing: FMSpacing.sm) {
                 // 타임스탬프 뱃지
                 Text(feedback.timestampSeconds.minuteSecondFormatted)
@@ -369,16 +402,50 @@ private struct FeedbackRow: View {
             }
             .padding(FMSpacing.sm)
 
-            // 댓글 프리뷰 영역
-            if commentCount > 0, let comment = latestComment {
+            // 액션 버튼 영역
+            HStack(spacing: FMSpacing.md) {
+                // 답글 버튼
+                Button {
+                    onReplyTapped?()
+                } label: {
+                    HStack(spacing: FMSpacing.xxxs) {
+                        Image(systemName: "arrowshape.turn.up.left")
+                            .font(.system(size: 11))
+                        Text("답글")
+                            .font(FMTypography.caption2)
+                    }
+                    .foregroundStyle(FMColors.secondaryLabel)
+                }
+                .accessibilityLabel("답글 달기")
+
+                // 답글 토글 버튼 (댓글이 있을 때만)
+                if feedback.commentCount > 0 {
+                    Button {
+                        onToggleReplies?()
+                    } label: {
+                        HStack(spacing: FMSpacing.xxxs) {
+                            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                                .font(.system(size: 10))
+                            Text(isExpanded ? "답글 숨기기" : "답글 \(feedback.commentCount)개 보기")
+                                .font(FMTypography.caption2)
+                        }
+                        .foregroundStyle(FMColors.accent)
+                    }
+                    .accessibilityLabel(isExpanded ? "답글 숨기기" : "답글 \(feedback.commentCount)개 보기")
+                }
+
+                Spacer()
+            }
+            .padding(.horizontal, FMSpacing.sm)
+            .padding(.bottom, FMSpacing.xs)
+
+            // 인라인 답글 확장
+            if isExpanded {
                 Divider()
                     .padding(.horizontal, FMSpacing.sm)
 
-                commentPreview(comment: comment)
+                inlineRepliesSection
             }
-
-            // 댓글 액션 버튼
-            commentActionButton
         }
         .background(
             isHighlighted
@@ -389,64 +456,122 @@ private struct FeedbackRow: View {
         .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm))
     }
 
-    @ViewBuilder
-    private func commentPreview(comment: FeedbackComment) -> some View {
-        HStack(alignment: .top, spacing: FMSpacing.xs) {
-            Image(systemName: "arrowshape.turn.up.left.fill")
-                .font(.system(size: 10))
-                .foregroundStyle(FMColors.secondaryLabel)
-                .padding(.top, 3)
+    // MARK: - Inline Replies
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(comment.authorName)
-                    .font(FMTypography.caption2)
-                    .fontWeight(.medium)
+    @ViewBuilder
+    private var inlineRepliesSection: some View {
+        switch replies {
+        case .loading:
+            HStack {
+                Spacer()
+                ProgressView()
+                    .padding(FMSpacing.sm)
+                Spacer()
+            }
+            .padding(.leading, FMSpacing.xl)
+
+        case .loaded(let comments):
+            if comments.isEmpty {
+                Text("아직 답글이 없습니다")
+                    .font(FMTypography.caption1)
                     .foregroundStyle(FMColors.secondaryLabel)
+                    .padding(FMSpacing.sm)
+                    .padding(.leading, FMSpacing.xl)
+            } else {
+                LazyVStack(spacing: 0) {
+                    ForEach(comments) { comment in
+                        InlineReplyRow(
+                            comment: comment,
+                            isAuthor: comment.authorID == currentUserID,
+                            onDelete: { onDeleteReply?(comment) }
+                        )
+                    }
+                }
+            }
+
+        case .failed:
+            Text("답글을 불러오지 못했습니다")
+                .font(FMTypography.caption1)
+                .foregroundStyle(FMColors.destructive)
+                .padding(FMSpacing.sm)
+                .padding(.leading, FMSpacing.xl)
+
+        case .idle, .none:
+            EmptyView()
+        }
+    }
+}
+
+// MARK: - Inline Reply Row
+
+private struct InlineReplyRow: View {
+    let comment: FeedbackComment
+    var isAuthor: Bool = false
+    var onDelete: (() -> Void)?
+
+    var body: some View {
+        HStack(alignment: .top, spacing: FMSpacing.xs) {
+            profileImage
+
+            VStack(alignment: .leading, spacing: FMSpacing.xxxs) {
+                HStack {
+                    Text(comment.authorName)
+                        .font(FMTypography.caption2)
+                        .fontWeight(.semibold)
+
+                    Text(comment.createdAt.relativeString)
+                        .font(FMTypography.caption2)
+                        .foregroundStyle(FMColors.secondaryLabel)
+
+                    Spacer()
+
+                    if isAuthor {
+                        Menu {
+                            Button(role: .destructive) {
+                                onDelete?()
+                            } label: {
+                                Label("삭제", systemImage: "trash")
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis")
+                                .font(.system(size: 12))
+                                .foregroundStyle(FMColors.secondaryLabel)
+                                .frame(width: 24, height: 24)
+                                .contentShape(Rectangle())
+                        }
+                    }
+                }
+
                 Text(comment.content)
                     .font(FMTypography.caption1)
                     .foregroundStyle(FMColors.label)
-                    .lineLimit(2)
             }
-
-            Spacer(minLength: 0)
         }
         .padding(.horizontal, FMSpacing.sm)
         .padding(.vertical, FMSpacing.xs)
-        .contentShape(Rectangle())
-        .onTapGesture { onCommentTapped?() }
+        .padding(.leading, FMSpacing.xl)
     }
 
-    @ViewBuilder
-    private var commentActionButton: some View {
-        if commentCount >= 2 {
-            Button {
-                onCommentTapped?()
-            } label: {
-                HStack(spacing: FMSpacing.xxxs) {
-                    Image(systemName: "bubble.left")
-                        .font(.system(size: 11))
-                    Text("댓글 \(commentCount)개 보기")
-                        .font(FMTypography.caption2)
+    private var profileImage: some View {
+        Group {
+            if let url = comment.authorProfileURL {
+                AsyncImage(url: url) { image in
+                    image
+                        .resizable()
+                        .scaledToFill()
+                } placeholder: {
+                    Image(systemName: "person.circle.fill")
+                        .resizable()
+                        .foregroundStyle(FMColors.secondaryLabel)
                 }
-                .foregroundStyle(FMColors.accent)
-                .padding(.horizontal, FMSpacing.sm)
-                .padding(.vertical, FMSpacing.xs)
-            }
-        } else if commentCount == 0 {
-            Button {
-                onCommentTapped?()
-            } label: {
-                HStack(spacing: FMSpacing.xxxs) {
-                    Image(systemName: "bubble.left")
-                        .font(.system(size: 11))
-                    Text("댓글 달기")
-                        .font(FMTypography.caption2)
-                }
-                .foregroundStyle(FMColors.secondaryLabel)
-                .padding(.horizontal, FMSpacing.sm)
-                .padding(.vertical, FMSpacing.xs)
+            } else {
+                Image(systemName: "person.circle.fill")
+                    .resizable()
+                    .foregroundStyle(FMColors.secondaryLabel)
             }
         }
+        .frame(width: 24, height: 24)
+        .clipShape(Circle())
     }
 }
 
@@ -466,7 +591,7 @@ private struct FullscreenVideoView: View {
 
             VideoPlayerView(
                 url: store.video.videoURL,
-                isPlaying: store.player.isPlaying,
+                isPlaying: store.player.isPlaying && store.player.isFullscreen,
                 seekTime: store.player.currentTime,
                 isSeeking: store.player.isSeeking,
                 isMuted: store.player.isMuted,

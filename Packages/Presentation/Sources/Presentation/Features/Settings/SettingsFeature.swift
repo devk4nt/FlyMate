@@ -20,6 +20,7 @@ public struct SettingsFeature {
     public enum Action {
         case profileEditTapped
         case studyManagementTapped
+        case subscriptionTapped
         case notificationToggled(Bool)
         case signOutTapped
         case deleteAccountTapped
@@ -40,6 +41,7 @@ public struct SettingsFeature {
     public enum Destination {
         case profileEdit(ProfileEditFeature)
         case studyManagement(StudyManagementFeature)
+        case subscription(SubscriptionFeature)
     }
 
     @Dependency(\.authClient) private var authClient
@@ -58,6 +60,12 @@ public struct SettingsFeature {
 
             case .studyManagementTapped:
                 state.destination = .studyManagement(StudyManagementFeature.State())
+                return .none
+
+            case .subscriptionTapped:
+                state.destination = .subscription(
+                    SubscriptionFeature.State(currentUserID: state.currentUser.id)
+                )
                 return .none
 
             case .notificationToggled(let enabled):

@@ -42,6 +42,16 @@ public struct SettingsView: View {
                     }
                 }
 
+                // 구독
+                Section("구독") {
+                    Button {
+                        store.send(.subscriptionTapped)
+                    } label: {
+                        Label("구독 관리", systemImage: "crown")
+                            .foregroundStyle(FMColors.label)
+                    }
+                }
+
                 // 스터디 관리
                 Section("스터디") {
                     Button {
@@ -97,6 +107,11 @@ public struct SettingsView: View {
         .sheet(item: $store.scope(state: \.destination?.studyManagement, action: \.destination.studyManagement)) { mgmtStore in
             NavigationStack {
                 StudyManagementView(store: mgmtStore)
+            }
+        }
+        .sheet(item: $store.scope(state: \.destination?.subscription, action: \.destination.subscription)) { subStore in
+            NavigationStack {
+                SubscriptionView(store: subStore)
             }
         }
     }

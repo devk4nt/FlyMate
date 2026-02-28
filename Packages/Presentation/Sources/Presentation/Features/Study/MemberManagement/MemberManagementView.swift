@@ -13,12 +13,7 @@ public struct MemberManagementView: View {
         List {
             Section {
                 ForEach(store.sortedMembers) { member in
-                    Button {
-                        store.send(.memberTapped(member))
-                    } label: {
-                        memberRow(member)
-                    }
-                    .buttonStyle(.plain)
+                    memberRow(member)
                 }
             } header: {
                 Text("멤버 \(store.study.memberCount)명")
@@ -47,31 +42,39 @@ public struct MemberManagementView: View {
 
     private func memberRow(_ member: StudyMember) -> some View {
         HStack(spacing: FMSpacing.sm) {
-            profileImage(member)
+            Button {
+                store.send(.memberTapped(member))
+            } label: {
+                HStack(spacing: FMSpacing.sm) {
+                    profileImage(member)
 
-            VStack(alignment: .leading, spacing: FMSpacing.xxxs) {
-                HStack(spacing: FMSpacing.xs) {
-                    Text(member.userName)
-                        .font(FMTypography.headline)
-                        .foregroundStyle(FMColors.label)
+                    VStack(alignment: .leading, spacing: FMSpacing.xxxs) {
+                        HStack(spacing: FMSpacing.xs) {
+                            Text(member.userName)
+                                .font(FMTypography.headline)
+                                .foregroundStyle(FMColors.label)
 
-                    if member.role == .owner {
-                        Text("방장")
-                            .font(FMTypography.caption2)
-                            .foregroundStyle(FMColors.primary)
-                            .padding(.horizontal, FMSpacing.xxs)
-                            .padding(.vertical, FMSpacing.xxxs)
-                            .background(FMColors.primary.opacity(0.12))
-                            .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm / 2))
+                            if member.role == .owner {
+                                Text("방장")
+                                    .font(FMTypography.caption2)
+                                    .foregroundStyle(FMColors.primary)
+                                    .padding(.horizontal, FMSpacing.xxs)
+                                    .padding(.vertical, FMSpacing.xxxs)
+                                    .background(FMColors.primary.opacity(0.12))
+                                    .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm / 2))
+                            }
+                        }
+
+                        Text(member.joinedAt.formatted(date: .abbreviated, time: .omitted))
+                            .font(FMTypography.caption1)
+                            .foregroundStyle(FMColors.secondaryLabel)
                     }
+
+                    Spacer()
                 }
-
-                Text(member.joinedAt.formatted(date: .abbreviated, time: .omitted))
-                    .font(FMTypography.caption1)
-                    .foregroundStyle(FMColors.secondaryLabel)
+                .contentShape(Rectangle())
             }
-
-            Spacer()
+            .buttonStyle(.plain)
 
             if store.isOwner && member.role != .owner {
                 Button(role: .destructive) {
@@ -85,7 +88,6 @@ public struct MemberManagementView: View {
             }
         }
         .padding(.vertical, FMSpacing.xxs)
-        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(member.userName)\(member.role == .owner ? ", 방장" : "")")
         .accessibilityHint("활동 현황 보기")

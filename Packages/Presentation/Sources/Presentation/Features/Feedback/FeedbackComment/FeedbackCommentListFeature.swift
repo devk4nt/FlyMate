@@ -60,25 +60,7 @@ public struct FeedbackCommentListFeature {
         content: String,
         members: [StudyMember]
     ) -> Set<UUID> {
-        guard let regex = try? NSRegularExpression(pattern: "@(\\S+)") else { return [] }
-        let nsContent = content as NSString
-        let matches = regex.matches(in: content, range: NSRange(location: 0, length: nsContent.length))
-
-        var ids = Set<UUID>()
-        for match in matches {
-            guard match.numberOfRanges > 1 else { continue }
-            let nameRange = match.range(at: 1)
-            let name = nsContent.substring(with: nameRange)
-
-            if name == "전체" {
-                for member in members {
-                    ids.insert(member.userID)
-                }
-            } else if let member = members.first(where: { $0.userName == name }) {
-                ids.insert(member.userID)
-            }
-        }
-        return ids
+        MentionUtils.syncMentionedUserIDs(content: content, members: members)
     }
 
     public var body: some ReducerOf<Self> {
@@ -203,7 +185,7 @@ public struct FeedbackCommentListFeature {
                 state.commentText = ""
                 state.mentionedUserIDs = []
                 if case .loaded(var comments) = state.comments {
-                    comments.append(comment)
+                    comments.insert(comment, at: 0)
                     state.comments = .loaded(comments)
                 }
                 return .none

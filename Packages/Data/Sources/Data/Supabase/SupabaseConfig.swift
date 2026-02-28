@@ -28,6 +28,8 @@ public enum SupabaseConfig {
         public static let joinRequests = "study_join_requests"
         public static let deviceTokens = "device_tokens"
         public static let feedbackComments = "feedback_comments"
+        public static let subscriptionPlans = "subscription_plans"
+        public static let subscriptions = "subscriptions"
     }
 
     public enum Bucket {
@@ -39,5 +41,14 @@ public enum SupabaseConfig {
     public enum RealtimeChannel {
         public static let feedbacks = "feedbacks"
         public static let notifications = "notifications"
+    }
+
+    public enum RPC {
+        public static let getUserEntitlements = "get_user_entitlements"
+        public static let checkFeatureLimit = "check_feature_limit"
+    }
+
+    public enum EdgeFunction {
+        public static let verifyReceipt = "verify-receipt"
     }
 }
