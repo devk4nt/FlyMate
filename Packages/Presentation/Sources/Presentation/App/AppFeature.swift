@@ -16,6 +16,7 @@ public struct AppFeature : Sendable {
         public var pendingDeepLink: DeepLink?
         public var fcmToken: String?
         public var entitlement: Entitlement?
+        public var onboarding: OnboardingFeature.State?
 
         public init() {
             self.destination = .login(LoginFeature.State())
@@ -38,6 +39,8 @@ public struct AppFeature : Sendable {
         case fcmTokenReceived(String)
         case registerTokenResponse
         case pushNotificationTapped([String: String])
+        case checkOnboarding
+        case onboarding(OnboardingFeature.Action)
         case entitlementLoaded(Entitlement)
         case transactionUpdated
 
@@ -58,6 +61,7 @@ public struct AppFeature : Sendable {
     @Dependency(\.userClient) private var userClient
     @Dependency(\.pushNotificationClient) private var pushNotificationClient
     @Dependency(\.subscriptionClient) private var subscriptionClient
+    @Dependency(\.userDefaultsClient) private var userDefaultsClient
 
     public init() {}
 
@@ -94,8 +98,23 @@ public struct AppFeature : Sendable {
                             await send(.pushNotificationTapped(payload))
                         }
                     }
-                    .cancellable(id: CancelID.pushNotificationObserver)
+                    .cancellable(id: CancelID.pushNotificationObserver),
+                    .send(.checkOnboarding)
                 )
+
+            case .checkOnboarding:
+                let hasCompleted = userDefaultsClient.boolForKey("hasCompletedOnboarding")
+                if !hasCompleted {
+                    state.onboarding = OnboardingFeature.State()
+                }
+                return .none
+
+            case .onboarding(.delegate(.onboardingCompleted)):
+                state.onboarding = nil
+                return .none
+
+            case .onboarding:
+                return .none
 
             case .authStateChanged(let user):
                 state.currentUser = user
@@ -248,6 +267,9 @@ public struct AppFeature : Sendable {
         }
         .ifLet(\.tabState, action: \.destination.tab) {
             TabFeature()
+        }
+        .ifLet(\.onboarding, action: \.onboarding) {
+            OnboardingFeature()
         }
     }
 }

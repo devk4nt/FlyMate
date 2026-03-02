@@ -37,6 +37,13 @@ public struct AppView: View {
             }
         }
         .animation(.default, value: store.toast)
+        .overlay {
+            if let onboardingStore = store.scope(state: \.onboarding, action: \.onboarding) {
+                OnboardingView(store: onboardingStore)
+                    .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: 0.3), value: store.onboarding != nil)
     }
 
     private func mapToastType(_ type: ToastState.ToastType) -> FMToast.ToastType {

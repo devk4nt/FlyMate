@@ -184,6 +184,12 @@ struct FlyMateApp: App {
             checkAlreadyReported: { try await reportRepo.checkAlreadyReported(targetType: $0, targetID: $1) }
         )
 
+        // UserDefaults
+        dependencies.userDefaultsClient = UserDefaultsClient(
+            boolForKey: { UserDefaults.standard.bool(forKey: $0) },
+            setBool: { value, key in UserDefaults.standard.set(value, forKey: key) }
+        )
+
         // Subscription
         let subscriptionRepo = SubscriptionRepositoryImpl(client: supabaseClient)
         let storeKitService = StoreKitService()
@@ -520,6 +526,12 @@ struct FlyMateApp: App {
                 )
             },
             checkAlreadyReported: { _, _ in false }
+        )
+
+        // UserDefaults (온보딩 완료 상태로 설정하여 프리뷰에서 스킵)
+        dependencies.userDefaultsClient = UserDefaultsClient(
+            boolForKey: { _ in true },
+            setBool: { _, _ in }
         )
 
         // Subscription
