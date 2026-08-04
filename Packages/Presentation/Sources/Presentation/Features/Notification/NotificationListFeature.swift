@@ -32,6 +32,7 @@ public struct NotificationListFeature {
         case markAsReadResponse(id: UUID, Result<Void, AppError>)
         case delegate(Delegate)
 
+        @CasePathable
         public enum Delegate: Equatable {
             case navigateToVideo(videoID: UUID, feedbackID: UUID?)
         }

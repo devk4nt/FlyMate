@@ -33,6 +33,7 @@ public struct ReportFeature : Sendable {
         case submitResponse(Result<Report, AppError>)
         case delegate(Delegate)
 
+        @CasePathable
         public enum Delegate: Equatable {
             case reportSubmitted
             case alreadyReported
