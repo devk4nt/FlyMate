@@ -64,7 +64,7 @@ public struct SubscriptionView: View {
                 Divider()
                 comparisonRow(feature: "스터디 참여", free: "1개", premium: "5개")
                 Divider()
-                comparisonRow(feature: "영상 길이", free: "1분", premium: "10분")
+                comparisonRow(feature: "영상 길이", free: "1분", premium: "3분")
                 Divider()
                 comparisonRow(feature: "스터디 멤버", free: "3명", premium: "8명")
             }

@@ -70,7 +70,7 @@ public enum BusinessError: Equatable, Sendable {
     public var userMessage: String {
         switch self {
         case .videoTooLong:
-            return "영상 길이가 최대 허용 시간을 초과했습니다."
+            return "영상은 최대 \(Int(AppConstants.maxVideoDurationSeconds) / 60)분까지 업로드할 수 있습니다."
         case .videoTooLarge:
             return "영상 파일 크기가 너무 큽니다. 더 짧은 영상을 선택해주세요."
         case .invalidVideoFormat:

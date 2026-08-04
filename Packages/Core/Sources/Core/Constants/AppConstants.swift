@@ -1,8 +1,8 @@
 import Foundation
 
 public enum AppConstants {
-    /// 영상 최대 길이 (초)
-    public static let maxVideoDurationSeconds: TimeInterval = 240
+    /// 영상 최대 길이 (초) — 피드백 요청 영상은 최대 3분
+    public static let maxVideoDurationSeconds: TimeInterval = 180
 
     /// 영상 최대 파일 크기 (bytes) — Supabase Storage 제한 50MB
     public static let maxVideoFileSizeBytes = 50 * 1_024 * 1_024
@@ -16,11 +16,10 @@ public enum AppConstants {
     /// 피드백 최대 글자 수
     public static let maxFeedbackLength = 500
 
-    /// 스터디 이름 최대 글자 수
-
     /// 피드백 댓글 최대 글자 수
     public static let maxCommentLength = 300
 
+    /// 스터디 이름 최대 글자 수
     public static let maxStudyNameLength = 30
 
     /// 방장으로 생성 가능한 최대 스터디 수

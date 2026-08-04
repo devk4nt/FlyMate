@@ -2,10 +2,11 @@
 
 ## 프로젝트 개요
 
-- **앱**: 면접 스터디 피드백 iOS 앱 (영상 기반)
+- **앱**: 승무원, 아나운서 등 영상면접 준비자를 위한 스터디 피드백 iOS 앱
 - **스택**: Swift 6, SwiftUI, TCA 1.x, Supabase
 - **타겟**: iOS 17+
 - **모듈**: SPM 로컬 패키지 4개 (Core, Domain, Data, Presentation)
+- **핵심 정책**: 피드백 요청 영상은 최대 3분(180초)
 
 ---
 
@@ -547,7 +548,7 @@ struct {FeatureName}FeatureTests {
 
 ```swift
 public enum AppConstants {
-    public static let maxVideoDurationSeconds: TimeInterval = 240
+    public static let maxVideoDurationSeconds: TimeInterval = 180
     public static let maxVideoFileSizeBytes = 50 * 1_024 * 1_024
     public static let maxStudyMembers = 8
     public static let defaultPageSize = 20

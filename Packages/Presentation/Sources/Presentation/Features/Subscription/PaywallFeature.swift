@@ -157,7 +157,7 @@ public enum PaywallReason: Equatable, Sendable {
         case .studyJoinLimitReached:
             return "무료 플랜에서는 스터디 1개에 참여할 수 있습니다.\n프리미엄으로 업그레이드하면 5개까지 가능합니다."
         case .videoDurationLimitReached:
-            return "무료 플랜에서는 1분까지 촬영할 수 있습니다.\n프리미엄으로 업그레이드하면 10분까지 가능합니다."
+            return "무료 플랜에서는 1분까지 촬영할 수 있습니다.\n프리미엄으로 업그레이드하면 3분까지 가능합니다."
         case .studyMemberLimitReached:
             return "무료 플랜에서는 스터디에 3명까지 참여할 수 있습니다.\n프리미엄으로 업그레이드하면 8명까지 가능합니다."
         case .general:

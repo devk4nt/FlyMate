@@ -20,16 +20,21 @@ struct FlyMateApp: App {
         } withDependencies: {
             #if DEBUG
             if AppFeature.skipAuth {
-                Self.registerLiveDependencies(&$0)
-                let supabaseClient = SupabaseClientProvider.shared.client
-                let testEmail = ProcessInfo.processInfo.environment["TEST_EMAIL"] ?? "test@flymate.app"
-                let testPassword = ProcessInfo.processInfo.environment["TEST_PASSWORD"] ?? "testpassword123"
-                $0.authClient.debugSignIn = {
-                    try? await supabaseClient.auth.signOut()
-                    _ = try await supabaseClient.auth.signIn(
-                        email: testEmail,
-                        password: testPassword
-                    )
+                // 테스트 계정 스킴(FlyMate-Test1~3)은 실제 Supabase 세션으로 진입
+                if let testEmail = ProcessInfo.processInfo.environment["TEST_EMAIL"] {
+                    Self.registerLiveDependencies(&$0)
+                    let supabaseClient = SupabaseClientProvider.shared.client
+                    let testPassword = ProcessInfo.processInfo.environment["TEST_PASSWORD"] ?? "testpassword123"
+                    $0.authClient.debugSignIn = {
+                        try? await supabaseClient.auth.signOut()
+                        _ = try await supabaseClient.auth.signIn(
+                            email: testEmail,
+                            password: testPassword
+                        )
+                    }
+                } else {
+                    // 기본 디버그 실행: 로그인 없이 목 데이터로 바로 진입
+                    Self.registerMockDependencies(&$0)
                 }
                 return
             }
@@ -335,7 +340,7 @@ struct FlyMateApp: App {
                         uploaderName: "Preview User",
                         title: "기술 면접 모의",
                         videoURL: URL(string: "https://example.com/video2.mp4")!,
-                        durationSeconds: 240,
+                        durationSeconds: 175,
                         feedbackCount: 1,
                         createdAt: Date()
                     ),
@@ -540,8 +545,8 @@ struct FlyMateApp: App {
             fetchPlans: {
                 [
                     SubscriptionPlan(id: "free", name: "무료", maxOwnedStudies: 1, maxJoinedStudies: 1, maxVideoDurationSeconds: 60, maxStudyMembers: 3),
-                    SubscriptionPlan(id: "premium_monthly", name: "프리미엄 (월간)", maxOwnedStudies: 5, maxJoinedStudies: 5, maxVideoDurationSeconds: 600, maxStudyMembers: 8),
-                    SubscriptionPlan(id: "premium_yearly", name: "프리미엄 (연간)", maxOwnedStudies: 5, maxJoinedStudies: 5, maxVideoDurationSeconds: 600, maxStudyMembers: 8),
+                    SubscriptionPlan(id: "premium_monthly", name: "프리미엄 (월간)", maxOwnedStudies: 5, maxJoinedStudies: 5, maxVideoDurationSeconds: 180, maxStudyMembers: 8),
+                    SubscriptionPlan(id: "premium_yearly", name: "프리미엄 (연간)", maxOwnedStudies: 5, maxJoinedStudies: 5, maxVideoDurationSeconds: 180, maxStudyMembers: 8),
                 ]
             },
             verifyReceipt: { _ in .free },

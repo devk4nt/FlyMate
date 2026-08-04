@@ -51,7 +51,7 @@ public struct PaywallView: View {
             // 프리미엄 혜택 목록
             VStack(alignment: .leading, spacing: FMSpacing.sm) {
                 benefitRow(icon: "person.3.fill", text: "스터디 5개 생성 · 5개 참여")
-                benefitRow(icon: "video.fill", text: "최대 10분 영상 촬영")
+                benefitRow(icon: "video.fill", text: "최대 3분 영상 촬영")
                 benefitRow(icon: "person.badge.plus", text: "스터디당 최대 8명 참여")
             }
             .frame(maxWidth: .infinity, alignment: .leading)

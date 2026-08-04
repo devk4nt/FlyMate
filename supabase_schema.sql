@@ -51,7 +51,8 @@ CREATE TABLE videos (
     title TEXT NOT NULL,
     video_url TEXT NOT NULL,
     thumbnail_url TEXT,
-    duration_seconds DOUBLE PRECISION NOT NULL DEFAULT 0,
+    duration_seconds DOUBLE PRECISION NOT NULL DEFAULT 0
+        CHECK (duration_seconds <= 180),  -- 피드백 요청 영상 최대 3분
     feedback_count INT NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
