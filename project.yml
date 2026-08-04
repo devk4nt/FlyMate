@@ -92,8 +92,6 @@ targets:
       - path: FlyMateTests
     dependencies:
       - target: FlyMate
-      - package: Presentation
-        product: Presentation
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.flymate.tests

@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 import ComposableArchitecture
 import Domain
@@ -7,9 +8,9 @@ import Core
 
 @MainActor
 struct JoinRequestManagementFeatureTests {
-    private static let studyID = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
+    private nonisolated static let studyID = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
 
-    private static let pendingRequests: [JoinRequest] = [
+    private nonisolated static let pendingRequests: [JoinRequest] = [
         JoinRequest(
             id: UUID(uuidString: "00000000-0000-0000-0000-000000000051")!,
             studyID: studyID,

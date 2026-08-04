@@ -11,7 +11,7 @@ public struct JoinRequestManagementFeature {
         public var requests: LoadingState<[JoinRequest]> = .idle
         public var actionInProgress: Set<UUID> = []
         @Presents public var confirmAlert: AlertState<Action.ConfirmAlert>?
-        fileprivate var selectedRequest: JoinRequest?
+        var selectedRequest: JoinRequest?
 
         public init(studyID: UUID) {
             self.studyID = studyID
@@ -32,6 +32,7 @@ public struct JoinRequestManagementFeature {
             case confirmReject
         }
 
+        @CasePathable
         public enum Delegate: Equatable {
             case memberApproved
         }

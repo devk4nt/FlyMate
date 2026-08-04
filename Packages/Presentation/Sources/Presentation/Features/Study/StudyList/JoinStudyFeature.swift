@@ -38,6 +38,7 @@ public struct JoinStudyFeature {
         case cancelTapped
         case delegate(Delegate)
 
+        @CasePathable
         public enum Delegate: Equatable {
             case joinRequested
         }

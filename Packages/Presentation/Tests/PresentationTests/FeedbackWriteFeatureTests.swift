@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 import ComposableArchitecture
 import Domain
@@ -260,13 +261,13 @@ struct FeedbackWriteFeatureTests {
         state.content = "@\(member.userName) 좋은 답변이었습니다!"
         state.mentionedUserIDs = [member.userID]
 
-        var capturedRequest: CreateFeedbackRequest?
+        let capturedRequest = LockIsolated<CreateFeedbackRequest?>(nil)
 
         let store = TestStore(initialState: state) {
             FeedbackWriteFeature()
         } withDependencies: {
             $0.feedbackClient.createFeedback = { request in
-                capturedRequest = request
+                capturedRequest.setValue(request)
                 return mockFeedback
             }
             $0.dismiss = DismissEffect { }
@@ -282,7 +283,7 @@ struct FeedbackWriteFeatureTests {
 
         await store.receive(\.feedbackSubmitted)
 
-        #expect(capturedRequest?.mentionedUserIDs == [member.userID])
+        #expect(capturedRequest.value?.mentionedUserIDs == [member.userID])
     }
 }
 

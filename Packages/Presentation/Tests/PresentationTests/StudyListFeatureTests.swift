@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 import ComposableArchitecture
 import Domain
@@ -75,26 +76,17 @@ struct StudyListFeatureTests {
     }
 
     @Test
-    func 참여_성공시_시트_닫고_새로고침() async {
+    func 참여_신청시_시트_닫힘() async {
         var state = StudyListFeature.State()
         state.joinStudy = JoinStudyFeature.State(inviteCode: "ABC123")
 
         let store = TestStore(initialState: state) {
             StudyListFeature()
-        } withDependencies: {
-            $0.studyClient.fetchMyStudies = { [Study.mock] }
         }
 
-        await store.send(.joinStudy(.presented(.delegate(.studyJoined(Study.mock))))) {
+        // 참여 신청은 방장 승인 대기 상태이므로 목록 새로고침 없이 시트만 닫는다
+        await store.send(.joinStudy(.presented(.delegate(.joinRequested)))) {
             $0.joinStudy = nil
-        }
-
-        await store.receive(\.refresh) {
-            $0.studies = .loading
-        }
-
-        await store.receive(\.studiesResponse.success) {
-            $0.studies = .loaded([Study.mock])
         }
     }
 
@@ -118,27 +110,4 @@ struct StudyListFeatureTests {
     }
 }
 
-// MARK: - Mock Data
-
-extension Study {
-    static let mock = Study(
-        id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
-        name: "iOS 면접 스터디",
-        description: "매주 모의 면접을 진행하는 스터디입니다.",
-        ownerID: UUID(uuidString: "00000000-0000-0000-0000-000000000010")!,
-        inviteCode: "ABC123",
-        maxMembers: 8,
-        members: [.mockOwner],
-        createdAt: Date(timeIntervalSince1970: 1_700_000_000)
-    )
-}
-
-extension StudyMember {
-    static let mockOwner = StudyMember(
-        id: UUID(uuidString: "00000000-0000-0000-0000-000000000020")!,
-        userID: UUID(uuidString: "00000000-0000-0000-0000-000000000010")!,
-        userName: "테스트 유저",
-        role: .owner,
-        joinedAt: Date(timeIntervalSince1970: 1_700_000_000)
-    )
-}
+// Study.mock은 FeedbackWriteFeatureTests.swift의 공용 정의를 사용한다

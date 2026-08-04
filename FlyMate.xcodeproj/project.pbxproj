@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 63;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -13,7 +13,6 @@
 		3AEA779E839949EEB9436D91 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = C6F8229DA2F8AD437BE5F144 /* GoogleService-Info.plist */; };
 		8CC73BC335EA7310E3086AF4 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7511D926E993BBC56637F19 /* AppDelegate.swift */; };
 		931D0EBFE41AD9E0004A4A6E /* Presentation in Frameworks */ = {isa = PBXBuildFile; productRef = 326CAC45E39E418FE6131225 /* Presentation */; };
-		BA0E55D39F60B7F339109367 /* Presentation in Frameworks */ = {isa = PBXBuildFile; productRef = 75E9CD419CA407082A184C46 /* Presentation */; };
 		CDE6F26732C9642418456AF9 /* Core in Frameworks */ = {isa = PBXBuildFile; productRef = 0193694AF7BD5CC903ACE8EA /* Core */; };
 		DD223495702D41029E708884 /* Data in Frameworks */ = {isa = PBXBuildFile; productRef = 01CA59E20A6354F66A02A729 /* Data */; };
 		E46CDDFA6219EDE53A78D002 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 5B3DDDE7A23F1CC311EFDA25 /* FirebaseMessaging */; };
@@ -35,7 +34,7 @@
 		2E9E05CDB4F78EFA10DF733E /* FlyMate.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FlyMate.entitlements; sourceTree = "<group>"; };
 		304024010BBA0B00DEDAADF5 /* Core */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Core; path = Packages/Core; sourceTree = SOURCE_ROOT; };
 		590AAE9419B2A3B318586BAD /* FlyMateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlyMateTests.swift; sourceTree = "<group>"; };
-		63C6C60BC5B872F8C6387ABB /* FlyMate.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FlyMate.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		63C6C60BC5B872F8C6387ABB /* FlyMate.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = FlyMate.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7468FD77627BDE9647B78FA3 /* Data */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Data; path = Packages/Data; sourceTree = SOURCE_ROOT; };
 		941DDA55B0EDC329F96A73A0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		B3AF0635D96DA886D783C670 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
@@ -55,14 +54,6 @@
 				DD223495702D41029E708884 /* Data in Frameworks */,
 				931D0EBFE41AD9E0004A4A6E /* Presentation in Frameworks */,
 				E46CDDFA6219EDE53A78D002 /* FirebaseMessaging in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		92CB2D32CE2FDE0632E7704D /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				BA0E55D39F60B7F339109367 /* Presentation in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -169,7 +160,6 @@
 			buildConfigurationList = 1DEEF76BD6DBED8F03FDFFCB /* Build configuration list for PBXNativeTarget "FlyMateTests" */;
 			buildPhases = (
 				EFBDAF264B3284DF6B60633D /* Sources */,
-				92CB2D32CE2FDE0632E7704D /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -178,7 +168,6 @@
 			);
 			name = FlyMateTests;
 			packageProductDependencies = (
-				75E9CD419CA407082A184C46 /* Presentation */,
 			);
 			productName = FlyMateTests;
 			productReference = 07741142CAE74593D9733208 /* FlyMateTests.xctest */;
@@ -194,6 +183,7 @@
 				LastUpgradeCheck = 1630;
 				TargetAttributes = {
 					1ACE2D66CA2A196E17B1EA4F = {
+						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 					C9CE44A4BDA1F9616E3A0CBF = {
@@ -219,6 +209,7 @@
 				79B833B36BA42B6FABF2B2FC /* XCLocalSwiftPackageReference "Packages/Domain" */,
 				5204B70FD263EF5C1E175868 /* XCLocalSwiftPackageReference "Packages/Presentation" */,
 			);
+			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -294,7 +285,6 @@
 				CODE_SIGN_ENTITLEMENTS = FlyMate/FlyMate.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 4Y2567YJY8;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				INFOPLIST_FILE = FlyMate/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -458,7 +448,6 @@
 				CODE_SIGN_ENTITLEMENTS = FlyMate/FlyMate.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 4Y2567YJY8;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				INFOPLIST_FILE = FlyMate/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -552,10 +541,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 3ACF911787437B0D93EC7D06 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseMessaging;
-		};
-		75E9CD419CA407082A184C46 /* Presentation */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = Presentation;
 		};
 		8E6F19090FB0B7D1DCB835B2 /* Domain */ = {
 			isa = XCSwiftPackageProductDependency;

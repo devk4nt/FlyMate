@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 import ComposableArchitecture
 import Domain
@@ -14,14 +15,14 @@ struct CommentInputFeatureTests {
         let videoID = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
         let mockFeedback = Feedback.commentInputMock
 
-        var capturedRequest: CreateFeedbackRequest?
+        let capturedRequest = LockIsolated<CreateFeedbackRequest?>(nil)
         let store = TestStore(
             initialState: CommentInputFeature.State(videoID: videoID)
         ) {
             CommentInputFeature()
         } withDependencies: {
             $0.feedbackClient.createFeedback = { request in
-                capturedRequest = request
+                capturedRequest.setValue(request)
                 return mockFeedback
             }
         }
@@ -43,9 +44,9 @@ struct CommentInputFeatureTests {
 
         await store.receive(\.delegate.feedbackCreated)
 
-        #expect(capturedRequest?.videoID == videoID)
-        #expect(capturedRequest?.content == "좋은 답변이었습니다!")
-        #expect(capturedRequest?.timestampSeconds == 30.0)
+        #expect(capturedRequest.value?.videoID == videoID)
+        #expect(capturedRequest.value?.content == "좋은 답변이었습니다!")
+        #expect(capturedRequest.value?.timestampSeconds == 30.0)
     }
 
     @Test
@@ -132,7 +133,7 @@ struct CommentInputFeatureTests {
         let feedbackID = UUID(uuidString: "00000000-0000-0000-0000-000000000100")!
         let mockComment = FeedbackComment.commentInputMock
 
-        var capturedRequest: CreateFeedbackCommentRequest?
+        let capturedRequest = LockIsolated<CreateFeedbackCommentRequest?>(nil)
 
         var state = CommentInputFeature.State(videoID: videoID)
         state.replyContext = CommentInputFeature.ReplyContext(
@@ -145,7 +146,7 @@ struct CommentInputFeatureTests {
             CommentInputFeature()
         } withDependencies: {
             $0.feedbackCommentClient.createComment = { request in
-                capturedRequest = request
+                capturedRequest.setValue(request)
                 return mockComment
             }
         }
@@ -166,8 +167,8 @@ struct CommentInputFeatureTests {
 
         await store.receive(\.delegate.commentCreated)
 
-        #expect(capturedRequest?.feedbackID == feedbackID)
-        #expect(capturedRequest?.content == "@테스트 유저 답글 내용")
+        #expect(capturedRequest.value?.feedbackID == feedbackID)
+        #expect(capturedRequest.value?.content == "@테스트 유저 답글 내용")
     }
 
     // MARK: - 멘션 자동완성

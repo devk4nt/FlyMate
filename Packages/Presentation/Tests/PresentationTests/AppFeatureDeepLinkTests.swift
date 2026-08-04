@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 import ComposableArchitecture
 import Domain
@@ -59,6 +60,10 @@ struct AppFeatureDeepLinkTests {
 
         let store = TestStore(initialState: state) {
             AppFeature()
+        } withDependencies: {
+            $0.subscriptionClient.fetchEntitlements = { _ in .free }
+            $0.subscriptionClient.observeTransactionUpdates = { .finished }
+            $0.pushNotificationClient.requestAuthorization = { false }
         }
         store.exhaustivity = .off
 
@@ -80,6 +85,10 @@ struct AppFeatureDeepLinkTests {
 
         let store = TestStore(initialState: state) {
             AppFeature()
+        } withDependencies: {
+            $0.subscriptionClient.fetchEntitlements = { _ in .free }
+            $0.subscriptionClient.observeTransactionUpdates = { .finished }
+            $0.pushNotificationClient.requestAuthorization = { false }
         }
         store.exhaustivity = .off
 

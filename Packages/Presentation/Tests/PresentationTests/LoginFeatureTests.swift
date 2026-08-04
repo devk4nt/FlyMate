@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 import ComposableArchitecture
 import Domain
@@ -7,6 +8,13 @@ import Core
 
 @MainActor
 struct LoginFeatureTests {
+    private nonisolated static let appleSignInResult = AppleSignInResult(
+        idToken: "mock-id-token",
+        nonce: "mock-nonce",
+        fullName: nil,
+        email: nil
+    )
+
     @Test
     func Apple_로그인_성공() async {
         let mockUser = User.mock
@@ -14,6 +22,7 @@ struct LoginFeatureTests {
         let store = TestStore(initialState: LoginFeature.State()) {
             LoginFeature()
         } withDependencies: {
+            $0.appleSignInClient.signIn = { Self.appleSignInResult }
             $0.authClient.signInWithApple = { _, _ in mockUser }
         }
 
@@ -21,6 +30,8 @@ struct LoginFeatureTests {
             $0.isLoading = true
             $0.error = nil
         }
+
+        await store.receive(\.appleSignInResult.success)
 
         await store.receive(\.loginResponse.success) {
             $0.isLoading = false
@@ -32,6 +43,7 @@ struct LoginFeatureTests {
         let store = TestStore(initialState: LoginFeature.State()) {
             LoginFeature()
         } withDependencies: {
+            $0.appleSignInClient.signIn = { Self.appleSignInResult }
             $0.authClient.signInWithApple = { _, _ in
                 throw AppError.network(.noConnection)
             }
@@ -41,6 +53,8 @@ struct LoginFeatureTests {
             $0.isLoading = true
             $0.error = nil
         }
+
+        await store.receive(\.appleSignInResult.success)
 
         await store.receive(\.loginResponse.failure) {
             $0.isLoading = false
