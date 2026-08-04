@@ -96,31 +96,7 @@ public struct MemberManagementView: View {
     // MARK: - Profile Image
 
     private func profileImage(_ member: StudyMember) -> some View {
-        Group {
-            if member.profileImageURL != nil {
-                AsyncImage(url: member.profileImageURL) { image in
-                    image
-                        .resizable()
-                        .scaledToFill()
-                } placeholder: {
-                    profilePlaceholder(member)
-                }
-            } else {
-                profilePlaceholder(member)
-            }
-        }
-        .frame(width: 40, height: 40)
-        .clipShape(Circle())
-    }
-
-    private func profilePlaceholder(_ member: StudyMember) -> some View {
-        Circle()
-            .fill(FMColors.primary.opacity(0.12))
-            .overlay {
-                Text(String(member.userName.prefix(1)))
-                    .font(FMTypography.headline)
-                    .foregroundStyle(FMColors.primary)
-            }
+        FMProfileImage(url: member.profileImageURL, name: member.userName, size: .lg)
     }
 }
 

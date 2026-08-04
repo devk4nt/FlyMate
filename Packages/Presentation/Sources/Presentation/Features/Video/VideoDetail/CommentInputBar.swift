@@ -13,7 +13,7 @@ struct CommentInputBar: View {
             if let error = store.error {
                 HStack(spacing: FMSpacing.xs) {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 12))
+                        .font(.system(size: FMSizing.IconSize.xs))
                         .foregroundStyle(FMColors.destructive)
 
                     Text(error.localizedDescription)
@@ -68,7 +68,7 @@ struct CommentInputBar: View {
                             .frame(width: 32, height: 32)
                     } else {
                         Image(systemName: "arrow.up.circle.fill")
-                            .font(.system(size: 32))
+                            .font(.system(size: FMSizing.IconSize.lg))
                             .foregroundStyle(
                                 store.isValid
                                     ? FMColors.accent
@@ -90,7 +90,7 @@ struct CommentInputBar: View {
     private func replyContextBanner(context: CommentInputFeature.ReplyContext) -> some View {
         HStack(spacing: FMSpacing.xs) {
             Image(systemName: "arrowshape.turn.up.left.fill")
-                .font(.system(size: 12))
+                .font(.system(size: FMSizing.IconSize.xs))
                 .foregroundStyle(FMColors.accent)
 
             Text("\(context.authorName)님에게 답글 남기는 중")
@@ -104,7 +104,7 @@ struct CommentInputBar: View {
                 store.send(.exitReplyMode)
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(FMTypography.feedMetaEmphasis)
                     .foregroundStyle(FMColors.secondaryLabel)
                     .frame(width: 24, height: 24)
                     .contentShape(Rectangle())
@@ -171,24 +171,6 @@ struct CommentInputBar: View {
     }
 
     private func memberProfileImage(_ member: StudyMember) -> some View {
-        Group {
-            if let url = member.profileImageURL {
-                AsyncImage(url: url) { image in
-                    image
-                        .resizable()
-                        .scaledToFill()
-                } placeholder: {
-                    Image(systemName: "person.circle.fill")
-                        .resizable()
-                        .foregroundStyle(FMColors.secondaryLabel)
-                }
-            } else {
-                Image(systemName: "person.circle.fill")
-                    .resizable()
-                    .foregroundStyle(FMColors.secondaryLabel)
-            }
-        }
-        .frame(width: 28, height: 28)
-        .clipShape(Circle())
+        FMProfileImage(url: member.profileImageURL, name: member.userName, size: .sm)
     }
 }

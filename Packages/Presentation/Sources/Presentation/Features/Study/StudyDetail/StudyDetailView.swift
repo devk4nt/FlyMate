@@ -2,7 +2,6 @@ import SwiftUI
 import ComposableArchitecture
 import Core
 import Domain
-import Kingfisher
 
 public struct StudyDetailView: View {
     @Bindable var store: StoreOf<StudyDetailFeature>
@@ -80,12 +79,16 @@ public struct StudyDetailView: View {
 
     private func videoListView(videos: [Video]) -> some View {
         ScrollView {
-            LazyVStack(spacing: FMSpacing.md) {
-                noticeBanner
-                studyInfoHeader
+            LazyVStack(spacing: 0) {
+                VStack(spacing: FMSpacing.md) {
+                    noticeBanner
+                    studyInfoHeader
+                }
+                .padding(FMSpacing.md)
 
                 ForEach(videos) { video in
-                    videoCard(video)
+                    feedCell(video)
+                        .contentShape(Rectangle())
                         .onTapGesture {
                             store.send(.videoTapped(video))
                         }
@@ -101,7 +104,6 @@ public struct StudyDetailView: View {
                         .padding()
                 }
             }
-            .padding(FMSpacing.md)
         }
         .refreshable {
             store.send(.refresh)
@@ -382,59 +384,16 @@ public struct StudyDetailView: View {
         return formatter.string(from: date)
     }
 
-    // MARK: - Video Card
+    // MARK: - Feed Cell
 
-    private func videoCard(_ video: Domain.Video) -> some View {
-        FMCard {
-            VStack(alignment: .leading, spacing: FMSpacing.xs) {
-                // 썸네일 영역
-                ZStack {
-                    if let thumbnailURL = video.thumbnailURL {
-                        KFImage(thumbnailURL)
-                            .resizable()
-                            .placeholder {
-                                RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm)
-                                    .fill(FMColors.secondaryBackground)
-                                    .overlay {
-                                        ProgressView()
-                                    }
-                            }
-                            .aspectRatio(contentMode: .fill)
-                            .frame(height: 160)
-                            .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm))
-                    } else {
-                        RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm)
-                            .fill(FMColors.secondaryBackground)
-                            .frame(height: 160)
-                    }
-
-                    Image(systemName: "play.circle.fill")
-                        .font(.system(size: 40))
-                        .foregroundStyle(.white.opacity(0.8))
-                        .shadow(radius: 4)
-                }
-                .frame(height: 160)
-                .clipped()
-
-                Text(video.title)
-                    .font(FMTypography.headline)
-
-                HStack {
-                    Text(video.uploaderName)
-                        .font(FMTypography.caption1)
-                        .foregroundStyle(FMColors.secondaryLabel)
-
-                    Spacer()
-
-                    Text(video.durationSeconds.minuteSecondFormatted)
-                        .font(FMTypography.caption1)
-                        .foregroundStyle(FMColors.secondaryLabel)
-
-                    if video.feedbackCount > 0 {
-                        FMBadge(count: video.feedbackCount)
-                    }
-                }
-            }
-        }
+    private func feedCell(_ video: Domain.Video) -> some View {
+        FMFeedCell(
+            authorName: video.uploaderName,
+            timeText: video.createdAt.relativeString,
+            thumbnailURL: video.thumbnailURL,
+            durationText: video.durationSeconds.minuteSecondFormatted,
+            title: video.title,
+            feedbackCount: video.feedbackCount
+        )
     }
 }

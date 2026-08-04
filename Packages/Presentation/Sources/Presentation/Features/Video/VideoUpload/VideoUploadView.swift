@@ -53,7 +53,7 @@ public struct VideoUploadView: View {
                         ) {
                             VStack(spacing: FMSpacing.xs) {
                                 Image(systemName: "video.badge.plus")
-                                    .font(.system(size: 32))
+                                    .font(.system(size: FMSizing.IconSize.lg))
                                 Text("영상 선택")
                                     .font(FMTypography.callout)
                             }

@@ -40,7 +40,7 @@ public struct FeedbackListView: View {
 
                 } else {
                     ScrollView {
-                        LazyVStack(spacing: FMSpacing.sm) {
+                        LazyVStack(spacing: 0) {
                             ForEach(feedbacks) { feedback in
                                 FeedbackManagementRow(
                                     feedback: feedback,
@@ -51,6 +51,7 @@ public struct FeedbackListView: View {
                                         store.send(.reportUserTapped(feedback))
                                     }
                                 )
+                                .contentShape(Rectangle())
                                 .onTapGesture {
                                     store.send(.feedbackTapped(feedback))
                                 }
@@ -66,7 +67,6 @@ public struct FeedbackListView: View {
                                     .padding()
                             }
                         }
-                        .padding(FMSpacing.md)
                     }
                     .refreshable {
                         store.send(.refresh)
@@ -135,17 +135,16 @@ struct FeedbackManagementRow: View {
     }
 
     var body: some View {
-        FMCard {
-            VStack(alignment: .leading, spacing: FMSpacing.xs) {
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: FMSpacing.xxs) {
                 HStack {
                     Text(feedback.authorName)
-                        .font(FMTypography.caption1)
-                        .fontWeight(.semibold)
+                        .font(FMTypography.authorName)
 
                     Spacer()
 
                     Text(feedback.createdAt.relativeString)
-                        .font(FMTypography.caption2)
+                        .font(FMTypography.feedMeta)
                         .foregroundStyle(FMColors.secondaryLabel)
 
                     if onReportFeedback != nil || onReportUser != nil {
@@ -176,18 +175,21 @@ struct FeedbackManagementRow: View {
                 }
 
                 highlightedContent(feedback.content)
-                    .font(FMTypography.callout)
+                    .font(FMTypography.feedBody)
                     .lineLimit(3)
 
-                HStack {
-                    Label(
-                        feedback.timestampSeconds.minuteSecondFormatted,
-                        systemImage: "clock"
-                    )
-                    .font(FMTypography.caption2)
-                    .foregroundStyle(FMColors.accent)
-                }
+                Label(
+                    feedback.timestampSeconds.minuteSecondFormatted,
+                    systemImage: "clock"
+                )
+                .font(FMTypography.feedMeta)
+                .foregroundStyle(FMColors.accent)
             }
+            .padding(.horizontal, FMSpacing.md)
+            .padding(.vertical, FMSpacing.sm)
+
+            Divider()
         }
+        .background(FMColors.background)
     }
 }

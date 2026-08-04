@@ -2,7 +2,6 @@ import SwiftUI
 import ComposableArchitecture
 import Core
 import Domain
-import Kingfisher
 
 struct MemberStatsSheet: View {
     let store: StoreOf<MemberStatsFeature>
@@ -84,18 +83,7 @@ struct MemberStatsSheet: View {
 
     private var profileHeader: some View {
         VStack(spacing: FMSpacing.xs) {
-            if let url = store.member.profileImageURL {
-                KFImage(url)
-                    .resizable()
-                    .placeholder {
-                        profilePlaceholder
-                    }
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 64, height: 64)
-                    .clipShape(Circle())
-            } else {
-                profilePlaceholder
-            }
+            FMProfileImage(url: store.member.profileImageURL, name: store.member.userName, size: .xl)
 
             HStack(spacing: FMSpacing.xs) {
                 Text(store.member.userName)
@@ -115,17 +103,6 @@ struct MemberStatsSheet: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(store.member.userName)\(store.member.role == .owner ? ", 방장" : "")")
-    }
-
-    private var profilePlaceholder: some View {
-        Circle()
-            .fill(FMColors.secondaryBackground)
-            .frame(width: 64, height: 64)
-            .overlay {
-                Image(systemName: "person.fill")
-                    .font(.system(size: 28))
-                    .foregroundStyle(FMColors.secondaryLabel)
-            }
     }
 
     // MARK: - Stat Card

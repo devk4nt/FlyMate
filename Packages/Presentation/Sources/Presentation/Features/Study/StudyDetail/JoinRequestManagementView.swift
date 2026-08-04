@@ -105,30 +105,6 @@ public struct JoinRequestManagementView: View {
     }
 
     private func profileImage(_ request: JoinRequest) -> some View {
-        Group {
-            if request.profileImageURL != nil {
-                AsyncImage(url: request.profileImageURL) { image in
-                    image
-                        .resizable()
-                        .scaledToFill()
-                } placeholder: {
-                    profilePlaceholder(request)
-                }
-            } else {
-                profilePlaceholder(request)
-            }
-        }
-        .frame(width: 40, height: 40)
-        .clipShape(Circle())
-    }
-
-    private func profilePlaceholder(_ request: JoinRequest) -> some View {
-        Circle()
-            .fill(FMColors.primary.opacity(0.12))
-            .overlay {
-                Text(String(request.userName.prefix(1)))
-                    .font(FMTypography.headline)
-                    .foregroundStyle(FMColors.primary)
-            }
+        FMProfileImage(url: request.profileImageURL, name: request.userName, size: .lg)
     }
 }

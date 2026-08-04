@@ -19,7 +19,7 @@ public struct PaywallView: View {
                     store.send(.dismissTapped)
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 28))
+                        .font(.system(size: FMSizing.IconSize.lg))
                         .foregroundStyle(FMColors.secondaryLabel)
                 }
                 .accessibilityLabel("닫기")
@@ -30,7 +30,7 @@ public struct PaywallView: View {
             // 아이콘 + 제한 사유
             VStack(spacing: FMSpacing.md) {
                 Image(systemName: store.reason.iconName)
-                    .font(.system(size: 48))
+                    .font(.system(size: FMSizing.IconSize.hero))
                     .foregroundStyle(FMColors.accent)
 
                 Text(store.reason.title)
@@ -103,7 +103,7 @@ public struct PaywallView: View {
     private func benefitRow(icon: String, text: String) -> some View {
         HStack(spacing: FMSpacing.sm) {
             Image(systemName: icon)
-                .font(.system(size: 16))
+                .font(.system(size: FMSizing.IconSize.sm))
                 .foregroundStyle(FMColors.accent)
                 .frame(width: 24)
 

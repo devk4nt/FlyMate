@@ -15,7 +15,7 @@ public struct LoginView: View {
             // 앱 로고 & 타이틀
             VStack(spacing: FMSpacing.md) {
                 Image(systemName: "airplane")
-                    .font(.system(size: 60))
+                    .font(.system(size: FMSizing.IconSize.hero))
                     .foregroundStyle(FMColors.accent)
 
                 Text("FlyMate")

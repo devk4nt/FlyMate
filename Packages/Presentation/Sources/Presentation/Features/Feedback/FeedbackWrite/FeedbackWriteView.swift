@@ -137,25 +137,7 @@ public struct FeedbackWriteView: View {
     }
 
     private func memberProfileImage(_ member: StudyMember) -> some View {
-        Group {
-            if let url = member.profileImageURL {
-                AsyncImage(url: url) { image in
-                    image
-                        .resizable()
-                        .scaledToFill()
-                } placeholder: {
-                    Image(systemName: "person.circle.fill")
-                        .resizable()
-                        .foregroundStyle(FMColors.secondaryLabel)
-                }
-            } else {
-                Image(systemName: "person.circle.fill")
-                    .resizable()
-                    .foregroundStyle(FMColors.secondaryLabel)
-            }
-        }
-        .frame(width: 28, height: 28)
-        .clipShape(Circle())
+        FMProfileImage(url: member.profileImageURL, name: member.userName, size: .sm)
     }
 }
 

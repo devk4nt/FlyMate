@@ -66,7 +66,7 @@ public struct JoinStudyView: View {
 
             VStack(spacing: FMSpacing.md) {
                 Image(systemName: "paperplane.fill")
-                    .font(.system(size: 48))
+                    .font(.system(size: FMSizing.IconSize.hero))
                     .foregroundStyle(FMColors.primary)
 
                 Text("참여 요청이 전송되었습니다")

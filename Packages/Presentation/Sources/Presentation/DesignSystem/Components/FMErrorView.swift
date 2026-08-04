@@ -19,7 +19,7 @@ public struct FMErrorView: View {
     public var body: some View {
         VStack(spacing: FMSpacing.md) {
             Image(systemName: iconName)
-                .font(.system(size: 48))
+                .font(.system(size: FMSizing.IconSize.hero))
                 .foregroundStyle(iconColor)
                 .accessibilityHidden(true)
 

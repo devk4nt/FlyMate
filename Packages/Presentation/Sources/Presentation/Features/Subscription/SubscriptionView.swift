@@ -30,7 +30,7 @@ public struct SubscriptionView: View {
     private var currentPlanSection: some View {
         VStack(spacing: FMSpacing.sm) {
             Image(systemName: store.isPremium ? "crown.fill" : "person.fill")
-                .font(.system(size: 40))
+                .font(.system(size: FMSizing.IconSize.xl))
                 .foregroundStyle(store.isPremium ? FMColors.accent : FMColors.secondaryLabel)
 
             Text(store.isPremium ? "프리미엄" : "무료 플랜")

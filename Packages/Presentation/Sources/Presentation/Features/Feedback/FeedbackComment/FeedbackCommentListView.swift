@@ -142,7 +142,7 @@ public struct FeedbackCommentListView: View {
                             .frame(width: 32, height: 32)
                     } else {
                         Image(systemName: "arrow.up.circle.fill")
-                            .font(.system(size: 32))
+                            .font(.system(size: FMSizing.IconSize.lg))
                             .foregroundStyle(
                                 store.isValid
                                     ? FMColors.accent
@@ -213,25 +213,7 @@ public struct FeedbackCommentListView: View {
     }
 
     private func memberProfileImage(_ member: StudyMember) -> some View {
-        Group {
-            if let url = member.profileImageURL {
-                AsyncImage(url: url) { image in
-                    image
-                        .resizable()
-                        .scaledToFill()
-                } placeholder: {
-                    Image(systemName: "person.circle.fill")
-                        .resizable()
-                        .foregroundStyle(FMColors.secondaryLabel)
-                }
-            } else {
-                Image(systemName: "person.circle.fill")
-                    .resizable()
-                    .foregroundStyle(FMColors.secondaryLabel)
-            }
-        }
-        .frame(width: 28, height: 28)
-        .clipShape(Circle())
+        FMProfileImage(url: member.profileImageURL, name: member.userName, size: .sm)
     }
 }
 
@@ -266,7 +248,7 @@ private struct CommentRow: View {
                         }
                     } label: {
                         Image(systemName: "ellipsis")
-                            .font(.system(size: 14))
+                            .font(.system(size: FMSizing.IconSize.sm))
                             .foregroundStyle(FMColors.secondaryLabel)
                             .frame(width: 28, height: 28)
                             .contentShape(Rectangle())
@@ -283,25 +265,7 @@ private struct CommentRow: View {
     }
 
     private var profileImage: some View {
-        Group {
-            if let url = comment.authorProfileURL {
-                AsyncImage(url: url) { image in
-                    image
-                        .resizable()
-                        .scaledToFill()
-                } placeholder: {
-                    Image(systemName: "person.circle.fill")
-                        .resizable()
-                        .foregroundStyle(FMColors.secondaryLabel)
-                }
-            } else {
-                Image(systemName: "person.circle.fill")
-                    .resizable()
-                    .foregroundStyle(FMColors.secondaryLabel)
-            }
-        }
-        .frame(width: 24, height: 24)
-        .clipShape(Circle())
+        FMProfileImage(url: comment.authorProfileURL, name: comment.authorName, size: .xs)
     }
 }
 

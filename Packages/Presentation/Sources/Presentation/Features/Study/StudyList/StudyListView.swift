@@ -35,17 +35,15 @@ public struct StudyListView: View {
                     }
                 } else {
                     ScrollView {
-                        LazyVStack(spacing: FMSpacing.md) {
+                        LazyVStack(spacing: 0) {
                             ForEach(studies) { study in
-                                FMCard {
-                                    StudyCardContent(study: study)
-                                }
-                                .onTapGesture {
-                                    store.send(.studyTapped(study))
-                                }
+                                StudyRow(study: study)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        store.send(.studyTapped(study))
+                                    }
                             }
                         }
-                        .padding(FMSpacing.md)
                     }
                     .refreshable {
                         store.send(.refresh)
@@ -95,34 +93,42 @@ public struct StudyListView: View {
     }
 }
 
-// MARK: - Study Card Content
+// MARK: - Study Row
 
-private struct StudyCardContent: View {
+private struct StudyRow: View {
     let study: Domain.Study
 
     var body: some View {
-        VStack(alignment: .leading, spacing: FMSpacing.xs) {
-            HStack {
-                Text(study.name)
-                    .font(FMTypography.headline)
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: FMSpacing.xxs) {
+                HStack {
+                    Text(study.name)
+                        .font(FMTypography.authorName)
+                        .foregroundStyle(FMColors.label)
 
-                Spacer()
+                    Spacer()
 
-                Text("\(study.memberCount)/\(study.maxMembers)명")
-                    .font(FMTypography.caption1)
+                    Text("\(study.memberCount)/\(study.maxMembers)명")
+                        .font(FMTypography.feedMeta)
+                        .foregroundStyle(FMColors.secondaryLabel)
+                }
+
+                Text(study.description)
+                    .font(FMTypography.feedBody)
                     .foregroundStyle(FMColors.secondaryLabel)
-            }
+                    .lineLimit(2)
 
-            Text(study.description)
-                .font(FMTypography.callout)
-                .foregroundStyle(FMColors.secondaryLabel)
-                .lineLimit(2)
-
-            HStack {
                 Text(study.createdAt.relativeString)
-                    .font(FMTypography.caption2)
+                    .font(FMTypography.feedMeta)
                     .foregroundStyle(FMColors.secondaryLabel)
             }
+            .padding(.horizontal, FMSpacing.md)
+            .padding(.vertical, FMSpacing.sm)
+
+            Divider()
         }
+        .background(FMColors.background)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(study.name), 멤버 \(study.memberCount)명")
     }
 }

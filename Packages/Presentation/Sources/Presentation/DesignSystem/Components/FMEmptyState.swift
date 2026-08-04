@@ -26,7 +26,7 @@ public struct FMEmptyState: View {
     public var body: some View {
         VStack(spacing: FMSpacing.md) {
             Image(systemName: systemImage)
-                .font(.system(size: 48))
+                .font(.system(size: FMSizing.IconSize.hero))
                 .foregroundStyle(FMColors.secondaryLabel)
                 .accessibilityHidden(true)
 

@@ -28,7 +28,7 @@ struct ScreenCaptureGuardModifier: ViewModifier {
 
             VStack(spacing: FMSpacing.md) {
                 Image(systemName: "eye.slash.fill")
-                    .font(.system(size: 48))
+                    .font(.system(size: FMSizing.IconSize.hero))
                     .foregroundStyle(.secondary)
 
                 Text("화면 녹화 중에는\n영상을 볼 수 없습니다")

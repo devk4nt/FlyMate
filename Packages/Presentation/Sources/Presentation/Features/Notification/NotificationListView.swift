@@ -94,7 +94,7 @@ private struct NotificationRow: View {
         HStack(alignment: .top, spacing: FMSpacing.sm) {
             // Notification type icon
             Image(systemName: iconName)
-                .font(.system(size: 20))
+                .font(.system(size: FMSizing.IconSize.md))
                 .foregroundStyle(iconColor)
                 .frame(width: 32, height: 32)
                 .accessibilityHidden(true)

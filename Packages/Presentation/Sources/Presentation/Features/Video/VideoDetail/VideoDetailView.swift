@@ -136,7 +136,7 @@ public struct VideoDetailView: View {
                 scheduleHideControls()
             } label: {
                 Image(systemName: store.player.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                    .font(.system(size: 44))
+                    .font(.system(size: FMSizing.IconSize.xl))
                     .foregroundStyle(.white)
                     .shadow(radius: 4)
             }
@@ -183,7 +183,7 @@ public struct VideoDetailView: View {
                             scheduleHideControls()
                         } label: {
                             Image(systemName: store.player.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                                .font(.system(size: 14))
+                                .font(.system(size: FMSizing.IconSize.sm))
                                 .foregroundStyle(.white.opacity(0.9))
                         }
                         .accessibilityLabel(store.player.isMuted ? "음소거 해제" : "음소거")
@@ -192,7 +192,7 @@ public struct VideoDetailView: View {
                             store.send(.fullscreenTapped)
                         } label: {
                             Image(systemName: "arrow.up.left.and.arrow.down.right")
-                                .font(.system(size: 14))
+                                .font(.system(size: FMSizing.IconSize.sm))
                                 .foregroundStyle(.white.opacity(0.9))
                         }
                         .accessibilityLabel("전체화면")
@@ -290,7 +290,7 @@ public struct VideoDetailView: View {
                 if feedbacks.isEmpty {
                     VStack(spacing: FMSpacing.sm) {
                         Image(systemName: "bubble.left")
-                            .font(.system(size: 32))
+                            .font(.system(size: FMSizing.IconSize.lg))
                             .foregroundStyle(FMColors.secondaryLabel)
                         Text("아직 피드백이 없습니다")
                             .font(FMTypography.callout)
@@ -410,7 +410,7 @@ private struct FeedbackRow: View {
                 } label: {
                     HStack(spacing: FMSpacing.xxxs) {
                         Image(systemName: "arrowshape.turn.up.left")
-                            .font(.system(size: 11))
+                            .font(.system(size: FMSizing.IconSize.xs))
                         Text("답글")
                             .font(FMTypography.caption2)
                     }
@@ -425,7 +425,7 @@ private struct FeedbackRow: View {
                     } label: {
                         HStack(spacing: FMSpacing.xxxs) {
                             Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                                .font(.system(size: 10))
+                                .font(.system(size: FMSizing.IconSize.xs))
                             Text(isExpanded ? "답글 숨기기" : "답글 \(feedback.commentCount)개 보기")
                                 .font(FMTypography.caption2)
                         }
@@ -534,7 +534,7 @@ private struct InlineReplyRow: View {
                             }
                         } label: {
                             Image(systemName: "ellipsis")
-                                .font(.system(size: 12))
+                                .font(.system(size: FMSizing.IconSize.xs))
                                 .foregroundStyle(FMColors.secondaryLabel)
                                 .frame(width: 24, height: 24)
                                 .contentShape(Rectangle())
@@ -553,25 +553,7 @@ private struct InlineReplyRow: View {
     }
 
     private var profileImage: some View {
-        Group {
-            if let url = comment.authorProfileURL {
-                AsyncImage(url: url) { image in
-                    image
-                        .resizable()
-                        .scaledToFill()
-                } placeholder: {
-                    Image(systemName: "person.circle.fill")
-                        .resizable()
-                        .foregroundStyle(FMColors.secondaryLabel)
-                }
-            } else {
-                Image(systemName: "person.circle.fill")
-                    .resizable()
-                    .foregroundStyle(FMColors.secondaryLabel)
-            }
-        }
-        .frame(width: 24, height: 24)
-        .clipShape(Circle())
+        FMProfileImage(url: comment.authorProfileURL, name: comment.authorName, size: .xs)
     }
 }
 
@@ -654,7 +636,7 @@ private struct FullscreenVideoView: View {
                 scheduleHideControls()
             } label: {
                 Image(systemName: store.player.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.system(size: 36, weight: .medium))
+                    .font(.system(size: FMSizing.IconSize.xl, weight: .medium))
                     .foregroundStyle(.white)
                     .shadow(color: .black.opacity(0.3), radius: 4, y: 1)
                     .frame(width: 60, height: 60)
@@ -669,7 +651,7 @@ private struct FullscreenVideoView: View {
                         store.send(.dismissFullscreen)
                     } label: {
                         Image(systemName: "xmark")
-                            .font(.system(size: 17, weight: .semibold))
+                            .font(.system(size: FMSizing.IconSize.sm, weight: .semibold))
                             .foregroundStyle(.white)
                             .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
                             .frame(width: 44, height: 44)
@@ -684,7 +666,7 @@ private struct FullscreenVideoView: View {
                         scheduleHideControls()
                     } label: {
                         Image(systemName: store.player.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                            .font(.system(size: 17))
+                            .font(.system(size: FMSizing.IconSize.sm))
                             .foregroundStyle(.white)
                             .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
                             .frame(width: 44, height: 44)
@@ -716,12 +698,12 @@ private struct FullscreenVideoView: View {
 
                     HStack {
                         Text(store.player.currentTime.minuteSecondFormatted)
-                            .font(.system(size: 12, weight: .medium))
+                            .font(FMTypography.feedMetaEmphasis)
                             .foregroundStyle(.white.opacity(0.85))
                             .monospacedDigit()
                         Spacer()
                         Text(store.player.duration.minuteSecondFormatted)
-                            .font(.system(size: 12, weight: .medium))
+                            .font(FMTypography.feedMetaEmphasis)
                             .foregroundStyle(.white.opacity(0.85))
                             .monospacedDigit()
                     }
