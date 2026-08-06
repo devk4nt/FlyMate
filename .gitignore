@@ -24,6 +24,13 @@ build/
 .swiftpm/
 Package.resolved
 
+# Tuist (프로젝트 파일은 tuist generate로 생성)
+FlyMate.xcodeproj/
+FlyMate.xcworkspace/
+Tuist/.build/
+Derived/
+!Tuist/Package.resolved
+
 # CocoaPods
 Pods/
 

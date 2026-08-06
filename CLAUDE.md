@@ -5,7 +5,7 @@
 - **앱**: 승무원, 아나운서 등 영상면접 준비자를 위한 스터디 피드백 iOS 앱
 - **스택**: Swift 6, SwiftUI, TCA 1.x, Supabase
 - **타겟**: iOS 17+
-- **모듈**: SPM 로컬 패키지 4개 (Core, Domain, Data, Presentation)
+- **모듈**: Tuist 타겟 4개 (Core, Domain, Data, Presentation) — `Project.swift`에서 정의, 소스는 `Packages/{모듈}/Sources/{모듈}/`
 - **핵심 정책**: 피드백 요청 영상은 최대 3분(180초)
 
 ---
@@ -564,7 +564,15 @@ public enum AppConstants {
 
 ## 빌드 & 실행
 
-- Xcode에서 iOS 시뮬레이터 타겟으로 빌드
-- `swift build`는 Core, Domain만 가능 (외부 의존성 없는 패키지)
-- Data, Presentation은 SPM 의존성 해석 후 Xcode 빌드 필요
-- 일부 UIKit API (`navigationBarTitleDisplayMode` 등)는 `swift build` 시 macOS 호환 에러 발생하나 iOS 타겟에서는 정상
+- 빌드 시스템: **Tuist** (mise로 버전 고정 — `mise.toml`)
+- 프로젝트 파일(`FlyMate.xcodeproj`/`FlyMate.xcworkspace`)은 생성물이므로 커밋하지 않음
+- 외부 의존성은 `Tuist/Package.swift`, 타겟/스킴 정의는 `Project.swift`
+
+```bash
+mise install          # tuist 설치 (최초 1회)
+tuist install         # 외부 의존성 해석
+tuist generate        # 워크스페이스 생성 + Xcode 열기
+```
+
+- 이후 Xcode에서 `FlyMate.xcworkspace`의 FlyMate 스킴으로 iOS 시뮬레이터 빌드
+- 테스트: FlyMate 스킴에 FlyMateTests + PresentationTests 포함 (`tuist test` 또는 Cmd+U)
