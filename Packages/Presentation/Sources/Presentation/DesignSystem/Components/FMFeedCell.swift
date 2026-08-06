@@ -1,8 +1,7 @@
 import SwiftUI
 import Kingfisher
 
-/// 인스타그램형 영상 피드 셀 — 작성자 헤더 + 풀블리드 썸네일 + 정보 푸터 + 하단 구분선.
-/// 카드가 아니라 경계선과 여백으로 구분되는 피드형 레이아웃의 기본 단위.
+/// 작성자 헤더 + 영상 + 반응 푸터로 구성된 소셜 피드 셀.
 public struct FMFeedCell: View {
     private let authorName: String
     private let authorProfileURL: URL?
@@ -35,9 +34,16 @@ public struct FMFeedCell: View {
             header
             media
             footer
-            Divider()
         }
-        .background(FMColors.background)
+        .background(FMColors.elevatedBackground)
+        .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous)
+                .stroke(FMColors.border.opacity(0.2), lineWidth: 0.5)
+        }
+        .shadow(color: FMShadow.cardColor, radius: 12, y: 5)
+        .padding(.horizontal, FMSpacing.md)
+        .padding(.vertical, FMSpacing.xs)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(authorName)의 영상, \(title), 피드백 \(feedbackCount)개, \(timeText)")
     }
@@ -58,8 +64,7 @@ public struct FMFeedCell: View {
                 .font(FMTypography.feedMeta)
                 .foregroundStyle(FMColors.secondaryLabel)
         }
-        .padding(.horizontal, FMSpacing.md)
-        .padding(.vertical, FMSpacing.xs)
+        .padding(FMSpacing.sm)
     }
 
     // MARK: - Media
@@ -77,16 +82,29 @@ public struct FMFeedCell: View {
                     .aspectRatio(contentMode: .fill)
             } else {
                 Rectangle()
-                    .fill(FMColors.secondaryBackground)
+                    .fill(FMColors.brandGradient.opacity(0.18))
+                    .overlay {
+                        Image(systemName: "video.fill")
+                            .font(.system(size: 30, weight: .medium))
+                            .foregroundStyle(FMColors.primary.opacity(0.5))
+                    }
             }
 
-            Image(systemName: "play.circle.fill")
-                .font(.system(size: FMSizing.IconSize.xl))
-                .foregroundStyle(.white.opacity(0.8))
-                .shadow(radius: 4)
+            Circle()
+                .fill(.ultraThinMaterial)
+                .frame(width: 58, height: 58)
+                .overlay {
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 21, weight: .bold))
+                        .foregroundStyle(.white)
+                        .offset(x: 2)
+                }
+                .shadow(color: .black.opacity(0.2), radius: 12, y: 5)
         }
         .aspectRatio(16 / 9, contentMode: .fit)
         .clipped()
+        .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous))
+        .padding(.horizontal, FMSpacing.sm)
         .overlay(alignment: .bottomTrailing) {
             Text(durationText)
                 .font(FMTypography.feedMetaEmphasis)
@@ -103,26 +121,27 @@ public struct FMFeedCell: View {
     // MARK: - Footer
 
     private var footer: some View {
-        VStack(alignment: .leading, spacing: FMSpacing.xxs) {
+        VStack(alignment: .leading, spacing: FMSpacing.xs) {
             Text(title)
-                .font(FMTypography.feedBody)
-                .fontWeight(.semibold)
+                .font(FMTypography.headline)
                 .foregroundStyle(FMColors.label)
                 .lineLimit(2)
 
-            if feedbackCount > 0 {
-                Text("피드백 \(feedbackCount)개")
-                    .font(FMTypography.feedMeta)
-                    .foregroundStyle(FMColors.secondaryLabel)
-            } else {
-                Text("첫 피드백을 남겨보세요")
-                    .font(FMTypography.feedMeta)
-                    .foregroundStyle(FMColors.secondaryLabel)
+            HStack(spacing: FMSpacing.xs) {
+                Image(systemName: feedbackCount > 0 ? "bubble.left.fill" : "bubble.left")
+                    .foregroundStyle(feedbackCount > 0 ? FMColors.primary : FMColors.secondaryLabel)
+
+                Text(feedbackCount > 0 ? "피드백 \(feedbackCount)개" : "첫 피드백을 남겨보세요")
+
+                Spacer()
+
+                Image(systemName: "arrow.up.right")
             }
+            .font(FMTypography.feedMetaEmphasis)
+            .foregroundStyle(FMColors.secondaryLabel)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, FMSpacing.md)
-        .padding(.vertical, FMSpacing.xs)
+        .padding(FMSpacing.sm)
     }
 }
 

@@ -10,33 +10,21 @@ public struct StudyCreateView: View {
     }
 
     public var body: some View {
-        Form {
-            Section("스터디 정보") {
-                FMTextField(
-                    title: "스터디 이름",
-                    placeholder: "스터디 이름을 입력하세요",
-                    text: $store.name.sending(\.nameChanged),
-                    characterLimit: AppConstants.maxStudyNameLength
-                )
+        ZStack {
+            FMColors.canvas
+                .ignoresSafeArea()
 
-                VStack(alignment: .leading, spacing: FMSpacing.xxs) {
-                    Text("설명")
-                        .font(FMTypography.caption1)
-                        .foregroundStyle(FMColors.secondaryLabel)
-
-                    TextEditor(text: $store.description.sending(\.descriptionChanged))
-                        .frame(minHeight: 80)
-                        .font(FMTypography.body)
+            ScrollView {
+                VStack(spacing: FMSpacing.md) {
+                    introHeader
+                    studyInformationCard
+                    memberCountCard
                 }
+                .padding(.horizontal, FMSpacing.md)
+                .padding(.top, FMSpacing.xs)
+                .padding(.bottom, FMSpacing.xxl)
             }
-
-            Section("인원 설정") {
-                Stepper(
-                    "최대 인원: \(store.maxMembers)명",
-                    value: $store.maxMembers.sending(\.maxMembersChanged),
-                    in: 2...AppConstants.maxStudyMembers
-                )
-            }
+            .scrollDismissesKeyboard(.interactively)
         }
         .navigationTitle("스터디 만들기")
         .navigationBarTitleDisplayMode(.inline)
@@ -46,16 +34,19 @@ public struct StudyCreateView: View {
                     store.send(.cancelTapped)
                 }
             }
-            ToolbarItem(placement: .confirmationAction) {
-                if store.isSubmitting {
-                    ProgressView()
-                } else {
-                    Button("만들기") {
-                        store.send(.submitTapped)
-                    }
-                    .disabled(!store.isValid)
-                }
+        }
+        .safeAreaInset(edge: .bottom) {
+            FMButton(
+                title: "스터디 만들기",
+                isLoading: store.isSubmitting,
+                isEnabled: store.isValid
+            ) {
+                store.send(.submitTapped)
             }
+            .padding(.horizontal, FMSpacing.md)
+            .padding(.top, FMSpacing.sm)
+            .padding(.bottom, FMSpacing.xs)
+            .background(.ultraThinMaterial)
         }
         .alert(
             "오류",
@@ -72,5 +63,158 @@ public struct StudyCreateView: View {
                 Text(error.localizedDescription)
             }
         }
+    }
+
+    private var introHeader: some View {
+        HStack(spacing: FMSpacing.md) {
+            ZStack {
+                RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous)
+                    .fill(FMColors.brandGradient)
+
+                Image(systemName: "person.3.fill")
+                    .font(.system(size: 26, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
+            .frame(width: 64, height: 64)
+            .shadow(color: FMColors.primary.opacity(0.24), radius: 12, y: 6)
+
+            VStack(alignment: .leading, spacing: FMSpacing.xxs) {
+                Text("새로운 팀을 시작해요")
+                    .font(FMTypography.title2)
+                    .foregroundStyle(FMColors.label)
+
+                Text("목표를 공유하고 서로의 성장을 도와주세요.")
+                    .font(FMTypography.callout)
+                    .foregroundStyle(FMColors.secondaryLabel)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, FMSpacing.sm)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var studyInformationCard: some View {
+        formCard(title: "스터디 정보", step: "01") {
+            FMTextField(
+                title: "스터디 이름",
+                placeholder: "예: 항공사 면접 스피치 스터디",
+                text: $store.name.sending(\.nameChanged),
+                characterLimit: AppConstants.maxStudyNameLength
+            )
+
+            VStack(alignment: .leading, spacing: FMSpacing.xs) {
+                Text("스터디 소개")
+                    .font(FMTypography.caption1)
+                    .foregroundStyle(FMColors.secondaryLabel)
+
+                ZStack(alignment: .topLeading) {
+                    if store.description.isEmpty {
+                        Text("어떤 목표로 활동하는 스터디인지 알려주세요")
+                            .font(FMTypography.body)
+                            .foregroundStyle(FMColors.secondaryLabel.opacity(0.65))
+                            .padding(.horizontal, FMSpacing.sm)
+                            .padding(.vertical, 14)
+                            .allowsHitTesting(false)
+                    }
+
+                    TextEditor(text: $store.description.sending(\.descriptionChanged))
+                        .font(FMTypography.body)
+                        .scrollContentBackground(.hidden)
+                        .frame(minHeight: 112)
+                        .padding(FMSpacing.xs)
+                }
+                .background(FMColors.secondaryBackground)
+                .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous)
+                        .stroke(FMColors.border.opacity(0.45), lineWidth: 1)
+                }
+            }
+        }
+    }
+
+    private var memberCountCard: some View {
+        formCard(title: "함께할 인원", step: "02") {
+            HStack(spacing: FMSpacing.md) {
+                ZStack {
+                    Circle()
+                        .fill(FMColors.primary.opacity(0.1))
+
+                    Image(systemName: "person.2.fill")
+                        .foregroundStyle(FMColors.primary)
+                }
+                .frame(width: 46, height: 46)
+
+                VStack(alignment: .leading, spacing: FMSpacing.xxxs) {
+                    Text("최대 인원")
+                        .font(FMTypography.headline)
+                    Text("운영자를 포함한 전체 인원이에요")
+                        .font(FMTypography.caption1)
+                        .foregroundStyle(FMColors.secondaryLabel)
+                }
+
+                Spacer()
+
+                Text("\(store.maxMembers)명")
+                    .font(FMTypography.title3)
+                    .foregroundStyle(FMColors.primary)
+                    .monospacedDigit()
+                    .frame(minWidth: 38)
+
+                Stepper(
+                    "최대 인원",
+                    value: $store.maxMembers.sending(\.maxMembersChanged),
+                    in: 2...AppConstants.maxStudyMembers
+                )
+                .labelsHidden()
+                .accessibilityLabel("최대 인원 \(store.maxMembers)명")
+            }
+        }
+    }
+
+    private func formCard<Content: View>(
+        title: String,
+        step: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: FMSpacing.md) {
+            HStack {
+                Text(title)
+                    .font(FMTypography.headline)
+                    .foregroundStyle(FMColors.label)
+
+                Spacer()
+
+                Text(step)
+                    .font(FMTypography.feedMetaEmphasis)
+                    .foregroundStyle(FMColors.primary)
+                    .padding(.horizontal, FMSpacing.xs)
+                    .padding(.vertical, FMSpacing.xxs)
+                    .background(FMColors.primary.opacity(0.1))
+                    .clipShape(Capsule())
+            }
+
+            content()
+        }
+        .padding(FMSpacing.md)
+        .background(FMColors.elevatedBackground)
+        .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous)
+                .stroke(FMColors.border.opacity(0.2), lineWidth: 0.5)
+        }
+        .shadow(color: FMShadow.cardColor, radius: 10, y: 4)
+    }
+}
+
+#Preview {
+    NavigationStack {
+        StudyCreateView(
+            store: Store(initialState: StudyCreateFeature.State()) {
+                StudyCreateFeature()
+            }
+        )
     }
 }

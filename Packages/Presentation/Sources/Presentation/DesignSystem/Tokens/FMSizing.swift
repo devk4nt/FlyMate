@@ -1,4 +1,4 @@
-import Foundation
+import SwiftUI
 
 public enum FMSizing {
     /// 페이지 인디케이터 점 크기
@@ -25,4 +25,10 @@ public enum FMSizing {
 
 public enum FMOpacity {
     public static let half: Double = 0.5
+}
+
+public enum FMShadow {
+    public static let cardColor = Color.black.opacity(0.07)
+    public static let cardRadius: CGFloat = 14
+    public static let cardY: CGFloat = 6
 }

@@ -40,6 +40,12 @@ public struct SettingsView: View {
                                 .foregroundStyle(FMColors.secondaryLabel)
                         }
                     }
+                    .listRowInsets(EdgeInsets(
+                        top: FMSpacing.md,
+                        leading: FMSpacing.md,
+                        bottom: FMSpacing.md,
+                        trailing: FMSpacing.md
+                    ))
                 }
 
                 // 구독
@@ -96,6 +102,9 @@ public struct SettingsView: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(FMColors.canvas)
+            .tint(FMColors.primary)
             .navigationTitle("설정")
         }
         .alert($store.scope(state: \.confirmAlert, action: \.confirmAlert))

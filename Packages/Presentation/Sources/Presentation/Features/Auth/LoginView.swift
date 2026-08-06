@@ -9,45 +9,86 @@ public struct LoginView: View {
     }
 
     public var body: some View {
-        VStack(spacing: FMSpacing.xxl) {
-            Spacer()
+        ZStack {
+            FMColors.canvas
+                .ignoresSafeArea()
 
-            // 앱 로고 & 타이틀
-            VStack(spacing: FMSpacing.md) {
-                Image(systemName: "airplane")
-                    .font(.system(size: FMSizing.IconSize.hero))
-                    .foregroundStyle(FMColors.accent)
+            Circle()
+                .fill(FMColors.primary.opacity(0.14))
+                .frame(width: 330, height: 330)
+                .blur(radius: 4)
+                .offset(x: 160, y: -330)
 
-                Text("FlyMate")
-                    .font(FMTypography.largeTitle)
+            Circle()
+                .fill(FMColors.secondary.opacity(0.13))
+                .frame(width: 260, height: 260)
+                .blur(radius: 8)
+                .offset(x: -170, y: 340)
 
-                Text("면접 스터디 피드백을 영상으로")
-                    .font(FMTypography.body)
-                    .foregroundStyle(FMColors.secondaryLabel)
-            }
+            VStack(spacing: FMSpacing.xxl) {
+                Spacer()
 
-            Spacer()
+                VStack(spacing: FMSpacing.lg) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 28, style: .continuous)
+                            .fill(FMColors.brandGradient)
 
-            // 로그인 버튼
-            VStack(spacing: FMSpacing.sm) {
-                FMButton(
-                    title: "Apple로 계속하기",
-                    style: .primary,
-                    isLoading: store.isLoading
-                ) {
-                    store.send(.appleLoginTapped)
+                        Image(systemName: "airplane")
+                            .font(.system(size: 42, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .rotationEffect(.degrees(-12))
+                    }
+                    .frame(width: 92, height: 92)
+                    .shadow(color: FMColors.primary.opacity(0.3), radius: 22, y: 12)
+
+                    VStack(spacing: FMSpacing.xs) {
+                        Text("FlyMate")
+                            .font(.system(size: 34, weight: .bold, design: .rounded))
+                            .foregroundStyle(FMColors.label)
+
+                        Text("함께 연습하고, 더 나은 나를 발견하세요")
+                            .font(FMTypography.body)
+                            .foregroundStyle(FMColors.secondaryLabel)
+                            .multilineTextAlignment(.center)
+                    }
                 }
 
-                FMButton(
-                    title: "카카오로 계속하기",
-                    style: .secondary,
-                    isLoading: store.isLoading
-                ) {
-                    store.send(.kakaoLoginTapped)
+                Spacer()
+
+                VStack(spacing: FMSpacing.md) {
+                    Text("간편하게 시작하기")
+                        .font(FMTypography.feedMetaEmphasis)
+                        .foregroundStyle(FMColors.secondaryLabel)
+                        .textCase(.uppercase)
+                        .tracking(0.7)
+
+                    FMButton(
+                        title: "Apple로 계속하기",
+                        style: .primary,
+                        isLoading: store.isLoading
+                    ) {
+                        store.send(.appleLoginTapped)
+                    }
+
+                    FMButton(
+                        title: "카카오로 계속하기",
+                        style: .secondary,
+                        isLoading: store.isLoading
+                    ) {
+                        store.send(.kakaoLoginTapped)
+                    }
                 }
+                .padding(FMSpacing.lg)
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
+                        .stroke(.white.opacity(0.5), lineWidth: 0.5)
+                }
+                .shadow(color: FMShadow.cardColor, radius: FMShadow.cardRadius, y: FMShadow.cardY)
+                .padding(.horizontal, FMSpacing.md)
+                .padding(.bottom, FMSpacing.xl)
             }
-            .padding(.horizontal, FMSpacing.lg)
-            .padding(.bottom, FMSpacing.xxxl)
         }
         .alert(
             "로그인 실패",

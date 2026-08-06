@@ -11,14 +11,15 @@ public struct FeedbackManagementView: View {
     public var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // 세그먼트 컨트롤
                 Picker("", selection: $store.selectedSegment.sending(\.segmentChanged)) {
                     ForEach(FeedbackManagementFeature.State.Segment.allCases, id: \.self) { segment in
                         Text(segment.rawValue).tag(segment)
                     }
                 }
                 .pickerStyle(.segmented)
-                .padding(FMSpacing.md)
+                .padding(.horizontal, FMSpacing.md)
+                .padding(.vertical, FMSpacing.sm)
+                .background(FMColors.canvas)
 
                 // 선택된 탭 내용
                 switch store.selectedSegment {
@@ -32,6 +33,7 @@ public struct FeedbackManagementView: View {
                     )
                 }
             }
+            .background(FMColors.canvas)
             .navigationTitle("피드백")
         }
     }

@@ -11,17 +11,20 @@ public struct FMNotificationBell: View {
 
     public var body: some View {
         Button(action: action) {
-            Image(systemName: unreadCount > 0 ? "bell.badge" : "bell")
-                .font(.body)
-                .foregroundStyle(FMColors.label)
-                .overlay(alignment: .topTrailing) {
-                    if unreadCount > 0 {
-                        FMBadge(count: unreadCount)
-                            .offset(x: 8, y: -8)
-                    }
+            ZStack(alignment: .topTrailing) {
+                Image(systemName: "bell")
+                    .font(.system(size: 19, weight: .medium))
+                    .foregroundStyle(FMColors.label)
+                    .frame(width: 32, height: 32)
+
+                if unreadCount > 0 {
+                    FMBadge(count: unreadCount)
+                        .scaleEffect(0.88)
+                        .padding(.top, 1)
                 }
-                .padding(.top, 8)
-                .padding(.trailing, 8)
+            }
+            .frame(width: 32, height: 32)
+            .contentShape(Rectangle())
         }
         .accessibilityLabel("알림")
         .accessibilityValue(unreadCount > 0 ? "읽지 않은 알림 \(unreadCount)개" : "새 알림 없음")

@@ -10,8 +10,8 @@ public struct FMCard<Content: View>: View {
 
     public init(
         padding: CGFloat = FMSpacing.md,
-        cornerRadius: CGFloat = FMSpacing.CornerRadius.md,
-        shadowRadius: CGFloat = 4,
+        cornerRadius: CGFloat = FMSpacing.CornerRadius.lg,
+        shadowRadius: CGFloat = FMShadow.cardRadius,
         @ViewBuilder content: () -> Content
     ) {
         self.padding = padding
@@ -23,13 +23,17 @@ public struct FMCard<Content: View>: View {
     public var body: some View {
         content
             .padding(padding)
-            .background(FMColors.background)
-            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+            .background(FMColors.elevatedBackground)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .stroke(FMColors.border.opacity(0.22), lineWidth: 0.5)
+            }
             .shadow(
-                color: Color.black.opacity(0.08),
+                color: FMShadow.cardColor,
                 radius: shadowRadius,
                 x: 0,
-                y: 2
+                y: FMShadow.cardY
             )
     }
 }

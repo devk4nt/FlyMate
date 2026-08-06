@@ -5,6 +5,7 @@ import Domain
 
 public struct StudyDetailView: View {
     @Bindable var store: StoreOf<StudyDetailFeature>
+    @State private var isDeleteNoticeConfirmationPresented = false
 
     public init(store: StoreOf<StudyDetailFeature>) {
         self.store = store
@@ -33,6 +34,7 @@ public struct StudyDetailView: View {
             )) {
                 noticeEditorSheet
             }
+            .background(FMColors.canvas)
     }
 
     @ViewBuilder
@@ -59,6 +61,7 @@ public struct StudyDetailView: View {
             }
             .padding(FMSpacing.md)
         }
+        .background(FMColors.canvas)
     }
 
     @ViewBuilder
@@ -105,6 +108,7 @@ public struct StudyDetailView: View {
                 }
             }
         }
+        .background(FMColors.canvas)
         .refreshable {
             store.send(.refresh)
         }
@@ -171,9 +175,9 @@ public struct StudyDetailView: View {
 
     // MARK: - Notice Editor Sheet
 
-    private var isSaveDisabled: Bool {
+    private var canSaveNotice: Bool {
         let trimmed = store.editingNoticeText.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty || store.noticeUpdateState.isLoading
+        return !trimmed.isEmpty
     }
 
     private var noticeEditorSheet: some View {
@@ -186,54 +190,203 @@ public struct StudyDetailView: View {
                         Button("취소") {
                             store.send(.dismissNoticeEditor)
                         }
-                    }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("저장") {
-                            store.send(.saveNoticeTapped)
-                        }
-                        .disabled(isSaveDisabled)
+                        .disabled(store.noticeUpdateState.isLoading)
                     }
                 }
-                .toolbar {
-                    ToolbarItem(placement: .bottomBar) {
-                        if store.study.notice != nil {
-                            Button(role: .destructive) {
-                                store.send(.deleteNoticeTapped)
-                            } label: {
-                                Text("공지 삭제")
-                                    .font(FMTypography.callout)
-                            }
-                            .disabled(store.noticeUpdateState.isLoading)
-                        }
-                    }
-                }
-                .overlay {
-                    if store.noticeUpdateState.isLoading {
-                        ProgressView()
-                    }
+                .safeAreaInset(edge: .bottom) {
+                    noticeSaveArea
                 }
         }
-        .presentationDetents([.medium])
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+        .interactiveDismissDisabled(store.noticeUpdateState.isLoading)
+        .confirmationDialog(
+            "공지사항을 삭제할까요?",
+            isPresented: $isDeleteNoticeConfirmationPresented,
+            titleVisibility: .visible
+        ) {
+            Button("공지사항 삭제", role: .destructive) {
+                store.send(.deleteNoticeTapped)
+            }
+            Button("취소", role: .cancel) {}
+        } message: {
+            Text("삭제한 공지사항은 다시 복구할 수 없습니다.")
+        }
     }
 
     private var noticeEditorContent: some View {
-        VStack(spacing: FMSpacing.md) {
-            TextEditor(text: $store.editingNoticeText.sending(\.editingNoticeTextChanged))
-                .font(FMTypography.body)
-                .frame(minHeight: 120)
-                .padding(FMSpacing.xs)
-                .background(FMColors.secondaryBackground)
-                .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm))
+        ScrollView {
+            VStack(spacing: FMSpacing.lg) {
+                noticeEditorHeader
+                noticeInputCard
 
-            if case .failed(let error) = store.noticeUpdateState {
-                Text(error.errorDescription ?? "")
+                if case .failed(let error) = store.noticeUpdateState {
+                    noticeErrorCard(message: error.errorDescription ?? "공지사항을 저장하지 못했습니다.")
+                }
+
+                if store.study.notice != nil {
+                    deleteNoticeButton
+                }
+            }
+            .padding(.horizontal, FMSpacing.md)
+            .padding(.top, FMSpacing.sm)
+            .padding(.bottom, FMSpacing.xxxl)
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .background(FMColors.canvas)
+    }
+
+    private var noticeEditorHeader: some View {
+        HStack(spacing: FMSpacing.md) {
+            Image(systemName: "megaphone.fill")
+                .font(.system(size: 21, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 52, height: 52)
+                .background(FMColors.brandGradient)
+                .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous))
+                .shadow(color: FMColors.primary.opacity(0.2), radius: 9, y: 5)
+
+            VStack(alignment: .leading, spacing: FMSpacing.xxxs) {
+                Text("멤버에게 중요한 소식을 알려주세요")
+                    .font(FMTypography.headline)
+                    .foregroundStyle(FMColors.label)
+
+                Text("공지사항은 스터디 화면 상단에 표시됩니다.")
                     .font(FMTypography.caption1)
-                    .foregroundStyle(FMColors.destructive)
+                    .foregroundStyle(FMColors.secondaryLabel)
             }
 
-            Spacer()
+            Spacer(minLength: 0)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private var noticeInputCard: some View {
+        FMCard {
+            VStack(alignment: .leading, spacing: FMSpacing.md) {
+                HStack(spacing: FMSpacing.sm) {
+                    Image(systemName: "text.alignleft")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(FMColors.primary)
+                        .frame(width: 36, height: 36)
+                        .background(FMColors.primary.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm, style: .continuous))
+
+                    VStack(alignment: .leading, spacing: FMSpacing.xxxs) {
+                        Text("공지 내용")
+                            .font(FMTypography.headline)
+                            .foregroundStyle(FMColors.label)
+
+                        Text("핵심 내용이 잘 보이도록 간결하게 작성해 주세요.")
+                            .font(FMTypography.caption1)
+                            .foregroundStyle(FMColors.secondaryLabel)
+                    }
+                }
+
+                Divider()
+
+                ZStack(alignment: .topLeading) {
+                    if store.editingNoticeText.isEmpty {
+                        Text("예: 이번 주 스터디 일정과 준비물을 안내해 주세요.")
+                            .font(FMTypography.body)
+                            .foregroundStyle(FMColors.secondaryLabel.opacity(0.72))
+                            .padding(.horizontal, FMSpacing.sm)
+                            .padding(.vertical, FMSpacing.sm + 1)
+                            .allowsHitTesting(false)
+                    }
+
+                    TextEditor(text: $store.editingNoticeText.sending(\.editingNoticeTextChanged))
+                        .font(FMTypography.body)
+                        .foregroundStyle(FMColors.label)
+                        .scrollContentBackground(.hidden)
+                        .padding(FMSpacing.xs)
+                        .frame(minHeight: 150)
+                }
+                .background(FMColors.secondaryBackground)
+                .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous)
+                        .stroke(FMColors.border.opacity(0.5), lineWidth: 1)
+                }
+
+                HStack {
+                    Label("모든 멤버에게 공개", systemImage: "person.2.fill")
+                    Spacer()
+                    Text("\(store.editingNoticeText.count)자")
+                }
+                .font(FMTypography.caption1)
+                .foregroundStyle(FMColors.secondaryLabel)
+            }
+        }
+    }
+
+    private func noticeErrorCard(message: String) -> some View {
+        HStack(alignment: .top, spacing: FMSpacing.sm) {
+            Image(systemName: "exclamationmark.circle.fill")
+                .foregroundStyle(FMColors.destructive)
+
+            Text(message)
+                .font(FMTypography.callout)
+                .foregroundStyle(FMColors.label)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(FMSpacing.md)
+        .background(FMColors.destructive.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("오류: \(message)")
+    }
+
+    private var deleteNoticeButton: some View {
+        Button {
+            isDeleteNoticeConfirmationPresented = true
+        } label: {
+            HStack(spacing: FMSpacing.sm) {
+                Image(systemName: "trash")
+                    .font(.system(size: 16, weight: .semibold))
+                    .frame(width: 34, height: 34)
+                    .background(FMColors.destructive.opacity(0.1))
+                    .clipShape(Circle())
+
+                VStack(alignment: .leading, spacing: FMSpacing.xxxs) {
+                    Text("공지사항 삭제")
+                        .font(FMTypography.headline)
+                    Text("현재 등록된 공지를 스터디에서 내립니다.")
+                        .font(FMTypography.caption1)
+                        .foregroundStyle(FMColors.secondaryLabel)
+                }
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "chevron.right")
+                    .font(FMTypography.caption2)
+                    .foregroundStyle(FMColors.secondaryLabel)
+            }
+            .foregroundStyle(FMColors.destructive)
+            .padding(FMSpacing.md)
+            .background(FMColors.elevatedBackground)
+            .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous)
+                    .stroke(FMColors.destructive.opacity(0.16), lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .disabled(store.noticeUpdateState.isLoading)
+    }
+
+    private var noticeSaveArea: some View {
+        FMButton(
+            title: "공지사항 저장",
+            isLoading: store.noticeUpdateState.isLoading,
+            isEnabled: canSaveNotice
+        ) {
+            store.send(.saveNoticeTapped)
+        }
+        .padding(.horizontal, FMSpacing.md)
+        .padding(.top, FMSpacing.xs)
+        .padding(.bottom, FMSpacing.xs)
+        .background(.ultraThinMaterial)
     }
 
     // MARK: - Study Info Header

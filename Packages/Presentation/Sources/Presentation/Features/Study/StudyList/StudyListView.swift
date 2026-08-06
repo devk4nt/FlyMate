@@ -35,7 +35,9 @@ public struct StudyListView: View {
                     }
                 } else {
                     ScrollView {
-                        LazyVStack(spacing: 0) {
+                        LazyVStack(spacing: FMSpacing.sm) {
+                            studyOverview(count: studies.count)
+
                             ForEach(studies) { study in
                                 StudyRow(study: study)
                                     .contentShape(Rectangle())
@@ -44,7 +46,11 @@ public struct StudyListView: View {
                                     }
                             }
                         }
+                        .padding(.horizontal, FMSpacing.md)
+                        .padding(.top, FMSpacing.xs)
+                        .padding(.bottom, FMSpacing.xxl)
                     }
+                    .background(FMColors.canvas)
                     .refreshable {
                         store.send(.refresh)
                     }
@@ -56,23 +62,17 @@ public struct StudyListView: View {
                 }
             }
         }
-        .navigationTitle("스터디")
+        .background(FMColors.canvas)
+        .navigationTitle("FlyMate")
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                FMNotificationBell(unreadCount: store.unreadNotificationCount) {
-                    store.send(.notificationBellTapped)
+            if #available(iOS 26.0, macOS 26.0, *) {
+                ToolbarItem(placement: .primaryAction) {
+                    topBarActions
                 }
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Menu {
-                    Button("스터디 만들기", systemImage: "plus") {
-                        store.send(.createStudyTapped)
-                    }
-                    Button("초대 코드 입력", systemImage: "ticket") {
-                        store.send(.joinStudyTapped)
-                    }
-                } label: {
-                    Image(systemName: "plus")
+                .sharedBackgroundVisibility(.hidden)
+            } else {
+                ToolbarItem(placement: .primaryAction) {
+                    topBarActions
                 }
             }
         }
@@ -91,6 +91,62 @@ public struct StudyListView: View {
             .presentationDetents([.medium])
         }
     }
+
+    private var topBarActions: some View {
+        HStack(spacing: FMSpacing.xl) {
+            FMNotificationBell(unreadCount: store.unreadNotificationCount) {
+                store.send(.notificationBellTapped)
+            }
+
+            Menu {
+                Button("스터디 만들기", systemImage: "plus") {
+                    store.send(.createStudyTapped)
+                }
+                Button("초대 코드 입력", systemImage: "ticket") {
+                    store.send(.joinStudyTapped)
+                }
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 19, weight: .medium))
+                    .foregroundStyle(FMColors.primary)
+                    .frame(width: 32, height: 32)
+            }
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, FMSpacing.sm)
+        .padding(.vertical, FMSpacing.xs)
+        .background(FMColors.background, in: Capsule())
+        .shadow(color: FMShadow.cardColor, radius: FMShadow.cardRadius, y: FMShadow.cardY)
+    }
+
+    private func studyOverview(count: Int) -> some View {
+        HStack(spacing: FMSpacing.md) {
+            ZStack {
+                RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous)
+                    .fill(FMColors.brandGradient)
+
+                Image(systemName: "person.3.fill")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
+            .frame(width: 52, height: 52)
+            .shadow(color: FMColors.primary.opacity(0.2), radius: 9, y: 5)
+
+            VStack(alignment: .leading, spacing: FMSpacing.xxxs) {
+                Text("함께 성장하는 공간")
+                    .font(FMTypography.title3)
+                    .foregroundStyle(FMColors.label)
+
+                Text("참여 중인 스터디 \(count)개")
+                    .font(FMTypography.callout)
+                    .foregroundStyle(FMColors.secondaryLabel)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, FMSpacing.sm)
+        .accessibilityElement(children: .combine)
+    }
 }
 
 // MARK: - Study Row
@@ -99,35 +155,51 @@ private struct StudyRow: View {
     let study: Domain.Study
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        HStack(spacing: FMSpacing.sm) {
+            ZStack {
+                RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous)
+                    .fill(FMColors.primary.opacity(0.1))
+
+                Text(String(study.name.prefix(1)))
+                    .font(FMTypography.title2)
+                    .foregroundStyle(FMColors.primary)
+            }
+            .frame(width: 52, height: 52)
+
             VStack(alignment: .leading, spacing: FMSpacing.xxs) {
-                HStack {
+                HStack(spacing: FMSpacing.xs) {
                     Text(study.name)
-                        .font(FMTypography.authorName)
+                        .font(FMTypography.headline)
                         .foregroundStyle(FMColors.label)
 
                     Spacer()
 
-                    Text("\(study.memberCount)/\(study.maxMembers)명")
-                        .font(FMTypography.feedMeta)
+                    Image(systemName: "chevron.right")
+                        .font(FMTypography.caption2)
                         .foregroundStyle(FMColors.secondaryLabel)
                 }
 
                 Text(study.description)
-                    .font(FMTypography.feedBody)
+                    .font(FMTypography.callout)
                     .foregroundStyle(FMColors.secondaryLabel)
-                    .lineLimit(2)
+                    .lineLimit(1)
 
-                Text(study.createdAt.relativeString)
-                    .font(FMTypography.feedMeta)
-                    .foregroundStyle(FMColors.secondaryLabel)
+                HStack(spacing: FMSpacing.sm) {
+                    Label("\(study.memberCount)/\(study.maxMembers)", systemImage: "person.2.fill")
+                    Label(study.createdAt.relativeString, systemImage: "clock")
+                }
+                .font(FMTypography.feedMeta)
+                .foregroundStyle(FMColors.secondaryLabel)
             }
-            .padding(.horizontal, FMSpacing.md)
-            .padding(.vertical, FMSpacing.sm)
-
-            Divider()
         }
-        .background(FMColors.background)
+        .padding(FMSpacing.md)
+        .background(FMColors.elevatedBackground)
+        .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous)
+                .stroke(FMColors.border.opacity(0.2), lineWidth: 0.5)
+        }
+        .shadow(color: FMShadow.cardColor, radius: 10, y: 4)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(study.name), 멤버 \(study.memberCount)명")
     }

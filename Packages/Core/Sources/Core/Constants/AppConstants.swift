@@ -7,6 +7,12 @@ public enum AppConstants {
     /// 영상 최대 파일 크기 (bytes) — Supabase Storage 제한 50MB
     public static let maxVideoFileSizeBytes = 50 * 1_024 * 1_024
 
+    /// 프로필 이미지 최대 변 길이 (px) — 업로드 전 다운스케일 기준
+    public static let profileImageMaxDimension: CGFloat = 512
+
+    /// 프로필 이미지 JPEG 압축 품질
+    public static let profileImageCompressionQuality: CGFloat = 0.8
+
     /// 스터디 최대 인원 수
     public static let maxStudyMembers = 8
 

@@ -40,7 +40,7 @@ public struct FeedbackListView: View {
 
                 } else {
                     ScrollView {
-                        LazyVStack(spacing: 0) {
+                        LazyVStack(spacing: FMSpacing.sm) {
                             ForEach(feedbacks) { feedback in
                                 FeedbackManagementRow(
                                     feedback: feedback,
@@ -67,7 +67,10 @@ public struct FeedbackListView: View {
                                     .padding()
                             }
                         }
+                        .padding(.horizontal, FMSpacing.md)
+                        .padding(.bottom, FMSpacing.xxl)
                     }
+                    .background(FMColors.canvas)
                     .refreshable {
                         store.send(.refresh)
                     }
@@ -79,6 +82,7 @@ public struct FeedbackListView: View {
                 }
             }
         }
+        .background(FMColors.canvas)
         .onAppear { store.send(.onAppear) }
         .sheet(item: $store.scope(state: \.report, action: \.report)) { reportStore in
             ReportView(store: reportStore)
@@ -135,8 +139,14 @@ struct FeedbackManagementRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: FMSpacing.xxs) {
+        HStack(alignment: .top, spacing: FMSpacing.sm) {
+            FMProfileImage(
+                url: feedback.authorProfileURL,
+                name: feedback.authorName,
+                size: .lg
+            )
+
+            VStack(alignment: .leading, spacing: FMSpacing.xs) {
                 HStack {
                     Text(feedback.authorName)
                         .font(FMTypography.authorName)
@@ -178,18 +188,28 @@ struct FeedbackManagementRow: View {
                     .font(FMTypography.feedBody)
                     .lineLimit(3)
 
-                Label(
-                    feedback.timestampSeconds.minuteSecondFormatted,
-                    systemImage: "clock"
-                )
-                .font(FMTypography.feedMeta)
-                .foregroundStyle(FMColors.accent)
-            }
-            .padding(.horizontal, FMSpacing.md)
-            .padding(.vertical, FMSpacing.sm)
+                HStack(spacing: FMSpacing.sm) {
+                    Label(
+                        feedback.timestampSeconds.minuteSecondFormatted,
+                        systemImage: "play.fill"
+                    )
 
-            Divider()
+                    if feedback.commentCount > 0 {
+                        Label("답글 \(feedback.commentCount)", systemImage: "bubble.left")
+                    }
+                }
+                .font(FMTypography.feedMetaEmphasis)
+                .foregroundStyle(FMColors.primary)
+
+            }
         }
-        .background(FMColors.background)
+        .padding(FMSpacing.md)
+        .background(FMColors.elevatedBackground)
+        .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous)
+                .stroke(FMColors.border.opacity(0.2), lineWidth: 0.5)
+        }
+        .shadow(color: FMShadow.cardColor, radius: 9, y: 4)
     }
 }

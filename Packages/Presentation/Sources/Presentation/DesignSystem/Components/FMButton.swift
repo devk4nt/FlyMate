@@ -46,17 +46,28 @@ public struct FMButton: View {
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, FMSpacing.sm)
+            .frame(minHeight: 52)
             .padding(.horizontal, FMSpacing.md)
-            .background(backgroundColor)
-            .foregroundStyle(foregroundColor)
-            .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm))
-            .overlay {
-                if style == .secondary {
-                    RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm)
-                        .stroke(FMColors.border, lineWidth: 1)
+            .background {
+                if style == .primary {
+                    FMColors.brandGradient
+                } else {
+                    backgroundColor
                 }
             }
+            .foregroundStyle(foregroundColor)
+            .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous))
+            .overlay {
+                if style == .secondary {
+                    RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous)
+                        .stroke(FMColors.border.opacity(0.55), lineWidth: 1)
+                }
+            }
+            .shadow(
+                color: style == .primary ? FMColors.primary.opacity(0.22) : .clear,
+                radius: 10,
+                y: 5
+            )
         }
         .disabled(!isEnabled || isLoading)
         .opacity(isEnabled ? 1.0 : 0.5)

@@ -34,6 +34,9 @@ public struct MainTabView: View {
             }
             .tag(TabFeature.State.Tab.settings)
         }
+        .tint(FMColors.primary)
+        .toolbarBackground(.visible, for: .tabBar)
+        .toolbarBackground(.ultraThinMaterial, for: .tabBar)
         .onAppear {
             store.send(.onAppear)
         }
