@@ -1,6 +1,7 @@
-import SwiftUI
+@preconcurrency import SwiftUI
 import StoreKit
 import ComposableArchitecture
+import Core
 import Domain
 import Presentation
 import Data
@@ -212,209 +213,450 @@ struct FlyMateApp: App {
     }
 
     #if DEBUG
+    // MARK: - Mock Dependencies
+    //
+    // 시나리오: "유나"는 스터디 A(승무원 영상면접)의 방장이자 스터디 B(아나운서 스피치)의 팀원.
+    // - 스터디 A: 멤버 4명, 영상 4개(내 영상 2 + 팀원 영상 2), 가입 대기 요청 1건
+    // - 스터디 B: 멤버 3명, 영상 2개(내 영상 1 + 방장 영상 1)
+    // - 피드백 10개(다양한 타임스탬프/멘션), 댓글 4개, 알림 4종
+    // 생성/삭제는 LockIsolated 스토어에 반영되어 세션 내에서 지속된다.
     private static func registerMockDependencies(_ dependencies: inout DependencyValues) {
-        let previewUserID = UUID(uuidString: "00000000-0000-0000-0000-000000000010")!
-        let previewUser = User(
-            id: previewUserID,
+        let now = Date()
+        let day: TimeInterval = 86_400
+        let hour: TimeInterval = 3_600
+
+        // 재현 가능한 고정 UUID (suffix로 구분: 1x 유저, 0x 스터디, 2x 멤버십, 1xx 영상, 2xx 피드백, 3xx 알림, 4xx 댓글, 5xx 가입요청)
+        @Sendable func uuid(_ suffix: Int) -> UUID {
+            UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", suffix))!
+        }
+
+        // 실제 재생 가능한 공개 샘플 영상 (플레이어/타임스탬프 이동 테스트용)
+        @Sendable func sampleVideoURL(_ urlString: String) -> URL {
+            URL(string: urlString)!
+        }
+        @Sendable func sampleThumbnailURL(_ suffix: Int) -> URL? {
+            URL(string: "https://picsum.photos/seed/flymate\(suffix)/640/360")
+        }
+        // ~10분짜리 장편 샘플 — 3분 내 타임스탬프 이동 모두 커버
+        let bigBuckBunny = "https://archive.org/download/BigBuckBunny_124/Content/big_buck_bunny_720p_surround.mp4"
+        let elephantsDream = "https://archive.org/download/ElephantsDream/ed_1024_512kb.mp4"
+        let bipbopHLS = "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_ts/master.m3u8"
+        // ~52초 단편 샘플
+        let sintelTrailer = "https://media.w3.org/2010/05/sintel/trailer.mp4"
+        let sintelTrailer720 = "https://download.blender.org/durian/trailer/sintel_trailer-720p.mp4"
+
+        // MARK: Users
+        let meID = uuid(10)
+        let haneulID = uuid(11)   // 김하늘 — 스터디 B 방장
+        let seoyeonID = uuid(12)  // 박서연
+        let minjunID = uuid(13)   // 이민준
+        let jiwooID = uuid(14)    // 최지우 — 스터디 A 가입 대기
+
+        let me = User(
+            id: meID,
             email: "preview@flymate.app",
-            name: "Preview User",
+            name: "유나",
             provider: .apple,
-            createdAt: Date()
+            createdAt: now.addingTimeInterval(-90 * day)
         )
 
-        let mockStudyID = UUID(uuidString: "00000000-0000-0000-0000-000000000001")!
-        let mockStudy = Study(
-            id: mockStudyID,
-            name: "iOS 면접 스터디",
-            description: "Swift & iOS 면접 준비 스터디",
-            ownerID: previewUserID,
-            inviteCode: "ABC123",
+        // MARK: Studies
+        let studyA = Study(
+            id: uuid(1),
+            name: "승무원 영상면접 스터디",
+            description: "국내·외항사 승무원 영상면접을 함께 준비해요",
+            ownerID: meID,
+            inviteCode: "FLY123",
             maxMembers: 6,
             members: [
-                StudyMember(
-                    id: UUID(),
-                    userID: previewUserID,
-                    userName: "Preview User",
-                    role: .owner,
-                    joinedAt: Date()
-                )
+                StudyMember(id: uuid(21), userID: meID, userName: "유나", role: .owner, joinedAt: now.addingTimeInterval(-60 * day)),
+                StudyMember(id: uuid(22), userID: haneulID, userName: "김하늘", role: .member, joinedAt: now.addingTimeInterval(-50 * day)),
+                StudyMember(id: uuid(23), userID: seoyeonID, userName: "박서연", role: .member, joinedAt: now.addingTimeInterval(-45 * day)),
+                StudyMember(id: uuid(24), userID: minjunID, userName: "이민준", role: .member, joinedAt: now.addingTimeInterval(-20 * day)),
             ],
-            createdAt: Date(),
-            notice: "매주 월요일 오후 8시 모의 면접을 진행합니다."
+            createdAt: now.addingTimeInterval(-60 * day),
+            notice: "매주 화·목 저녁 9시까지 영상 업로드하고, 서로 피드백 2개 이상 남겨주세요!",
+            noticeUpdatedAt: now.addingTimeInterval(-2 * day)
         )
+
+        let studyB = Study(
+            id: uuid(2),
+            name: "아나운서 스피치 스터디",
+            description: "뉴스 리딩과 MC 멘트 중심의 스피치 훈련",
+            ownerID: haneulID,
+            inviteCode: "ANN456",
+            maxMembers: 8,
+            members: [
+                StudyMember(id: uuid(25), userID: haneulID, userName: "김하늘", role: .owner, joinedAt: now.addingTimeInterval(-80 * day)),
+                StudyMember(id: uuid(26), userID: meID, userName: "유나", role: .member, joinedAt: now.addingTimeInterval(-40 * day)),
+                StudyMember(id: uuid(27), userID: jiwooID, userName: "최지우", role: .member, joinedAt: now.addingTimeInterval(-15 * day)),
+            ],
+            createdAt: now.addingTimeInterval(-80 * day),
+            notice: "리딩 영상은 3분 이내로 올려주세요."
+        )
+
+        // 미가입 스터디 — 초대코드 "CRW789" 입력으로 가입 요청 시나리오 테스트용
+        let studyC = Study(
+            id: uuid(3),
+            name: "외항사 승무원 준비반",
+            description: "에미레이트·카타르 등 외항사 영어면접 집중 대비",
+            ownerID: jiwooID,
+            inviteCode: "CRW789",
+            maxMembers: 8,
+            members: [
+                StudyMember(id: uuid(28), userID: jiwooID, userName: "최지우", role: .owner, joinedAt: now.addingTimeInterval(-30 * day)),
+                StudyMember(id: uuid(29), userID: minjunID, userName: "이민준", role: .member, joinedAt: now.addingTimeInterval(-10 * day)),
+            ],
+            createdAt: now.addingTimeInterval(-30 * day),
+            notice: "영어 답변 영상 위주로 올려주세요."
+        )
+
+        let studyStore = LockIsolated([studyA, studyB])
+
+        // MARK: Videos
+        let videos: [Video] = [
+            Video(
+                id: uuid(100), studyID: studyA.id, uploaderID: meID, uploaderName: "유나",
+                title: "기내 안전 안내 롤플레이",
+                videoURL: sampleVideoURL(bigBuckBunny), thumbnailURL: sampleThumbnailURL(100),
+                durationSeconds: 178, feedbackCount: 3,
+                focusPoints: "발음, 시선 처리",
+                feedbackRequest: "미소가 어색하지 않은지 봐주세요!",
+                createdAt: now.addingTimeInterval(-3 * day)
+            ),
+            Video(
+                id: uuid(101), studyID: studyA.id, uploaderID: meID, uploaderName: "유나",
+                title: "1분 자기소개 스피치",
+                videoURL: sampleVideoURL(sintelTrailer), thumbnailURL: sampleThumbnailURL(101),
+                durationSeconds: 52, feedbackCount: 2,
+                createdAt: now.addingTimeInterval(-1 * day)
+            ),
+            Video(
+                id: uuid(102), studyID: studyA.id, uploaderID: seoyeonID, uploaderName: "박서연",
+                title: "영어 기내방송 연습",
+                videoURL: sampleVideoURL(elephantsDream), thumbnailURL: sampleThumbnailURL(102),
+                durationSeconds: 145, feedbackCount: 2,
+                focusPoints: "영어 발음과 억양",
+                createdAt: now.addingTimeInterval(-2 * day)
+            ),
+            Video(
+                id: uuid(103), studyID: studyA.id, uploaderID: minjunID, uploaderName: "이민준",
+                title: "돌발질문 대처 — 컴플레인 응대",
+                videoURL: sampleVideoURL(bipbopHLS), thumbnailURL: sampleThumbnailURL(103),
+                durationSeconds: 170, feedbackCount: 1,
+                createdAt: now.addingTimeInterval(-5 * hour)
+            ),
+            Video(
+                id: uuid(104), studyID: studyB.id, uploaderID: meID, uploaderName: "유나",
+                title: "뉴스 리딩 — 경제 브리핑",
+                videoURL: sampleVideoURL(bigBuckBunny), thumbnailURL: sampleThumbnailURL(104),
+                durationSeconds: 120, feedbackCount: 1,
+                focusPoints: "숫자 강세, 문단 전환 톤",
+                createdAt: now.addingTimeInterval(-4 * day)
+            ),
+            Video(
+                id: uuid(105), studyID: studyB.id, uploaderID: haneulID, uploaderName: "김하늘",
+                title: "행사 MC 오프닝 멘트",
+                videoURL: sampleVideoURL(sintelTrailer720), thumbnailURL: sampleThumbnailURL(105),
+                durationSeconds: 52, feedbackCount: 1,
+                createdAt: now.addingTimeInterval(-6 * hour)
+            ),
+        ]
+        let videoStore = LockIsolated(videos)
+        let myVideoIDs = Set(videos.filter { $0.uploaderID == meID }.map(\.id))
+
+        // MARK: Feedbacks
+        let feedbackStore = MockFeedbackStore(initialFeedbacks: [
+            // 영상 100 — 기내 안전 안내 (내 영상)
+            Feedback(
+                id: uuid(200), videoID: uuid(100), studyID: studyA.id, authorID: haneulID, authorName: "김하늘",
+                content: "도입부 미소가 정말 자연스러워요. 인사 각도도 좋습니다!",
+                timestampSeconds: 12, createdAt: now.addingTimeInterval(-2 * day), commentCount: 2
+            ),
+            Feedback(
+                id: uuid(201), videoID: uuid(100), studyID: studyA.id, authorID: seoyeonID, authorName: "박서연",
+                content: "산소마스크 안내 파트에서 말이 조금 빨라져요. 한 박자 쉬어가면 더 안정적일 것 같아요.",
+                timestampSeconds: 95, createdAt: now.addingTimeInterval(-1 * day),
+                mentionedUserIDs: [meID], commentCount: 1
+            ),
+            Feedback(
+                id: uuid(202), videoID: uuid(100), studyID: studyA.id, authorID: minjunID, authorName: "이민준",
+                content: "마무리 인사에서 시선이 카메라 아래로 떨어지네요. 끝까지 렌즈를 봐주세요.",
+                timestampSeconds: 168, createdAt: now.addingTimeInterval(-20 * hour)
+            ),
+            // 영상 101 — 1분 자기소개 (내 영상)
+            Feedback(
+                id: uuid(203), videoID: uuid(101), studyID: studyA.id, authorID: haneulID, authorName: "김하늘",
+                content: "지원 동기가 구체적이라 설득력 있어요. 목소리 톤도 밝고 좋습니다.",
+                timestampSeconds: 18, createdAt: now.addingTimeInterval(-18 * hour)
+            ),
+            Feedback(
+                id: uuid(204), videoID: uuid(101), studyID: studyA.id, authorID: seoyeonID, authorName: "박서연",
+                content: "끝맺음이 살짝 급하게 끝나는 느낌이에요. \"감사합니다\" 앞에서 호흡 한 번!",
+                timestampSeconds: 45, createdAt: now.addingTimeInterval(-10 * hour)
+            ),
+            // 영상 102 — 영어 기내방송 (박서연 영상, 내가 남긴 피드백 포함)
+            Feedback(
+                id: uuid(205), videoID: uuid(102), studyID: studyA.id, authorID: meID, authorName: "유나",
+                content: "Ladies and gentlemen 발음이 훨씬 부드러워졌어요! 억양 연습 효과가 보입니다.",
+                timestampSeconds: 30, createdAt: now.addingTimeInterval(-1 * day), commentCount: 1
+            ),
+            Feedback(
+                id: uuid(206), videoID: uuid(102), studyID: studyA.id, authorID: minjunID, authorName: "이민준",
+                content: "중반부 착륙 안내에서 문장 사이 간격이 일정해서 듣기 편했어요.",
+                timestampSeconds: 110, createdAt: now.addingTimeInterval(-15 * hour)
+            ),
+            // 영상 103 — 돌발질문 대처 (이민준 영상)
+            Feedback(
+                id: uuid(207), videoID: uuid(103), studyID: studyA.id, authorID: meID, authorName: "유나",
+                content: "컴플레인 상황에서 공감 표현을 먼저 한 게 좋았어요. 해결책 제시 순서도 깔끔!",
+                timestampSeconds: 45, createdAt: now.addingTimeInterval(-3 * hour)
+            ),
+            // 영상 104 — 뉴스 리딩 (내 영상, 스터디 B)
+            Feedback(
+                id: uuid(208), videoID: uuid(104), studyID: studyB.id, authorID: haneulID, authorName: "김하늘",
+                content: "숫자 읽을 때 강세가 정확해요. 다만 문단 전환에서 톤이 똑같아서 단조롭게 들려요.",
+                timestampSeconds: 60, createdAt: now.addingTimeInterval(-3 * day)
+            ),
+            // 영상 105 — MC 오프닝 (김하늘 영상, 스터디 B)
+            Feedback(
+                id: uuid(209), videoID: uuid(105), studyID: studyB.id, authorID: meID, authorName: "유나",
+                content: "오프닝 첫 문장의 임팩트가 좋네요. 관객 호응 유도 멘트도 추가해보면 어떨까요?",
+                timestampSeconds: 20, createdAt: now.addingTimeInterval(-2 * hour)
+            ),
+        ])
+
+        // MARK: Comments
+        let commentStore = LockIsolated<[FeedbackComment]>([
+            FeedbackComment(
+                id: uuid(400), feedbackID: uuid(200), studyID: studyA.id, authorID: meID, authorName: "유나",
+                content: "감사합니다! 인사 각도는 거울 보면서 연습한 보람이 있네요 😊",
+                createdAt: now.addingTimeInterval(-2 * day + hour)
+            ),
+            FeedbackComment(
+                id: uuid(401), feedbackID: uuid(200), studyID: studyA.id, authorID: haneulID, authorName: "김하늘",
+                content: "@유나 다음 영상도 기대할게요!",
+                mentionedUserIDs: [meID],
+                createdAt: now.addingTimeInterval(-2 * day + 2 * hour)
+            ),
+            FeedbackComment(
+                id: uuid(402), feedbackID: uuid(201), studyID: studyA.id, authorID: meID, authorName: "유나",
+                content: "맞아요, 그 파트만 가면 긴장해서 빨라지더라고요. 다시 찍어볼게요!",
+                createdAt: now.addingTimeInterval(-20 * hour)
+            ),
+            FeedbackComment(
+                id: uuid(403), feedbackID: uuid(205), studyID: studyA.id, authorID: seoyeonID, authorName: "박서연",
+                content: "@유나 님이 알려주신 쉐도잉 방법 덕분이에요. 감사합니다!",
+                mentionedUserIDs: [meID],
+                createdAt: now.addingTimeInterval(-12 * hour)
+            ),
+        ])
+
+        // MARK: Notifications
+        let notificationStore = LockIsolated<[AppNotification]>([
+            AppNotification(
+                id: uuid(300), recipientID: meID, type: .feedbackOnMyVideo,
+                title: "새 피드백이 달렸어요",
+                body: "이민준님이 \"기내 안전 안내 롤플레이\" 영상에 피드백을 남겼습니다.",
+                referenceVideoID: uuid(100), referenceFeedbackID: uuid(202),
+                isRead: false, createdAt: now.addingTimeInterval(-20 * hour)
+            ),
+            AppNotification(
+                id: uuid(301), recipientID: meID, type: .replyOnMyFeedback,
+                title: "내 피드백에 답글이 달렸어요",
+                body: "박서연님이 회원님의 피드백에 답글을 남겼습니다.",
+                referenceVideoID: uuid(102), referenceFeedbackID: uuid(205),
+                isRead: false, createdAt: now.addingTimeInterval(-12 * hour)
+            ),
+            AppNotification(
+                id: uuid(302), recipientID: meID, type: .mentionedInFeedback,
+                title: "피드백에서 태그되었어요",
+                body: "박서연님이 피드백에서 회원님을 태그했습니다.",
+                referenceVideoID: uuid(100), referenceFeedbackID: uuid(201),
+                isRead: true, createdAt: now.addingTimeInterval(-1 * day)
+            ),
+            AppNotification(
+                id: uuid(303), recipientID: meID, type: .mentionedInFeedbackComment,
+                title: "답글에서 태그되었어요",
+                body: "김하늘님이 답글에서 회원님을 태그했습니다.",
+                referenceVideoID: uuid(100), referenceFeedbackID: uuid(200),
+                isRead: true, createdAt: now.addingTimeInterval(-2 * day + 2 * hour)
+            ),
+        ])
+
+        // MARK: Join Requests (스터디 A 방장 시나리오용)
+        let joinRequestStore = LockIsolated<[JoinRequest]>([
+            JoinRequest(
+                id: uuid(500), studyID: studyA.id, studyName: studyA.name,
+                userID: jiwooID, userName: "최지우",
+                status: .pending, createdAt: now.addingTimeInterval(-5 * hour)
+            ),
+        ])
+
+        let memberStats: [UUID: (given: Int, received: Int, videos: Int)] = [
+            meID: (given: 3, received: 6, videos: 3),
+            haneulID: (given: 3, received: 1, videos: 1),
+            seoyeonID: (given: 2, received: 2, videos: 1),
+            minjunID: (given: 2, received: 1, videos: 1),
+        ]
+
+        // MARK: Client 등록
 
         // Auth
         dependencies.authClient = AuthClient(
-            currentUser: { previewUser },
-            signInWithApple: { _, _ in previewUser },
-            signInWithKakao: { _ in previewUser },
+            currentUser: { me },
+            signInWithApple: { _, _ in me },
+            signInWithKakao: { _ in me },
             signOut: {},
             deleteAccount: {},
-            observeAuthState: { AsyncStream { continuation in continuation.yield(previewUser) } }
+            observeAuthState: { AsyncStream { continuation in continuation.yield(me) } }
         )
 
         // Study
         dependencies.studyClient = StudyClient(
-            fetchMyStudies: { [mockStudy] },
-            fetchStudy: { _ in mockStudy },
+            fetchMyStudies: { studyStore.value },
+            fetchStudy: { id in
+                studyStore.value.first { $0.id == id } ?? studyA
+            },
             createStudy: { request in
-                Study(
+                let study = Study(
                     id: UUID(),
                     name: request.name,
                     description: request.description,
-                    ownerID: previewUserID,
+                    ownerID: meID,
                     inviteCode: "NEW123",
                     maxMembers: request.maxMembers,
                     members: [
-                        StudyMember(
-                            id: UUID(),
-                            userID: previewUserID,
-                            userName: "Preview User",
-                            role: .owner,
-                            joinedAt: Date()
-                        )
+                        StudyMember(id: UUID(), userID: meID, userName: me.name, role: .owner, joinedAt: Date())
                     ],
                     createdAt: Date()
                 )
+                studyStore.withValue { $0.append(study) }
+                return study
             },
-            requestJoinStudy: { _ in
-                JoinRequest(
-                    id: UUID(),
-                    studyID: mockStudyID,
-                    studyName: "iOS 면접 스터디",
-                    userID: previewUserID,
-                    userName: "Preview User",
-                    status: .pending,
-                    createdAt: Date()
+            requestJoinStudy: { code in
+                if studyStore.value.contains(where: { $0.inviteCode == code }) {
+                    throw AppError.business(.alreadyJoined)
+                }
+                guard code == studyC.inviteCode else {
+                    throw AppError.business(.invalidInviteCode)
+                }
+                // 3초 뒤 방장(최지우)이 승인한 것처럼 내 스터디 목록에 추가
+                Task {
+                    try? await Task.sleep(for: .seconds(3))
+                    studyStore.withValue { studies in
+                        guard !studies.contains(where: { $0.id == studyC.id }) else { return }
+                        var joined = studyC
+                        joined.members.append(
+                            StudyMember(id: UUID(), userID: meID, userName: me.name, role: .member, joinedAt: Date())
+                        )
+                        studies.append(joined)
+                    }
+                }
+                return JoinRequest(
+                    id: UUID(), studyID: studyC.id, studyName: studyC.name,
+                    userID: meID, userName: me.name,
+                    status: .pending, createdAt: Date()
                 )
             },
-            leaveStudy: { _ in },
-            deleteStudy: { _ in },
-            removeMember: { _, _ in },
+            leaveStudy: { id in studyStore.withValue { $0.removeAll { $0.id == id } } },
+            deleteStudy: { id in studyStore.withValue { $0.removeAll { $0.id == id } } },
+            removeMember: { studyID, userID in
+                studyStore.withValue { studies in
+                    guard let index = studies.firstIndex(where: { $0.id == studyID }) else { return }
+                    studies[index].members.removeAll { $0.userID == userID }
+                }
+            },
             fetchInviteCodeInfo: { code in
-                InviteCode(
+                guard let study = (studyStore.value + [studyC]).first(where: { $0.inviteCode == code }) else {
+                    throw AppError.business(.invalidInviteCode)
+                }
+                return InviteCode(
                     code: code,
-                    studyID: mockStudyID,
-                    studyName: "iOS 면접 스터디",
-                    createdAt: Date(),
-                    expiresAt: Date().addingTimeInterval(7 * 24 * 60 * 60),
+                    studyID: study.id,
+                    studyName: study.name,
+                    createdAt: now,
+                    expiresAt: now.addingTimeInterval(7 * day),
                     isActive: true
                 )
             },
-            updateNotice: { _, _ in },
-            fetchPendingRequests: { _ in [] },
-            approveJoinRequest: { _ in },
-            rejectJoinRequest: { _ in },
-            cancelJoinRequest: { _ in },
+            updateNotice: { studyID, notice in
+                studyStore.withValue { studies in
+                    guard let index = studies.firstIndex(where: { $0.id == studyID }) else { return }
+                    studies[index].notice = notice
+                    studies[index].noticeUpdatedAt = Date()
+                }
+            },
+            fetchPendingRequests: { studyID in
+                joinRequestStore.value.filter { $0.studyID == studyID }
+            },
+            approveJoinRequest: { requestID in
+                guard let request = joinRequestStore.value.first(where: { $0.id == requestID }) else { return }
+                joinRequestStore.withValue { $0.removeAll { $0.id == requestID } }
+                studyStore.withValue { studies in
+                    guard let index = studies.firstIndex(where: { $0.id == request.studyID }) else { return }
+                    studies[index].members.append(
+                        StudyMember(id: UUID(), userID: request.userID, userName: request.userName, role: .member, joinedAt: Date())
+                    )
+                }
+            },
+            rejectJoinRequest: { requestID in
+                joinRequestStore.withValue { $0.removeAll { $0.id == requestID } }
+            },
+            cancelJoinRequest: { requestID in
+                joinRequestStore.withValue { $0.removeAll { $0.id == requestID } }
+            },
             fetchMemberStats: { studyID, userID in
-                MemberStats(
+                let stats = memberStats[userID] ?? (given: 0, received: 0, videos: 0)
+                return MemberStats(
                     userID: userID,
                     studyID: studyID,
-                    feedbackGivenCount: 12,
-                    feedbackReceivedCount: 8,
-                    videosUploadedCount: 5,
-                    joinedAt: Date().addingTimeInterval(-30 * 24 * 60 * 60)
+                    feedbackGivenCount: stats.given,
+                    feedbackReceivedCount: stats.received,
+                    videosUploadedCount: stats.videos,
+                    joinedAt: now.addingTimeInterval(-40 * day)
                 )
             }
         )
 
         // Video
+        let uploadedVideoURL = sampleVideoURL(sintelTrailer)
+        let uploadedThumbnailURL = sampleThumbnailURL(999)
         dependencies.videoClient = VideoClient(
             fetchVideos: { studyID, _ in
-                [
-                    Video(
-                        id: UUID(uuidString: "00000000-0000-0000-0000-000000000100")!,
-                        studyID: studyID,
-                        uploaderID: previewUserID,
-                        uploaderName: "Preview User",
-                        title: "자기소개 면접 연습",
-                        videoURL: URL(string: "https://example.com/video1.mp4")!,
-                        durationSeconds: 180,
-                        feedbackCount: 3,
-                        createdAt: Date().addingTimeInterval(-86400)
-                    ),
-                    Video(
-                        id: UUID(uuidString: "00000000-0000-0000-0000-000000000101")!,
-                        studyID: studyID,
-                        uploaderID: previewUserID,
-                        uploaderName: "Preview User",
-                        title: "기술 면접 모의",
-                        videoURL: URL(string: "https://example.com/video2.mp4")!,
-                        durationSeconds: 175,
-                        feedbackCount: 1,
-                        createdAt: Date()
-                    ),
-                ]
+                // ponytail: 커서 무시 — 목 데이터는 단일 페이지
+                videoStore.value
+                    .filter { $0.studyID == studyID }
+                    .sorted { $0.createdAt > $1.createdAt }
             },
             fetchVideo: { id in
-                Video(
-                    id: id,
-                    studyID: mockStudyID,
-                    uploaderID: previewUserID,
-                    uploaderName: "Preview User",
-                    title: "Mock Video",
-                    videoURL: URL(string: "https://example.com/video.mp4")!,
-                    durationSeconds: 120,
-                    createdAt: Date()
-                )
+                videoStore.value.first { $0.id == id } ?? videos[0]
             },
             uploadVideo: { request, progress in
-                for p in [0.3, 0.6, 0.9, 1.0] as [Double] {
+                for step in [0.25, 0.5, 0.75, 1.0] as [Double] {
                     try await Task.sleep(for: .milliseconds(300))
-                    progress(p)
+                    progress(step)
                 }
-                return Video(
+                let video = Video(
                     id: UUID(),
                     studyID: request.studyID,
-                    uploaderID: previewUserID,
-                    uploaderName: "Preview User",
+                    uploaderID: meID,
+                    uploaderName: me.name,
                     title: request.title,
-                    videoURL: URL(string: "https://example.com/uploaded.mp4")!,
-                    durationSeconds: 60,
+                    videoURL: uploadedVideoURL,
+                    thumbnailURL: uploadedThumbnailURL,
+                    durationSeconds: request.durationSeconds,
+                    focusPoints: request.focusPoints,
+                    feedbackRequest: request.feedbackRequest,
                     createdAt: Date()
                 )
+                videoStore.withValue { $0.insert(video, at: 0) }
+                return video
             },
-            deleteVideo: { _ in }
+            deleteVideo: { id in videoStore.withValue { $0.removeAll { $0.id == id } } }
         )
 
         // Feedback
-        let mockVideoID1 = UUID(uuidString: "00000000-0000-0000-0000-000000000100")!
-        let mockVideoID2 = UUID(uuidString: "00000000-0000-0000-0000-000000000101")!
-        let reviewerID = UUID(uuidString: "00000000-0000-0000-0000-000000000020")!
-
-        let feedbackStore = MockFeedbackStore(initialFeedbacks: [
-            Feedback(
-                id: UUID(uuidString: "00000000-0000-0000-0000-000000000200")!,
-                videoID: mockVideoID1,
-                studyID: mockStudyID,
-                authorID: reviewerID,
-                authorName: "김면접",
-                content: "자기소개 도입부가 인상적이에요. 다만 경력 설명 부분에서 좀 더 구체적인 수치를 넣으면 좋겠습니다.",
-                timestampSeconds: 35,
-                createdAt: Date().addingTimeInterval(-7200)
-            ),
-            Feedback(
-                id: UUID(uuidString: "00000000-0000-0000-0000-000000000201")!,
-                videoID: mockVideoID1,
-                studyID: mockStudyID,
-                authorID: reviewerID,
-                authorName: "김면접",
-                content: "마무리 멘트가 자연스럽고 좋습니다!",
-                timestampSeconds: 150,
-                createdAt: Date().addingTimeInterval(-3600)
-            ),
-            Feedback(
-                id: UUID(uuidString: "00000000-0000-0000-0000-000000000202")!,
-                videoID: mockVideoID2,
-                studyID: mockStudyID,
-                authorID: reviewerID,
-                authorName: "김면접",
-                content: "Swift Concurrency 설명할 때 Actor 예시를 추가하면 더 설득력 있을 것 같아요.",
-                timestampSeconds: 90,
-                createdAt: Date().addingTimeInterval(-1800)
-            ),
-        ])
-
         dependencies.feedbackClient = FeedbackClient(
             fetchFeedbacks: { videoID in
                 feedbackStore.feedbacks(for: videoID)
@@ -423,21 +665,22 @@ struct FlyMateApp: App {
                 let feedback = Feedback(
                     id: UUID(),
                     videoID: request.videoID,
-                    studyID: mockStudyID,
-                    authorID: previewUserID,
-                    authorName: "Preview User",
+                    studyID: videoStore.value.first { $0.id == request.videoID }?.studyID ?? studyA.id,
+                    authorID: meID,
+                    authorName: me.name,
                     content: request.content,
                     timestampSeconds: request.timestampSeconds,
-                    createdAt: Date()
+                    createdAt: Date(),
+                    mentionedUserIDs: request.mentionedUserIDs
                 )
                 feedbackStore.add(feedback)
                 return feedback
             },
             fetchReceived: { userID, _ in
-                feedbackStore.received(by: userID)
+                feedbackStore.all().filter { myVideoIDs.contains($0.videoID) && $0.authorID != userID }
             },
             fetchGiven: { userID, _ in
-                feedbackStore.given(by: userID)
+                feedbackStore.all().filter { $0.authorID == userID }
             },
             observeFeedbacks: { videoID in
                 feedbackStore.observe(videoID: videoID)
@@ -447,29 +690,46 @@ struct FlyMateApp: App {
             }
         )
 
-        // Feedback Comment (Mock)
+        // Feedback Comment
         dependencies.feedbackCommentClient = FeedbackCommentClient(
-            fetchComments: { _ in [] },
-            fetchLatestComments: { _ in [:] },
+            fetchComments: { feedbackID in
+                commentStore.value
+                    .filter { $0.feedbackID == feedbackID }
+                    .sorted { $0.createdAt < $1.createdAt }
+            },
+            fetchLatestComments: { feedbackIDs in
+                let allComments = commentStore.value
+                var latest: [UUID: FeedbackComment] = [:]
+                for feedbackID in feedbackIDs {
+                    latest[feedbackID] = allComments
+                        .filter { $0.feedbackID == feedbackID }
+                        .max { $0.createdAt < $1.createdAt }
+                }
+                return latest
+            },
             createComment: { request in
-                FeedbackComment(
+                let comment = FeedbackComment(
                     id: UUID(),
                     feedbackID: request.feedbackID,
-                    studyID: mockStudyID,
-                    authorID: previewUserID,
-                    authorName: "Preview User",
+                    studyID: feedbackStore.all().first { $0.id == request.feedbackID }?.studyID ?? studyA.id,
+                    authorID: meID,
+                    authorName: me.name,
                     content: request.content,
                     mentionedUserIDs: request.mentionedUserIDs,
                     createdAt: Date()
                 )
+                commentStore.withValue { $0.append(comment) }
+                return comment
             },
-            deleteComment: { _ in }
+            deleteComment: { id in
+                commentStore.withValue { $0.removeAll { $0.id == id } }
+            }
         )
 
         // User
         dependencies.userClient = UserClient(
-            fetchUser: { _ in previewUser },
-            updateProfile: { _ in previewUser },
+            fetchUser: { _ in me },
+            updateProfile: { _ in me },
             registerDeviceToken: { _ in },
             removeDeviceToken: { _ in },
             updateNotificationSettings: { _ in }
@@ -485,35 +745,26 @@ struct FlyMateApp: App {
         )
 
         // Notification
-        let mockNotifications: [AppNotification] = [
-            AppNotification(
-                id: UUID(uuidString: "00000000-0000-0000-0000-000000000300")!,
-                recipientID: previewUserID,
-                type: .feedbackOnMyVideo,
-                title: "새 피드백이 달렸어요",
-                body: "김면접님이 \"자기소개 면접 연습\" 영상에 피드백을 남겼습니다.",
-                referenceVideoID: UUID(uuidString: "00000000-0000-0000-0000-000000000100")!,
-                referenceFeedbackID: UUID(uuidString: "00000000-0000-0000-0000-000000000200")!,
-                isRead: false,
-                createdAt: Date().addingTimeInterval(-1800)
-            ),
-            AppNotification(
-                id: UUID(uuidString: "00000000-0000-0000-0000-000000000301")!,
-                recipientID: previewUserID,
-                type: .mentionedInFeedback,
-                title: "피드백에서 태그되었어요",
-                body: "김면접님이 피드백에서 회원님을 태그했습니다.",
-                referenceVideoID: UUID(uuidString: "00000000-0000-0000-0000-000000000101")!,
-                referenceFeedbackID: UUID(uuidString: "00000000-0000-0000-0000-000000000202")!,
-                isRead: true,
-                createdAt: Date().addingTimeInterval(-7200)
-            ),
-        ]
         dependencies.notificationClient = NotificationClient(
-            fetchNotifications: { _, _ in mockNotifications },
-            fetchUnreadCount: { _ in mockNotifications.filter { !$0.isRead }.count },
-            markAsRead: { _ in },
-            markAllAsRead: { _ in },
+            fetchNotifications: { _, _ in
+                notificationStore.value.sorted { $0.createdAt > $1.createdAt }
+            },
+            fetchUnreadCount: { _ in
+                notificationStore.value.filter { !$0.isRead }.count
+            },
+            markAsRead: { id in
+                notificationStore.withValue { notifications in
+                    guard let index = notifications.firstIndex(where: { $0.id == id }) else { return }
+                    notifications[index].isRead = true
+                }
+            },
+            markAllAsRead: { _ in
+                notificationStore.withValue { notifications in
+                    for index in notifications.indices {
+                        notifications[index].isRead = true
+                    }
+                }
+            },
             observeNotifications: { _ in AsyncStream { continuation in continuation.finish() } }
         )
 
@@ -522,7 +773,7 @@ struct FlyMateApp: App {
             createReport: { request in
                 Report(
                     id: UUID(),
-                    reporterID: previewUserID,
+                    reporterID: meID,
                     targetType: request.targetType,
                     targetID: request.targetID,
                     reason: request.reason,
@@ -539,9 +790,20 @@ struct FlyMateApp: App {
             setBool: { _, _ in }
         )
 
-        // Subscription
+        // Subscription (프리미엄 — 스터디 2개 소속 시나리오와 일관성 유지)
+        let premium = Entitlement(
+            planID: "premium_monthly",
+            status: "active",
+            expiresDate: now.addingTimeInterval(30 * day),
+            maxOwnedStudies: 5,
+            maxJoinedStudies: 5,
+            maxVideoDurationSeconds: 180,
+            maxStudyMembers: 8,
+            currentOwnedStudies: 1,
+            currentJoinedStudies: 1
+        )
         dependencies.subscriptionClient = SubscriptionClient(
-            fetchEntitlements: { _ in .free },
+            fetchEntitlements: { _ in premium },
             fetchPlans: {
                 [
                     SubscriptionPlan(id: "free", name: "무료", maxOwnedStudies: 1, maxJoinedStudies: 1, maxVideoDurationSeconds: 60, maxStudyMembers: 3),
@@ -549,8 +811,8 @@ struct FlyMateApp: App {
                     SubscriptionPlan(id: "premium_yearly", name: "프리미엄 (연간)", maxOwnedStudies: 5, maxJoinedStudies: 5, maxVideoDurationSeconds: 180, maxStudyMembers: 8),
                 ]
             },
-            verifyReceipt: { _ in .free },
-            checkFeatureLimit: { _, _ in FeatureLimit(allowed: true, current: 0, max: 1, feature: "create_study") },
+            verifyReceipt: { _ in premium },
+            checkFeatureLimit: { _, feature in FeatureLimit(allowed: true, current: 1, max: 5, feature: feature) },
             fetchProducts: { [] },
             purchase: { _ in fatalError("Mock: purchase not available") },
             currentEntitlement: { nil },
@@ -568,21 +830,13 @@ struct FlyMateApp: App {
             self.feedbacks = initialFeedbacks
         }
 
+        func all() -> [Feedback] {
+            lock.withLock { feedbacks }
+        }
+
         func feedbacks(for videoID: UUID) -> [Feedback] {
             lock.withLock {
                 feedbacks.filter { $0.videoID == videoID }
-            }
-        }
-
-        func received(by userID: UUID) -> [Feedback] {
-            lock.withLock {
-                feedbacks.filter { $0.authorID != userID }
-            }
-        }
-
-        func given(by userID: UUID) -> [Feedback] {
-            lock.withLock {
-                feedbacks.filter { $0.authorID == userID }
             }
         }
 
