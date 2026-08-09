@@ -71,14 +71,15 @@ enum DTOMapper {
 
     // MARK: - Video
 
-    static func toDomain(_ dto: VideoDTO) -> Video {
+    /// videoURL은 조회 시점에 발급한 서명 URL — DTO의 video_url(스토리지 경로)은 사용하지 않는다.
+    static func toDomain(_ dto: VideoDTO, videoURL: URL) -> Video {
         Video(
             id: dto.id,
             studyID: dto.studyID,
             uploaderID: dto.uploaderID,
             uploaderName: dto.uploaderName,
             title: dto.title,
-            videoURL: URL(string: dto.videoURL)!,
+            videoURL: videoURL,
             thumbnailURL: dto.thumbnailURL.flatMap(URL.init(string:)),
             durationSeconds: dto.durationSeconds,
             feedbackCount: dto.feedbackCount,

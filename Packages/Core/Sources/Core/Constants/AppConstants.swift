@@ -13,11 +13,17 @@ public enum AppConstants {
     /// 프로필 이미지 JPEG 압축 품질
     public static let profileImageCompressionQuality: CGFloat = 0.8
 
+    /// 영상 서명 URL 만료 시간 (초) — private 버킷 영상은 만료 전까지만 재생 가능
+    public static let signedVideoURLExpirySeconds = 60 * 60
+
     /// 스터디 최대 인원 수
     public static let maxStudyMembers = 8
 
     /// 페이지네이션 기본 페이지 크기
     public static let defaultPageSize = 20
+
+    /// 피드백 대기 큐 최대 조회 개수 — 스터디 규모(최대 5개 × 8명)상 페이지네이션 불필요
+    public static let pendingFeedbackFetchLimit = 100
 
     /// 피드백 최대 글자 수
     public static let maxFeedbackLength = 500
