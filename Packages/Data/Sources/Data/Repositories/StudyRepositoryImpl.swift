@@ -5,9 +5,11 @@ import Supabase
 
 public struct StudyRepositoryImpl: StudyRepository {
     private let client: SupabaseClient
+    private let storageService: StorageService
 
     public init(client: SupabaseClient) {
         self.client = client
+        self.storageService = StorageService(client: client)
     }
 
     public func fetchMyStudies() async throws -> [Study] {
@@ -152,11 +154,7 @@ public struct StudyRepositoryImpl: StudyRepository {
     public func leaveStudy(id: UUID) async throws {
         let userID = try await client.auth.session.user.id
 
-        // 콘텐츠 익명화 (멤버 삭제 전에 실행)
-        try await client.rpc(
-            "anonymize_member_in_study",
-            params: ["p_study_id": id, "p_user_id": userID]
-        ).execute()
+        try await removeMemberContent(studyID: id, userID: userID)
 
         try await client.from(SupabaseConfig.Table.studyMembers)
             .delete()
@@ -173,17 +171,24 @@ public struct StudyRepositoryImpl: StudyRepository {
     }
 
     public func removeMember(studyID: UUID, userID: UUID) async throws {
-        // 콘텐츠 익명화 (멤버 삭제 전에 실행)
-        try await client.rpc(
-            "anonymize_member_in_study",
-            params: ["p_study_id": studyID, "p_user_id": userID]
-        ).execute()
+        try await removeMemberContent(studyID: studyID, userID: userID)
 
         try await client.from(SupabaseConfig.Table.studyMembers)
             .delete()
             .eq("study_id", value: studyID)
             .eq("user_id", value: userID)
             .execute()
+    }
+
+    /// 탈퇴/강퇴 멤버의 영상·피드백·댓글 삭제 및 멘션 치환 후,
+    /// 삭제된 영상의 Storage 파일 정리 (멤버 삭제 전에 실행)
+    private func removeMemberContent(studyID: UUID, userID: UUID) async throws {
+        let deletedVideoIDs: [UUID] = try await client.rpc(
+            "remove_member_content_in_study",
+            params: ["p_study_id": studyID, "p_user_id": userID]
+        ).execute().value
+
+        await storageService.deleteVideoFiles(studyID: studyID, videoIDs: deletedVideoIDs)
     }
 
     public func updateNotice(studyID: UUID, notice: String?) async throws {

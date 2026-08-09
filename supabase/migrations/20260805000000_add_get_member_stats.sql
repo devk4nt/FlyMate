@@ -3,6 +3,9 @@
 -- 클라이언트: StudyRepositoryImpl.fetchMemberStats (MemberStatsResponse)
 -- ============================================================
 
+-- 원격에 반환 타입이 다른 기존 함수가 있어 CREATE OR REPLACE가 불가 — 먼저 제거
+DROP FUNCTION IF EXISTS get_member_stats(UUID, UUID);
+
 CREATE OR REPLACE FUNCTION get_member_stats(p_study_id UUID, p_user_id UUID)
 RETURNS TABLE(
     user_id UUID,
