@@ -32,7 +32,64 @@ public struct VideoRepositoryImpl: VideoRepository {
                 .execute()
                 .value
         }
-        return dtos.map(DTOMapper.toDomain)
+        return try await mapWithSignedURLs(dtos)
+    }
+
+    public func fetchFeedVideos(studyIDs: [UUID], cursor: Date?) async throws -> [Video] {
+        guard !studyIDs.isEmpty else { return [] }
+        let dtos: [VideoDTO]
+        if let cursor {
+            dtos = try await client.from(SupabaseConfig.Table.videos)
+                .select()
+                .in("study_id", values: studyIDs)
+                .lt("created_at", value: ISO8601DateFormatter().string(from: cursor))
+                .order("created_at", ascending: false)
+                .limit(AppConstants.defaultPageSize)
+                .execute()
+                .value
+        } else {
+            dtos = try await client.from(SupabaseConfig.Table.videos)
+                .select()
+                .in("study_id", values: studyIDs)
+                .order("created_at", ascending: false)
+                .limit(AppConstants.defaultPageSize)
+                .execute()
+                .value
+        }
+        return try await mapWithSignedURLs(dtos)
+    }
+
+    public func fetchPendingFeedbackVideos(studyIDs: [UUID], userID: UUID) async throws -> [Video] {
+        guard !studyIDs.isEmpty else { return [] }
+
+        // 스터디원 영상 (내가 올린 것 제외, 오래된 순 — 오래 기다린 영상부터)
+        // ponytail: anti-join 대신 2쿼리 + 클라이언트 필터 — 스터디 규모상 데이터가 작아 충분
+        let dtos: [VideoDTO] = try await client.from(SupabaseConfig.Table.videos)
+            .select()
+            .in("study_id", values: studyIDs)
+            .neq("uploader_id", value: userID)
+            .order("created_at", ascending: true)
+            .limit(AppConstants.pendingFeedbackFetchLimit)
+            .execute()
+            .value
+
+        // 내가 피드백을 남긴 영상 ID 목록
+        struct FeedbackedVideoID: Decodable {
+            let videoID: UUID
+            enum CodingKeys: String, CodingKey {
+                case videoID = "video_id"
+            }
+        }
+        let feedbacked: [FeedbackedVideoID] = try await client.from(SupabaseConfig.Table.feedbacks)
+            .select("video_id")
+            .eq("author_id", value: userID)
+            .execute()
+            .value
+        let completedVideoIDs = Set(feedbacked.map(\.videoID))
+
+        return try await mapWithSignedURLs(
+            dtos.filter { !completedVideoIDs.contains($0.id) }
+        )
     }
 
     public func fetchVideo(id: UUID) async throws -> Video {
@@ -42,7 +99,10 @@ public struct VideoRepositoryImpl: VideoRepository {
             .single()
             .execute()
             .value
-        return DTOMapper.toDomain(dto)
+        guard let video = try await mapWithSignedURLs([dto]).first else {
+            throw AppError.unexpected("영상 서명 URL 발급에 실패했습니다.")
+        }
+        return video
     }
 
     public func uploadVideo(
@@ -53,7 +113,7 @@ public struct VideoRepositoryImpl: VideoRepository {
 
         // 영상 업로드
         progress(0.1)
-        let videoURL = try await storageService.uploadVideo(
+        let videoPath = try await storageService.uploadVideo(
             data: request.videoData,
             studyID: request.studyID,
             videoID: videoID
@@ -101,7 +161,7 @@ public struct VideoRepositoryImpl: VideoRepository {
                 studyID: request.studyID,
                 uploaderID: userID,
                 title: request.title,
-                videoURL: videoURL.absoluteString,
+                videoURL: videoPath,
                 thumbnailURL: thumbnailURL?.absoluteString,
                 durationSeconds: request.durationSeconds,
                 focusPoints: request.focusPoints,
@@ -113,7 +173,10 @@ public struct VideoRepositoryImpl: VideoRepository {
             .value
 
         progress(1.0)
-        return DTOMapper.toDomain(dto)
+        guard let video = try await mapWithSignedURLs([dto]).first else {
+            throw AppError.unexpected("영상 서명 URL 발급에 실패했습니다.")
+        }
+        return video
     }
 
     public func deleteVideo(id: UUID) async throws {
@@ -121,5 +184,18 @@ public struct VideoRepositoryImpl: VideoRepository {
             .delete()
             .eq("id", value: id)
             .execute()
+    }
+
+    // MARK: - Signed URL
+
+    /// private 버킷 영상의 재생용 서명 URL을 일괄 발급해 도메인 모델로 변환한다.
+    private func mapWithSignedURLs(_ dtos: [VideoDTO]) async throws -> [Video] {
+        guard !dtos.isEmpty else { return [] }
+        let paths = dtos.map { StorageService.videoPath(studyID: $0.studyID, videoID: $0.id) }
+        let urls = try await storageService.signedVideoURLs(paths: paths)
+        guard urls.count == dtos.count else {
+            throw AppError.unexpected("영상 서명 URL 발급에 실패했습니다.")
+        }
+        return zip(dtos, urls).map { DTOMapper.toDomain($0, videoURL: $1) }
     }
 }

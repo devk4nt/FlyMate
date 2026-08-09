@@ -9,6 +9,7 @@ public struct TabFeature {
     public struct State: Equatable {
         public var selectedTab: Tab = .study
         public var currentUser: User
+        public var feed: VideoFeedFeature.State
         public var study: StudyNavigationFeature.State
         public var feedbackManagement: FeedbackManagementFeature.State
         public var notificationList: NotificationListFeature.State
@@ -18,6 +19,7 @@ public struct TabFeature {
 
         public init(currentUser: User) {
             self.currentUser = currentUser
+            self.feed = VideoFeedFeature.State(scope: .pendingFeedback, currentUserID: currentUser.id)
             self.study = StudyNavigationFeature.State(currentUserID: currentUser.id)
             self.feedbackManagement = FeedbackManagementFeature.State(userID: currentUser.id)
             self.notificationList = NotificationListFeature.State(userID: currentUser.id)
@@ -25,6 +27,7 @@ public struct TabFeature {
         }
 
         public enum Tab: Equatable, Hashable {
+            case feed
             case study
             case feedback
             case settings
@@ -36,6 +39,7 @@ public struct TabFeature {
         case tabSelected(State.Tab)
         case notificationBellTapped
         case dismissNotificationSheet
+        case feed(VideoFeedFeature.Action)
         case study(StudyNavigationFeature.Action)
         case feedbackManagement(FeedbackManagementFeature.Action)
         case notificationList(NotificationListFeature.Action)
@@ -59,6 +63,9 @@ public struct TabFeature {
     public init() {}
 
     public var body: some ReducerOf<Self> {
+        Scope(state: \.feed, action: \.feed) {
+            VideoFeedFeature()
+        }
         Scope(state: \.study, action: \.study) {
             StudyNavigationFeature()
         }
@@ -185,7 +192,7 @@ public struct TabFeature {
             case .navigationFailed:
                 return .none
 
-            case .study, .feedbackManagement, .notificationList, .settings:
+            case .feed, .study, .feedbackManagement, .notificationList, .settings:
                 return .none
             }
         }

@@ -54,7 +54,7 @@ struct FlyMateApp: App {
             signInWithApple: { try await authRepo.signInWithApple(idToken: $0, nonce: $1) },
             signInWithKakao: { try await authRepo.signInWithKakao(accessToken: $0) },
             signOut: { try await authRepo.signOut() },
-            deleteAccount: { try await authRepo.deleteAccount() },
+            deleteAccount: { try await authRepo.deleteAccount(appleAuthorizationCode: $0) },
             observeAuthState: { authRepo.observeAuthState() }
         )
 
@@ -81,6 +81,8 @@ struct FlyMateApp: App {
         let videoRepo = VideoRepositoryImpl(client: supabaseClient)
         dependencies.videoClient = VideoClient(
             fetchVideos: { try await videoRepo.fetchVideos(studyID: $0, cursor: $1) },
+            fetchFeedVideos: { try await videoRepo.fetchFeedVideos(studyIDs: $0, cursor: $1) },
+            fetchPendingFeedbackVideos: { try await videoRepo.fetchPendingFeedbackVideos(studyIDs: $0, userID: $1) },
             fetchVideo: { try await videoRepo.fetchVideo(id: $0) },
             uploadVideo: { try await videoRepo.uploadVideo($0, progress: $1) },
             deleteVideo: { try await videoRepo.deleteVideo(id: $0) }
@@ -361,6 +363,23 @@ struct FlyMateApp: App {
                 durationSeconds: 52, feedbackCount: 1,
                 createdAt: now.addingTimeInterval(-6 * hour)
             ),
+            // 유나(나)가 아직 피드백하지 않은 영상 — 피드백 대기 큐 시나리오용
+            Video(
+                id: uuid(106), studyID: studyA.id, uploaderID: seoyeonID, uploaderName: "박서연",
+                title: "한국어 기내방송 — 이륙 안내",
+                videoURL: sampleVideoURL(sintelTrailer), thumbnailURL: sampleThumbnailURL(106),
+                durationSeconds: 48,
+                focusPoints: "톤 안정성, 속도",
+                feedbackRequest: "이륙 안내 파트 속도가 적당한지 봐주세요",
+                createdAt: now.addingTimeInterval(-8 * hour)
+            ),
+            Video(
+                id: uuid(107), studyID: studyB.id, uploaderID: jiwooID, uploaderName: "최지우",
+                title: "뉴스 리딩 — 날씨 브리핑",
+                videoURL: sampleVideoURL(sintelTrailer720), thumbnailURL: sampleThumbnailURL(107),
+                durationSeconds: 55,
+                createdAt: now.addingTimeInterval(-2 * hour)
+            ),
         ]
         let videoStore = LockIsolated(videos)
         let myVideoIDs = Set(videos.filter { $0.uploaderID == meID }.map(\.id))
@@ -496,8 +515,9 @@ struct FlyMateApp: App {
         let memberStats: [UUID: (given: Int, received: Int, videos: Int)] = [
             meID: (given: 3, received: 6, videos: 3),
             haneulID: (given: 3, received: 1, videos: 1),
-            seoyeonID: (given: 2, received: 2, videos: 1),
+            seoyeonID: (given: 2, received: 2, videos: 2),
             minjunID: (given: 2, received: 1, videos: 1),
+            jiwooID: (given: 0, received: 0, videos: 1),
         ]
 
         // MARK: Client 등록
@@ -508,7 +528,7 @@ struct FlyMateApp: App {
             signInWithApple: { _, _ in me },
             signInWithKakao: { _ in me },
             signOut: {},
-            deleteAccount: {},
+            deleteAccount: { _ in },
             observeAuthState: { AsyncStream { continuation in continuation.yield(me) } }
         )
 
@@ -628,6 +648,25 @@ struct FlyMateApp: App {
                 videoStore.value
                     .filter { $0.studyID == studyID }
                     .sorted { $0.createdAt > $1.createdAt }
+            },
+            fetchFeedVideos: { studyIDs, cursor in
+                // ponytail: 커서 무시 — 목 데이터는 단일 페이지
+                guard cursor == nil else { return [] }
+                return videoStore.value
+                    .filter { studyIDs.contains($0.studyID) }
+                    .sorted { $0.createdAt > $1.createdAt }
+            },
+            fetchPendingFeedbackVideos: { studyIDs, userID in
+                let completedVideoIDs = Set(
+                    feedbackStore.all().filter { $0.authorID == userID }.map(\.videoID)
+                )
+                return videoStore.value
+                    .filter {
+                        studyIDs.contains($0.studyID)
+                            && $0.uploaderID != userID
+                            && !completedVideoIDs.contains($0.id)
+                    }
+                    .sorted { $0.createdAt < $1.createdAt }
             },
             fetchVideo: { id in
                 videoStore.value.first { $0.id == id } ?? videos[0]
@@ -784,10 +823,10 @@ struct FlyMateApp: App {
             checkAlreadyReported: { _, _ in false }
         )
 
-        // UserDefaults (온보딩 완료 상태로 설정하여 프리뷰에서 스킵)
+        // UserDefaults — 기본 디버그 실행에서도 실제 앱과 동일하게 온보딩 상태 유지
         dependencies.userDefaultsClient = UserDefaultsClient(
-            boolForKey: { _ in true },
-            setBool: { _, _ in }
+            boolForKey: { UserDefaults.standard.bool(forKey: $0) },
+            setBool: { value, key in UserDefaults.standard.set(value, forKey: key) }
         )
 
         // Subscription (프리미엄 — 스터디 2개 소속 시나리오와 일관성 유지)

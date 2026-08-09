@@ -6,7 +6,8 @@ import Domain
 @Reducer
 public struct VideoDetailFeature {
     @ObservableState
-    public struct State: Equatable {
+    public struct State: Equatable, Identifiable {
+        public var id: UUID { video.id }
         public var video: Video
         public var feedbacks: LoadingState<[Feedback]> = .idle
         public var player = VideoPlayerState()
@@ -19,6 +20,7 @@ public struct VideoDetailFeature {
         public var showToast = false
         public var toastMessage = ""
         public var toastType: FMToast.ToastType = .success
+        public var showFeedbackSheet = false
         @Presents public var feedbackCommentList: FeedbackCommentListFeature.State?
 
         public init(video: Video, focusedFeedbackID: UUID? = nil, currentUserID: UUID? = nil) {
@@ -26,6 +28,14 @@ public struct VideoDetailFeature {
             self.focusedFeedbackID = focusedFeedbackID
             self.currentUserID = currentUserID
             self.commentInput = CommentInputFeature.State(videoID: video.id)
+            // 딥링크로 특정 피드백에 진입한 경우 시트를 바로 연다
+            self.showFeedbackSheet = focusedFeedbackID != nil
+        }
+
+        /// 내가 이 영상에 피드백을 남겼는가 — 저장 없이 로드된 피드백에서 유도
+        public var hasMyFeedback: Bool {
+            guard let currentUserID, case .loaded(let feedbacks) = feedbacks else { return false }
+            return feedbacks.contains { $0.authorID == currentUserID }
         }
     }
 
@@ -35,7 +45,6 @@ public struct VideoDetailFeature {
         public var duration: TimeInterval = 0
         public var isSeeking = false
         public var isMuted = false
-        public var isFullscreen = false
     }
 
     public enum Action {
@@ -56,8 +65,9 @@ public struct VideoDetailFeature {
         case durationUpdated(TimeInterval)
         case playerReachedEnd
         case muteTapped
-        case fullscreenTapped
-        case dismissFullscreen
+        // Feedback sheet
+        case feedbackSheetTapped
+        case feedbackSheetDismissed
         // Feedback actions
         case feedbackTapped(Feedback)
         // Comment input
@@ -73,7 +83,10 @@ public struct VideoDetailFeature {
         case feedbackCommentList(PresentationAction<FeedbackCommentListFeature.Action>)
     }
 
-    private enum CancelID { case realtimeFeedback }
+    /// 피드에서 페이지별 인스턴스가 공존하므로 영상 단위로 스트림 구독을 취소한다
+    private struct RealtimeCancelID: Hashable {
+        let videoID: UUID
+    }
 
     @Dependency(\.feedbackClient) private var feedbackClient
     @Dependency(\.feedbackCommentClient) private var feedbackCommentClient
@@ -110,7 +123,7 @@ public struct VideoDetailFeature {
                             await send(.feedbacksUpdated(feedbacks))
                         }
                     }
-                    .cancellable(id: CancelID.realtimeFeedback),
+                    .cancellable(id: RealtimeCancelID(videoID: videoID)),
                     .run { send in
                         do {
                             let studyData = try await study.fetchStudy(studyID)
@@ -124,7 +137,8 @@ public struct VideoDetailFeature {
 
             case .onDisappear:
                 state.player.isPlaying = false
-                return .cancel(id: CancelID.realtimeFeedback)
+                state.showFeedbackSheet = false
+                return .cancel(id: RealtimeCancelID(videoID: state.video.id))
 
             case .membersResponse(.success(let study)):
                 state.commentInput.members = study.members
@@ -240,12 +254,12 @@ public struct VideoDetailFeature {
                 state.player.isMuted.toggle()
                 return .none
 
-            case .fullscreenTapped:
-                state.player.isFullscreen = true
+            case .feedbackSheetTapped:
+                state.showFeedbackSheet = true
                 return .none
 
-            case .dismissFullscreen:
-                state.player.isFullscreen = false
+            case .feedbackSheetDismissed:
+                state.showFeedbackSheet = false
                 return .none
 
             // MARK: - Feedback

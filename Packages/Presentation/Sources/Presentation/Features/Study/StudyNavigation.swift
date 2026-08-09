@@ -25,7 +25,7 @@ public struct StudyNavigationFeature {
     @Reducer(state: .equatable)
     public enum Path {
         case studyDetail(StudyDetailFeature)
-        case videoDetail(VideoDetailFeature)
+        case videoFeed(VideoFeedFeature)
         case videoUpload(VideoUploadFeature)
         case memberManagement(MemberManagementFeature)
         case joinRequestManagement(JoinRequestManagementFeature)
@@ -48,7 +48,15 @@ public struct StudyNavigationFeature {
                 return .none
 
             case .path(.element(_, action: .studyDetail(.videoTapped(let video)))):
-                state.path.append(.videoDetail(VideoDetailFeature.State(video: video, currentUserID: state.currentUserID)))
+                state.path.append(
+                    .videoFeed(
+                        VideoFeedFeature.State(
+                            scope: .study(video.studyID),
+                            initialVideoID: video.id,
+                            currentUserID: state.currentUserID
+                        )
+                    )
+                )
                 return .none
 
             case .path(.element(_, action: .studyDetail(.uploadVideoTapped(let studyID)))):
@@ -108,7 +116,16 @@ public struct StudyNavigationFeature {
             case .navigateToVideo(let study, let video, let feedbackID):
                 state.path.removeAll()
                 state.path.append(.studyDetail(StudyDetailFeature.State(study: study, currentUserID: state.currentUserID)))
-                state.path.append(.videoDetail(VideoDetailFeature.State(video: video, focusedFeedbackID: feedbackID, currentUserID: state.currentUserID)))
+                state.path.append(
+                    .videoFeed(
+                        VideoFeedFeature.State(
+                            scope: .study(video.studyID),
+                            initialVideoID: video.id,
+                            focusedFeedbackID: feedbackID,
+                            currentUserID: state.currentUserID
+                        )
+                    )
+                )
                 return .none
 
             case .studyList, .path:

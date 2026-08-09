@@ -4,17 +4,23 @@ import Domain
 
 public struct VideoClient: Sendable {
     public var fetchVideos: @Sendable (UUID, Date?) async throws -> [Video]
+    public var fetchFeedVideos: @Sendable ([UUID], Date?) async throws -> [Video]
+    public var fetchPendingFeedbackVideos: @Sendable ([UUID], UUID) async throws -> [Video]
     public var fetchVideo: @Sendable (UUID) async throws -> Video
     public var uploadVideo: @Sendable (UploadVideoRequest, @Sendable (Double) -> Void) async throws -> Video
     public var deleteVideo: @Sendable (UUID) async throws -> Void
 
     public init(
         fetchVideos: @escaping @Sendable (UUID, Date?) async throws -> [Video],
+        fetchFeedVideos: @escaping @Sendable ([UUID], Date?) async throws -> [Video],
+        fetchPendingFeedbackVideos: @escaping @Sendable ([UUID], UUID) async throws -> [Video],
         fetchVideo: @escaping @Sendable (UUID) async throws -> Video,
         uploadVideo: @escaping @Sendable (UploadVideoRequest, @Sendable (Double) -> Void) async throws -> Video,
         deleteVideo: @escaping @Sendable (UUID) async throws -> Void
     ) {
         self.fetchVideos = fetchVideos
+        self.fetchFeedVideos = fetchFeedVideos
+        self.fetchPendingFeedbackVideos = fetchPendingFeedbackVideos
         self.fetchVideo = fetchVideo
         self.uploadVideo = uploadVideo
         self.deleteVideo = deleteVideo
@@ -24,6 +30,8 @@ public struct VideoClient: Sendable {
 extension VideoClient: TestDependencyKey {
     public static let testValue = VideoClient(
         fetchVideos: unimplemented("\(Self.self).fetchVideos"),
+        fetchFeedVideos: unimplemented("\(Self.self).fetchFeedVideos"),
+        fetchPendingFeedbackVideos: unimplemented("\(Self.self).fetchPendingFeedbackVideos"),
         fetchVideo: unimplemented("\(Self.self).fetchVideo"),
         uploadVideo: { _, _ in
             XCTFail("Unimplemented: \(Self.self).uploadVideo")

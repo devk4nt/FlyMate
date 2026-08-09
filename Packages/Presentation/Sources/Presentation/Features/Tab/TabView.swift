@@ -18,6 +18,14 @@ public struct MainTabView: View {
             }
             .tag(TabFeature.State.Tab.study)
 
+            VideoFeedView(
+                store: store.scope(state: \.feed, action: \.feed)
+            )
+            .tabItem {
+                Label("피드", systemImage: "play.rectangle.on.rectangle")
+            }
+            .tag(TabFeature.State.Tab.feed)
+
             FeedbackManagementView(
                 store: store.scope(state: \.feedbackManagement, action: \.feedbackManagement)
             )

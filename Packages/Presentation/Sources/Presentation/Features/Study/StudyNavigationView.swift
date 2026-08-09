@@ -19,8 +19,11 @@ public struct StudyNavigationView: View {
             switch store.case {
             case .studyDetail(let detailStore):
                 StudyDetailView(store: detailStore)
-            case .videoDetail(let videoStore):
-                VideoDetailView(store: videoStore)
+            case .videoFeed(let feedStore):
+                VideoFeedView(store: feedStore)
+                    .toolbar(.hidden, for: .tabBar)
+                    .toolbarBackground(.hidden, for: .navigationBar)
+                    .toolbarColorScheme(.dark, for: .navigationBar)
             case .videoUpload(let uploadStore):
                 VideoUploadView(store: uploadStore)
             case .memberManagement(let memberStore):

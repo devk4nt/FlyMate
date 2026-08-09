@@ -78,6 +78,7 @@ struct VideoPlayerView: UIViewRepresentable {
 
             let playerItem = AVPlayerItem(url: url)
             let player = AVPlayer(playerItem: playerItem)
+            player.allowsExternalPlayback = false  // AirPlay로 영상 반출 차단
             self.player = player
 
             view.playerLayer.player = player
