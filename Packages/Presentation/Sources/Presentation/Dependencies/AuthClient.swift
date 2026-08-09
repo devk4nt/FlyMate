@@ -7,7 +7,8 @@ public struct AuthClient: Sendable {
     public var signInWithApple: @Sendable (String, String) async throws -> User
     public var signInWithKakao: @Sendable (String) async throws -> User
     public var signOut: @Sendable () async throws -> Void
-    public var deleteAccount: @Sendable () async throws -> Void
+    /// Apple 계정은 재인증으로 받은 authorization code를 전달 (토큰 revoke용), 그 외 nil
+    public var deleteAccount: @Sendable (String?) async throws -> Void
     public var observeAuthState: @Sendable () -> AsyncStream<User?>
     /// 디버그 자동 로그인 (skipAuth 모드에서 Supabase 세션 확보용)
     public var debugSignIn: (@Sendable () async throws -> Void)?
@@ -17,7 +18,7 @@ public struct AuthClient: Sendable {
         signInWithApple: @escaping @Sendable (String, String) async throws -> User,
         signInWithKakao: @escaping @Sendable (String) async throws -> User,
         signOut: @escaping @Sendable () async throws -> Void,
-        deleteAccount: @escaping @Sendable () async throws -> Void,
+        deleteAccount: @escaping @Sendable (String?) async throws -> Void,
         observeAuthState: @escaping @Sendable () -> AsyncStream<User?>,
         debugSignIn: (@Sendable () async throws -> Void)? = nil
     ) {

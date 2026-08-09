@@ -10,6 +10,8 @@ public struct AppleSignInResult: Equatable, Sendable {
     public let nonce: String
     public let fullName: PersonNameComponents?
     public let email: String?
+    /// 계정 삭제 시 Sign in with Apple 토큰 revoke에 사용 (5분 내 만료)
+    public let authorizationCode: String?
 }
 
 // MARK: - Apple Sign In Client
@@ -88,7 +90,9 @@ private final class AppleSignInDelegate: NSObject, ASAuthorizationControllerDele
             idToken: idToken,
             nonce: nonce,
             fullName: credential.fullName,
-            email: credential.email
+            email: credential.email,
+            authorizationCode: credential.authorizationCode
+                .flatMap { String(data: $0, encoding: .utf8) }
         )
         continuation.resume(returning: result)
     }

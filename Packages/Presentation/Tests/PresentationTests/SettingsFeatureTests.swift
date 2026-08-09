@@ -1,4 +1,6 @@
 import Foundation
+import UIKit
+import UserNotifications
 import Testing
 import ComposableArchitecture
 import Domain
@@ -57,6 +59,76 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func 진입시_권한_거부면_토글_꺼짐() async {
+        let store = TestStore(initialState: SettingsFeature.State(currentUser: .settingsMock)) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.pushNotificationClient.getAuthorizationStatus = { .denied }
+        }
+
+        await store.send(.onAppear)
+        await store.receive(\.pushStatusResponse) {
+            $0.pushAuthorizationStatus = .denied
+            $0.notificationsEnabled = false
+        }
+    }
+
+    @Test
+    func 진입시_권한_허용이면_토글_유지() async {
+        let store = TestStore(initialState: SettingsFeature.State(currentUser: .settingsMock)) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.pushNotificationClient.getAuthorizationStatus = { .authorized }
+        }
+
+        await store.send(.onAppear)
+        await store.receive(\.pushStatusResponse) {
+            $0.pushAuthorizationStatus = .authorized
+        }
+    }
+
+    @Test
+    func 권한_거부_상태에서_토글_켜면_시스템_설정_이동() async {
+        let openedURL = LockIsolated<URL?>(nil)
+        var state = SettingsFeature.State(currentUser: .settingsMock)
+        state.pushAuthorizationStatus = .denied
+        state.notificationsEnabled = false
+
+        let store = TestStore(initialState: state) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.openURL = OpenURLEffect { url in
+                openedURL.setValue(url)
+                return true
+            }
+        }
+
+        await store.send(.notificationToggled(true))
+        #expect(openedURL.value?.absoluteString == UIApplication.openSettingsURLString)
+    }
+
+    @Test
+    func 권한_미결정_상태에서_토글_켜면_권한_요청_후_켜짐() async {
+        var state = SettingsFeature.State(currentUser: .settingsMock)
+        state.notificationsEnabled = false
+
+        let store = TestStore(initialState: state) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.pushNotificationClient.requestAuthorization = { true }
+            $0.userClient.updateNotificationSettings = { _ in }
+        }
+
+        await store.send(.notificationToggled(true))
+        await store.receive(\.pushStatusResponse) {
+            $0.pushAuthorizationStatus = .authorized
+        }
+        await store.receive(\.notificationToggled) {
+            $0.notificationsEnabled = true
+        }
+    }
+
+    @Test
     func 로그아웃_확인_후_성공() async {
         let store = TestStore(initialState: SettingsFeature.State(currentUser: .settingsMock)) {
             SettingsFeature()
@@ -99,7 +171,10 @@ struct SettingsFeatureTests {
         let store = TestStore(initialState: SettingsFeature.State(currentUser: .settingsMock)) {
             SettingsFeature()
         } withDependencies: {
-            $0.authClient.deleteAccount = {}
+            $0.appleSignInClient.signIn = { Self.reAuthResult }
+            $0.authClient.deleteAccount = { code in
+                #expect(code == "mock-auth-code")
+            }
         }
 
         await store.send(.deleteAccountTapped) {
@@ -118,7 +193,8 @@ struct SettingsFeatureTests {
         let store = TestStore(initialState: SettingsFeature.State(currentUser: .settingsMock)) {
             SettingsFeature()
         } withDependencies: {
-            $0.authClient.deleteAccount = { throw AppError.network(.serverError(statusCode: 500)) }
+            $0.appleSignInClient.signIn = { Self.reAuthResult }
+            $0.authClient.deleteAccount = { _ in throw AppError.network(.serverError(statusCode: 500)) }
         }
 
         await store.send(.deleteAccountTapped) {
@@ -130,6 +206,24 @@ struct SettingsFeatureTests {
         }
 
         await store.receive(\.deleteAccountFailed)
+    }
+
+    @Test
+    func Apple_재인증_취소시_탈퇴_중단() async {
+        let store = TestStore(initialState: SettingsFeature.State(currentUser: .settingsMock)) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.appleSignInClient.signIn = { throw AppleSignInError.canceled }
+        }
+
+        await store.send(.deleteAccountTapped) {
+            $0.confirmAlert = Self.deleteAccountAlert
+        }
+
+        // 재인증 취소 시 deleteAccount 호출 없이 종료 (deleteAccount는 unimplemented)
+        await store.send(.confirmAlert(.presented(.confirmDeleteAccount))) {
+            $0.confirmAlert = nil
+        }
     }
 
     @Test
@@ -146,6 +240,16 @@ struct SettingsFeatureTests {
             $0.destination = nil
         }
     }
+
+    // MARK: - Mock Apple Re-auth
+
+    private nonisolated static let reAuthResult = AppleSignInResult(
+        idToken: "mock-id-token",
+        nonce: "mock-nonce",
+        fullName: nil,
+        email: nil,
+        authorizationCode: "mock-auth-code"
+    )
 
     // MARK: - Alert States
 

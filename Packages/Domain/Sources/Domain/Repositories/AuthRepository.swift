@@ -13,8 +13,9 @@ public protocol AuthRepository: Sendable {
     /// 로그아웃을 수행한다.
     func signOut() async throws
 
-    /// 계정을 탈퇴한다.
-    func deleteAccount() async throws
+    /// 계정을 탈퇴한다. Apple 계정은 재인증으로 받은 authorization code를 전달해
+    /// 서버에서 Sign in with Apple 토큰을 revoke한다 (App Store 심사 요구사항).
+    func deleteAccount(appleAuthorizationCode: String?) async throws
 
     /// 인증 상태 변경을 관찰한다.
     func observeAuthState() -> AsyncStream<User?>

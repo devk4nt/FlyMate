@@ -74,9 +74,19 @@ public struct AuthRepositoryImpl: AuthRepository {
         try await client.auth.signOut()
     }
 
-    public func deleteAccount() async throws {
+    public func deleteAccount(appleAuthorizationCode: String?) async throws {
         // 서버측 Edge Function 호출로 계정 삭제 처리
-        try await client.functions.invoke("delete-account")
+        // Apple 계정은 authorization code를 전달해 Sign in with Apple 토큰 revoke
+        struct DeleteAccountRequest: Encodable {
+            let appleAuthorizationCode: String?
+            enum CodingKeys: String, CodingKey {
+                case appleAuthorizationCode = "apple_authorization_code"
+            }
+        }
+        try await client.functions.invoke(
+            "delete-account",
+            options: .init(body: DeleteAccountRequest(appleAuthorizationCode: appleAuthorizationCode))
+        )
     }
 
     public func observeAuthState() -> AsyncStream<Domain.User?> {

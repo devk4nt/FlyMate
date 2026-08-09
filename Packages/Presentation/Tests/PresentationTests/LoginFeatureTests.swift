@@ -12,7 +12,8 @@ struct LoginFeatureTests {
         idToken: "mock-id-token",
         nonce: "mock-nonce",
         fullName: nil,
-        email: nil
+        email: nil,
+        authorizationCode: "mock-auth-code"
     )
 
     @Test
