@@ -29,6 +29,20 @@ public struct FMMentionTextEditor: UIViewRepresentable {
         return textView
     }
 
+    /// 콘텐츠 높이에 맞춰 자체 크기 계산 — 미구현 시 제안된 최대 높이를 항상 차지한다.
+    /// 호출부의 frame(minHeight:maxHeight:)이 최종 클램핑을 담당한다.
+    public func sizeThatFits(
+        _ proposal: ProposedViewSize,
+        uiView: UITextView,
+        context: Context
+    ) -> CGSize? {
+        guard let width = proposal.width, width.isFinite else { return nil }
+        let fitting = uiView.sizeThatFits(
+            CGSize(width: width, height: .greatestFiniteMagnitude)
+        )
+        return CGSize(width: width, height: fitting.height)
+    }
+
     public func updateUIView(_ textView: UITextView, context: Context) {
         context.coordinator.isFocused = isFocused
 

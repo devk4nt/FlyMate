@@ -23,7 +23,7 @@ public struct SubscriptionView: View {
             .padding(.top, FMSpacing.sm)
             .padding(.bottom, FMSpacing.xxxl)
         }
-        .background(FMColors.canvas)
+        .background(FMColors.softCanvas)
         .navigationTitle("구독 관리")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -94,7 +94,7 @@ public struct SubscriptionView: View {
         .padding(FMSpacing.lg)
         .background(FMColors.brandGradient)
         .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
-        .shadow(color: FMColors.primary.opacity(0.24), radius: 16, y: 8)
+        .shadow(color: FMColors.brandInk.opacity(0.22), radius: 16, y: 8)
         .accessibilityElement(children: .combine)
     }
 
@@ -117,39 +117,44 @@ public struct SubscriptionView: View {
     // MARK: - Comparison
 
     private var comparisonSection: some View {
-        FMCard {
-            VStack(alignment: .leading, spacing: FMSpacing.md) {
-                sectionHeader(
-                    icon: "chart.bar.fill",
-                    title: "플랜 비교",
-                    description: "프리미엄으로 더 넉넉하게 이용하세요."
-                )
+        VStack(alignment: .leading, spacing: FMSpacing.md) {
+            sectionHeader(
+                icon: "chart.bar.fill",
+                title: "플랜 비교",
+                description: "프리미엄으로 더 넉넉하게 이용하세요."
+            )
 
-                Divider()
+            Divider()
 
-                HStack {
-                    Text("혜택")
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Text("무료")
-                        .frame(width: 58)
-                    Text("프리미엄")
-                        .foregroundStyle(FMColors.primary)
-                        .frame(width: 68)
-                }
-                .font(FMTypography.caption1)
-                .foregroundStyle(FMColors.secondaryLabel)
+            HStack {
+                Text("혜택")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text("무료")
+                    .frame(width: 58)
+                Text("프리미엄")
+                    .foregroundStyle(FMColors.brandInk)
+                    .frame(width: 68)
+            }
+            .font(FMTypography.caption1)
+            .foregroundStyle(FMColors.secondaryLabel)
 
-                VStack(spacing: 0) {
-                    comparisonRow(feature: "스터디 생성", free: "1개", premium: "5개", icon: "plus.square")
-                    Divider().padding(.leading, 32)
-                    comparisonRow(feature: "스터디 참여", free: "1개", premium: "5개", icon: "person.2")
-                    Divider().padding(.leading, 32)
-                    comparisonRow(feature: "영상 길이", free: "1분", premium: "3분", icon: "video")
-                    Divider().padding(.leading, 32)
-                    comparisonRow(feature: "스터디 멤버", free: "3명", premium: "8명", icon: "person.3")
-                }
+            VStack(spacing: 0) {
+                comparisonRow(feature: "스터디 생성", free: "1개", premium: "5개", icon: "plus.square")
+                Divider().padding(.leading, 32)
+                comparisonRow(feature: "스터디 참여", free: "1개", premium: "5개", icon: "person.2")
+                Divider().padding(.leading, 32)
+                comparisonRow(feature: "영상 길이", free: "1분", premium: "3분", icon: "video")
+                Divider().padding(.leading, 32)
+                comparisonRow(feature: "스터디 멤버", free: "3명", premium: "8명", icon: "person.3")
             }
         }
+        .padding(FMSpacing.lg)
+        .background(FMColors.background, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
+                .stroke(FMColors.airBlue.opacity(0.2), lineWidth: 1)
+        }
+        .shadow(color: FMColors.brandInk.opacity(0.06), radius: 12, y: 6)
     }
 
     private func comparisonRow(feature: String, free: String, premium: String, icon: String) -> some View {
@@ -171,7 +176,7 @@ public struct SubscriptionView: View {
 
             Text(premium)
                 .font(FMTypography.headline)
-                .foregroundStyle(FMColors.primary)
+                .foregroundStyle(FMColors.brandInk)
                 .frame(width: 68)
         }
         .padding(.vertical, FMSpacing.sm)
@@ -206,7 +211,7 @@ public struct SubscriptionView: View {
                 VStack(alignment: .leading, spacing: FMSpacing.xxs) {
                     Text(badge)
                         .font(FMTypography.caption1)
-                        .foregroundStyle(emphasized ? .white.opacity(0.8) : FMColors.primary)
+                        .foregroundStyle(emphasized ? .white.opacity(0.8) : FMColors.brandInk)
 
                     Text(product.displayName)
                         .font(FMTypography.headline)
@@ -231,22 +236,22 @@ public struct SubscriptionView: View {
                 if emphasized {
                     FMColors.brandGradient
                 } else {
-                    FMColors.elevatedBackground
+                    FMColors.background
                 }
             }
             .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous)
-                    .stroke(emphasized ? Color.clear : FMColors.border.opacity(0.35), lineWidth: 1)
+                    .stroke(emphasized ? Color.clear : FMColors.airBlue.opacity(0.25), lineWidth: 1)
             }
-            .shadow(color: emphasized ? FMColors.primary.opacity(0.2) : FMShadow.cardColor, radius: 10, y: 5)
+            .shadow(color: emphasized ? FMColors.brandInk.opacity(0.2) : FMColors.brandInk.opacity(0.06), radius: 10, y: 5)
         }
         .disabled(store.purchaseInProgress)
         .opacity(store.purchaseInProgress ? 0.6 : 1.0)
         .overlay {
             if store.purchaseInProgress {
                 ProgressView()
-                    .tint(emphasized ? .white : FMColors.primary)
+                    .tint(emphasized ? .white : FMColors.brandInk)
             }
         }
         .accessibilityLabel("\(product.displayName) \(product.displayPrice)로 구독하기")
@@ -261,7 +266,7 @@ public struct SubscriptionView: View {
             } label: {
                 Label("이전 구매 복원", systemImage: "arrow.clockwise")
                     .font(FMTypography.callout)
-                    .foregroundStyle(FMColors.primary)
+                    .foregroundStyle(FMColors.brandInk)
             }
             .disabled(store.purchaseInProgress)
 
@@ -278,9 +283,9 @@ public struct SubscriptionView: View {
         HStack(spacing: FMSpacing.sm) {
             Image(systemName: icon)
                 .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(FMColors.primary)
+                .foregroundStyle(FMColors.brandInk)
                 .frame(width: 36, height: 36)
-                .background(FMColors.primary.opacity(0.1))
+                .background(FMColors.airBlue.opacity(0.12))
                 .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm, style: .continuous))
 
             VStack(alignment: .leading, spacing: FMSpacing.xxxs) {

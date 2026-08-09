@@ -1,6 +1,14 @@
 import SwiftUI
 
 public enum FMTypography {
+    public static var heroTitle: Font {
+        .system(.largeTitle, design: .rounded, weight: .bold)
+    }
+
+    public static var sectionTitle: Font {
+        .system(.title2, design: .rounded, weight: .bold)
+    }
+
     public static var largeTitle: Font {
         .system(size: 28, weight: .bold)
     }

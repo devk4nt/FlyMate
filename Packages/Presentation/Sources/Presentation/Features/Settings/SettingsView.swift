@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import ComposableArchitecture
 
 public struct SettingsView: View {
@@ -11,101 +12,116 @@ public struct SettingsView: View {
     public var body: some View {
         NavigationStack {
             List {
-                // 프로필 섹션
                 Section {
-                    Button {
-                        store.send(.profileEditTapped)
-                    } label: {
-                        HStack(spacing: FMSpacing.md) {
-                            Circle()
-                                .fill(FMColors.secondaryBackground)
-                                .frame(width: 56, height: 56)
-                                .overlay {
-                                    Text(String(store.currentUser.name.prefix(1)))
-                                        .font(FMTypography.title2)
-                                        .foregroundStyle(FMColors.accent)
-                                }
-
-                            VStack(alignment: .leading, spacing: FMSpacing.xxxs) {
-                                Text(store.currentUser.name)
-                                    .font(FMTypography.headline)
-                                    .foregroundStyle(FMColors.label)
-                                Text(store.currentUser.email)
-                                    .font(FMTypography.caption1)
-                                    .foregroundStyle(FMColors.secondaryLabel)
-                            }
-
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .foregroundStyle(FMColors.secondaryLabel)
-                        }
-                    }
-                    .listRowInsets(EdgeInsets(
-                        top: FMSpacing.md,
-                        leading: FMSpacing.md,
-                        bottom: FMSpacing.md,
-                        trailing: FMSpacing.md
-                    ))
+                    profileCard
                 }
+                .listRowInsets(EdgeInsets(
+                    top: FMSpacing.xs,
+                    leading: FMSpacing.md,
+                    bottom: FMSpacing.md,
+                    trailing: FMSpacing.md
+                ))
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
 
-                // 구독
-                Section("구독") {
+                Section("서비스") {
                     Button {
                         store.send(.subscriptionTapped)
                     } label: {
-                        Label("구독 관리", systemImage: "crown")
-                            .foregroundStyle(FMColors.label)
+                        SettingsActionLabel(
+                            systemImage: "crown.fill",
+                            title: "구독 관리",
+                            description: "플랜과 이용 한도를 확인해요",
+                            tint: FMColors.brandRed
+                        )
                     }
-                }
 
-                // 스터디 관리
-                Section("스터디") {
                     Button {
                         store.send(.studyManagementTapped)
                     } label: {
-                        Label("스터디 관리", systemImage: "person.3")
-                            .foregroundStyle(FMColors.label)
+                        SettingsActionLabel(
+                            systemImage: "person.3.fill",
+                            title: "스터디 관리",
+                            description: "참여 중인 스터디를 관리해요",
+                            tint: FMColors.brandInk
+                        )
                     }
                 }
+                .settingsSectionStyle()
 
-                // 알림 설정
                 Section("알림") {
                     Toggle(isOn: $store.notificationsEnabled.sending(\.notificationToggled)) {
-                        Label("푸시 알림", systemImage: "bell")
+                        SettingsActionLabel(
+                            systemImage: "bell.fill",
+                            title: "푸시 알림",
+                            description: "새 피드백과 스터디 소식을 받아요",
+                            tint: FMColors.airBlue,
+                            showsChevron: false
+                        )
                     }
+                    .tint(FMColors.brandInk)
                 }
+                .settingsSectionStyle()
 
-                // 계정
                 Section("계정") {
                     Button {
                         store.send(.signOutTapped)
                     } label: {
-                        Label("로그아웃", systemImage: "rectangle.portrait.and.arrow.right")
-                            .foregroundStyle(FMColors.label)
+                        SettingsActionLabel(
+                            systemImage: "rectangle.portrait.and.arrow.right",
+                            title: "로그아웃",
+                            description: "현재 계정에서 로그아웃해요",
+                            tint: FMColors.secondaryLabel,
+                            showsChevron: false
+                        )
                     }
 
                     Button {
                         store.send(.deleteAccountTapped)
                     } label: {
-                        Label("회원 탈퇴", systemImage: "person.crop.circle.badge.minus")
-                            .foregroundStyle(FMColors.destructive)
+                        SettingsActionLabel(
+                            systemImage: "person.crop.circle.badge.minus",
+                            title: "회원 탈퇴",
+                            description: "계정과 모든 데이터를 삭제해요",
+                            tint: FMColors.destructive,
+                            isDestructive: true,
+                            showsChevron: false
+                        )
                     }
                 }
+                .settingsSectionStyle()
 
-                // 앱 정보
                 Section("앱 정보") {
                     HStack {
-                        Text("버전")
+                        SettingsActionLabel(
+                            systemImage: "info.circle.fill",
+                            title: "FlyMate 버전",
+                            description: "더 나은 면접 연습을 함께 만들어요",
+                            tint: FMColors.brandInk,
+                            showsChevron: false
+                        )
+
                         Spacer()
+
                         Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "-")
+                            .font(.subheadline.weight(.semibold))
                             .foregroundStyle(FMColors.secondaryLabel)
                     }
                 }
+                .settingsSectionStyle()
             }
+            .contentMargins(.top, 0, for: .scrollContent)
+            .listSectionSpacing(FMSpacing.lg)
             .scrollContentBackground(.hidden)
-            .background(FMColors.canvas)
-            .tint(FMColors.primary)
+            .background(FMColors.softCanvas)
+            .tint(FMColors.brandInk)
             .navigationTitle("설정")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+        .onAppear { store.send(.onAppear) }
+        // 시스템 설정에서 권한 변경 후 복귀 시 토글 상태 재동기화
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            store.send(.onAppear)
         }
         .alert($store.scope(state: \.confirmAlert, action: \.confirmAlert))
         .sheet(item: $store.scope(state: \.destination?.profileEdit, action: \.destination.profileEdit)) { editStore in
@@ -123,5 +139,105 @@ public struct SettingsView: View {
                 SubscriptionView(store: subStore)
             }
         }
+    }
+
+    private var profileCard: some View {
+        Button {
+            store.send(.profileEditTapped)
+        } label: {
+            HStack(spacing: FMSpacing.md) {
+                FMProfileImage(
+                    url: store.currentUser.profileImageURL,
+                    name: store.currentUser.name,
+                    size: .xl
+                )
+                .background(.white.opacity(0.92), in: Circle())
+                .overlay {
+                    Circle()
+                        .stroke(.white.opacity(0.8), lineWidth: 2)
+                }
+
+                VStack(alignment: .leading, spacing: FMSpacing.xxs) {
+                    Text("MY FLYMATE")
+                        .font(.caption2.weight(.bold))
+                        .tracking(0.6)
+                        .foregroundStyle(.white.opacity(0.76))
+
+                    Text(store.currentUser.name)
+                        .font(FMTypography.sectionTitle)
+                        .foregroundStyle(.white)
+
+                    Text(store.currentUser.email)
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.76))
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "pencil")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 34, height: 34)
+                    .background(.white.opacity(0.16), in: Circle())
+            }
+            .padding(FMSpacing.lg)
+            .background(FMColors.brandGradient)
+            .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
+            .shadow(color: FMColors.brandInk.opacity(0.18), radius: 16, y: 8)
+            .contentShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(store.currentUser.name), \(store.currentUser.email), 프로필 편집")
+        .accessibilityHint("프로필 정보를 수정하려면 이중 탭하세요")
+    }
+}
+
+private struct SettingsActionLabel: View {
+    let systemImage: String
+    let title: String
+    let description: String
+    let tint: Color
+    var isDestructive = false
+    var showsChevron = true
+
+    var body: some View {
+        HStack(spacing: FMSpacing.sm) {
+            Image(systemName: systemImage)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(tint)
+                .frame(width: 36, height: 36)
+                .background(tint.opacity(0.1), in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm, style: .continuous))
+
+            VStack(alignment: .leading, spacing: FMSpacing.xxxs) {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(isDestructive ? FMColors.destructive : FMColors.label)
+
+                Text(description)
+                    .font(.caption)
+                    .foregroundStyle(FMColors.secondaryLabel)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+            }
+
+            if showsChevron {
+                Spacer(minLength: 0)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(FMColors.secondaryLabel.opacity(0.7))
+            }
+        }
+        .contentShape(Rectangle())
+    }
+}
+
+private extension View {
+    func settingsSectionStyle() -> some View {
+        self
+            .listRowBackground(FMColors.background)
+            .listRowSeparatorTint(FMColors.airBlue.opacity(0.18))
     }
 }

@@ -67,7 +67,7 @@ public struct StudyManagementFeature {
                         TextState("취소")
                     }
                 } message: {
-                    TextState("정말 이 스터디를 탈퇴하시겠습니까?")
+                    TextState("탈퇴하면 이 스터디에 올린 영상과 작성한 피드백·댓글이 모두 삭제됩니다. 정말 탈퇴하시겠습니까?")
                 }
                 return .none
 

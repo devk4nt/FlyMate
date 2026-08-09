@@ -15,15 +15,32 @@ public enum FMColors {
     public static let airBlue = Color(red: 0.290196, green: 0.662745, blue: 0.847059)
     public static let brandRed = Color(red: 0.850980, green: 0.211765, blue: 0.243137)
 
-    // Semantic brand colors. Keep interactive color tied to the asset catalog so
-    // tint, buttons and highlights all change together in light and dark mode.
+    // Semantic brand colors. Air blue is the primary interaction color across
+    // icons, controls, buttons, and selected states.
     public static let accent = primary
     public static let destructive = brandRed
     public static let success = Color(red: 0.12, green: 0.67, blue: 0.42)
     public static let warning = Color(red: 0.96, green: 0.58, blue: 0.12)
 
+    // Adaptive brand surfaces keep highlighted content readable in both modes.
+    #if canImport(UIKit)
+    public static let brandInk = Color(UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 0.45, green: 0.76, blue: 0.92, alpha: 1)
+            : UIColor(red: 0.290196, green: 0.662745, blue: 0.847059, alpha: 1)
+    })
+    public static let softCanvas = Color(UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 0.05, green: 0.07, blue: 0.10, alpha: 1)
+            : UIColor(red: 0.95, green: 0.98, blue: 1.00, alpha: 1)
+    })
+    #else
+    public static let brandInk = airBlue
+    public static let softCanvas = Color(red: 0.95, green: 0.98, blue: 1.00)
+    #endif
+
     public static let brandGradient = LinearGradient(
-        colors: [koreanAirDarkBlue, airBlue],
+        colors: [airBlue, secondary],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
