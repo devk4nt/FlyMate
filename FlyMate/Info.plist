@@ -53,8 +53,8 @@
 	<string>$(SUPABASE_URL)</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<key>UILaunchScreen</key>
-	<dict/>
+	<key>UILaunchStoryboardName</key>
+	<string>FlyMateLaunchScreen</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

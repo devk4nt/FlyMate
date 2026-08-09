@@ -3,12 +3,36 @@ import ComposableArchitecture
 
 public struct AppView: View {
     let store: StoreOf<AppFeature>
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isShowingSplash = true
 
     public init(store: StoreOf<AppFeature>) {
         self.store = store
     }
 
     public var body: some View {
+        ZStack {
+            appContent
+
+            if isShowingSplash {
+                SplashView()
+                    .transition(.opacity.combined(with: .scale(scale: 1.02)))
+                    .zIndex(10)
+            }
+        }
+        .task {
+            guard isShowingSplash else { return }
+
+            let duration: UInt64 = reduceMotion ? 700_000_000 : 1_450_000_000
+            try? await Task.sleep(nanoseconds: duration)
+
+            withAnimation(reduceMotion ? .linear(duration: 0.15) : .easeOut(duration: 0.4)) {
+                isShowingSplash = false
+            }
+        }
+    }
+
+    private var appContent: some View {
         Group {
             switch store.destination {
             case .login:
