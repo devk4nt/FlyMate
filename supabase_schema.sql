@@ -1,6 +1,11 @@
 -- ============================================================
 -- FlyMate Supabase Schema
 -- Run this in Supabase SQL Editor (Dashboard > SQL Editor)
+--
+-- NOTE: 이 파일은 초기 셋업 스냅샷. 이후 변경사항은
+--       supabase/migrations/ 가 source of truth이며, 새 환경은
+--       이 파일 실행 후 마이그레이션을 순서대로 적용해야 한다.
+--       (예: 탈퇴 정책 anonymize→delete 전환, videos 버킷 private 전환)
 -- ============================================================
 
 -- ============================================================
@@ -379,6 +384,13 @@ CREATE POLICY "Study members can read feedbacks"
 CREATE POLICY "Study members can create feedbacks"
     ON feedbacks FOR INSERT WITH CHECK (
         auth.uid() = author_id
+        AND EXISTS (
+            SELECT 1
+            FROM videos v
+            JOIN study_members sm ON sm.study_id = v.study_id
+            WHERE v.id = feedbacks.video_id
+              AND sm.user_id = auth.uid()
+        )
     );
 
 CREATE POLICY "Author can delete own feedback"

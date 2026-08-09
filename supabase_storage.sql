@@ -1,6 +1,10 @@
 -- ============================================================
 -- FlyMate Storage Setup
 -- Run this in Supabase SQL Editor AFTER supabase_schema.sql
+--
+-- NOTE: 이 파일은 초기 셋업 스냅샷. 이후 supabase/migrations/ 가
+--       source of truth. 특히 videos 버킷은 20260808000001에서
+--       private으로 전환되고 공개 read 정책이 제거되었다.
 -- ============================================================
 
 -- ============================================================
@@ -87,11 +91,12 @@ CREATE POLICY "Public read access for profile images"
     USING (bucket_id = 'profile-images');
 
 -- Users can upload/overwrite own profile image (path: {userID}.jpg)
+-- iOS 클라이언트가 UUID를 대문자로 업로드하므로 lower()로 비교
 CREATE POLICY "Users can upload own profile image"
     ON storage.objects FOR INSERT
     WITH CHECK (
         bucket_id = 'profile-images'
-        AND auth.role() = 'authenticated'
+        AND lower(name) = auth.uid()::text || '.jpg'
     );
 
 CREATE POLICY "Users can update own profile image"
