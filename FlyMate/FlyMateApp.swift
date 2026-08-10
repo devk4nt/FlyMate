@@ -21,7 +21,7 @@ struct FlyMateApp: App {
         } withDependencies: {
             #if DEBUG
             if AppFeature.skipAuth {
-                // 테스트 계정 스킴(FlyMate-Test1~3)은 실제 Supabase 세션으로 진입
+                // 테스트 계정 스킴(FlyMate-Owner/Member/Applicant)은 실제 Supabase 세션으로 진입
                 if let testEmail = ProcessInfo.processInfo.environment["TEST_EMAIL"] {
                     Self.registerLiveDependencies(&$0)
                     let supabaseClient = SupabaseClientProvider.shared.client

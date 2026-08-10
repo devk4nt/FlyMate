@@ -1,3 +1,4 @@
+import Foundation
 import ProjectDescription
 
 // MARK: - Shared
@@ -8,7 +9,7 @@ let destinations: Destinations = [.iPhone, .iPad]
 let baseSettings: SettingsDictionary = [
     "SWIFT_VERSION": "6.0",
     "IPHONEOS_DEPLOYMENT_TARGET": "17.0",
-    "DEVELOPMENT_TEAM": "",
+    "DEVELOPMENT_TEAM": "4Y2567YJY8",
     "CODE_SIGN_STYLE": "Automatic",
 ]
 
@@ -30,10 +31,13 @@ func module(
     )
 }
 
-/// 실제 Supabase 테스트 계정으로 로그인하는 디버그 스킴 (FlyMate-Test1~3)
-func testAccountScheme(_ number: Int, email: String) -> Scheme {
-    .scheme(
-        name: "FlyMate-Test\(number)",
+/// 실제 Supabase 테스트 계정으로 로그인하는 디버그 스킴.
+/// 비밀번호는 커밋되지 않도록 tuist generate 시점의 환경변수에서 읽는다:
+/// `FLYMATE_TEST_PASSWORD=<pw> tuist generate`
+func testAccountScheme(_ role: String, email: String) -> Scheme {
+    let testPassword = ProcessInfo.processInfo.environment["FLYMATE_TEST_PASSWORD"] ?? ""
+    return .scheme(
+        name: "FlyMate-\(role)",
         shared: true,
         buildAction: .buildAction(targets: ["FlyMate"]),
         runAction: .runAction(
@@ -41,7 +45,7 @@ func testAccountScheme(_ number: Int, email: String) -> Scheme {
             executable: "FlyMate",
             arguments: .arguments(environmentVariables: [
                 "TEST_EMAIL": .environmentVariable(value: email, isEnabled: true),
-                "TEST_PASSWORD": .environmentVariable(value: "testpassword123", isEnabled: true),
+                "TEST_PASSWORD": .environmentVariable(value: testPassword, isEnabled: true),
             ])
         )
     )
@@ -107,6 +111,7 @@ let project = Project(
                     "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
                     "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor",
                     "ENABLE_USER_SCRIPT_SANDBOXING": true,
+                    "OTHER_LDFLAGS": ["$(inherited)", "-ObjC"],
                 ]) { _, new in new },
                 configurations: [
                     .debug(name: .debug, xcconfig: "Secrets.xcconfig"),
@@ -156,8 +161,52 @@ let project = Project(
             profileAction: .profileAction(configuration: .release, executable: "FlyMate"),
             analyzeAction: .analyzeAction(configuration: .debug)
         ),
-        testAccountScheme(1, email: "test@flymate.app"),
-        testAccountScheme(2, email: "test2@flymate.app"),
-        testAccountScheme(3, email: "test3@flymate.app"),
+        // 다중 계정 시나리오용 실계정 스킴 — 시뮬레이터/기기 2대에 각각 띄워 크로스 계정 확인
+        // Owner: 방장 계정 (스터디 생성·가입 승인·FCM 푸시 수신)
+        testAccountScheme("Owner", email: "test@flymate.app"),
+        // Member: 멤버 계정 (@멘션 알림 수신 확인용으로 추가)
+        testAccountScheme("Member", email: "test2@flymate.app"),
+        // Applicant: 가입 신청자 계정 (가입 승인 플로우 확인용으로 추가)
+        testAccountScheme("Applicant", email: "test3@flymate.app"),
+        // 방장 회원 탈퇴 시나리오 목 스킴 — 탈퇴 시 방장 승계(스터디 A→김하늘),
+        // 혼자 방장인 스터디 삭제를 확인. 탈퇴 후 재로그인하면 결과 조회 가능
+        .scheme(
+            name: "FlyMate-OwnerDelete",
+            shared: true,
+            buildAction: .buildAction(targets: ["FlyMate"]),
+            runAction: .runAction(
+                configuration: .debug,
+                executable: "FlyMate",
+                arguments: .arguments(environmentVariables: [
+                    "MOCK_OWNER_DELETE": .environmentVariable(value: "1", isEnabled: true),
+                ])
+            )
+        ),
+        // 앱 전역 Skeleton/Shimmer 시각 검수용 — 목 API 응답을 5초 지연한다.
+        .scheme(
+            name: "FlyMate-Loading",
+            shared: true,
+            buildAction: .buildAction(targets: ["FlyMate"]),
+            runAction: .runAction(
+                configuration: .debug,
+                executable: "FlyMate",
+                arguments: .arguments(environmentVariables: [
+                    "MOCK_LOADING_DELAY_MS": .environmentVariable(value: "5000", isEnabled: true),
+                ])
+            )
+        ),
+        // 실기기에서 실제 로그인 플로우(Apple/카카오)로 진입하는 디버그 스킴
+        .scheme(
+            name: "FlyMate-Live",
+            shared: true,
+            buildAction: .buildAction(targets: ["FlyMate"]),
+            runAction: .runAction(
+                configuration: .debug,
+                executable: "FlyMate",
+                arguments: .arguments(environmentVariables: [
+                    "LIVE_AUTH": .environmentVariable(value: "1", isEnabled: true),
+                ])
+            )
+        ),
     ]
 )

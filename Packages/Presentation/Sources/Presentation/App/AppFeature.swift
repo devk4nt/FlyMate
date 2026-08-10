@@ -5,7 +5,8 @@ import Domain
 @Reducer
 public struct AppFeature : Sendable {
     #if DEBUG
-    public static let skipAuth = true
+    /// 디버그 기본값은 목 데이터 자동 진입. LIVE_AUTH=1이면 실제 로그인 플로우 (FlyMate-Live 스킴)
+    public static let skipAuth = ProcessInfo.processInfo.environment["LIVE_AUTH"] != "1"
     #endif
 
     @ObservableState
@@ -121,24 +122,22 @@ public struct AppFeature : Sendable {
                 if let user {
                     if case .login = state.destination {
                         state.destination = .tab(TabFeature.State(currentUser: user))
-                        let subClient = subscriptionClient
-                        let userID = user.id
                         var effects: [Effect<Action>] = [
                             .send(.requestPushPermission),
-                            // 로그인 후 entitlement 조회
-                            .run { send in
-                                let entitlement = try? await subClient.fetchEntitlements(userID)
-                                if let entitlement {
-                                    await send(.entitlementLoaded(entitlement))
-                                }
-                            },
-                            // Transaction.updates 구독
-                            .run { send in
-                                for await _ in subClient.observeTransactionUpdates() {
-                                    await send(.transactionUpdated)
-                                }
-                            }
-                            .cancellable(id: CancelID.transactionUpdates)
+                            // ponytail: 구독 미출시 — entitlement 조회 + Transaction.updates 구독 비활성.
+                            // verify-receipt/app-store-webhook 배포 후 아래 주석 복원 (SettingsView 구독 버튼과 함께)
+                            // .run { [subClient = subscriptionClient, userID = user.id] send in
+                            //     let entitlement = try? await subClient.fetchEntitlements(userID)
+                            //     if let entitlement {
+                            //         await send(.entitlementLoaded(entitlement))
+                            //     }
+                            // },
+                            // .run { [subClient = subscriptionClient] send in
+                            //     for await _ in subClient.observeTransactionUpdates() {
+                            //         await send(.transactionUpdated)
+                            //     }
+                            // }
+                            // .cancellable(id: CancelID.transactionUpdates)
                         ]
                         if let pendingDeepLink = state.pendingDeepLink {
                             state.pendingDeepLink = nil
