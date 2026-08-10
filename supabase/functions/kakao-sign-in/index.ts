@@ -44,15 +44,14 @@ serve(async (req) => {
     }
 
     const kakaoUser: KakaoUserResponse = await kakaoRes.json();
-    const email = kakaoUser.kakao_account?.email;
+    const realEmail = kakaoUser.kakao_account?.email ?? null;
     const name = kakaoUser.kakao_account?.profile?.nickname ?? "User";
 
-    if (!email) {
-      return new Response(
-        JSON.stringify({ error: "Email permission is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // 이메일 동의항목은 비즈 앱 전환 후에만 쓸 수 있으므로, auth 식별자는
+    // 카카오 회원번호 기반 내부용 이메일로 고정한다. 실제 이메일은 (동의받은
+    // 경우에만) public.users.email에 반영 — 나중에 비즈 앱 승인이 나도
+    // 같은 카카오 계정이 같은 유저로 유지된다.
+    const authEmail = `kakao_${kakaoUser.id}@kakao.flymate.app`;
 
     // 2. Supabase Admin 클라이언트
     const supabaseAdmin = createClient(
@@ -63,7 +62,7 @@ serve(async (req) => {
 
     // 3. 사용자 생성 (이미 존재하면 무시)
     const { error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email,
+      email: authEmail,
       email_confirm: true,
       user_metadata: { name, provider: "kakao" },
       app_metadata: { provider: "kakao" },
@@ -80,7 +79,7 @@ serve(async (req) => {
     const { data: linkData, error: linkError } =
       await supabaseAdmin.auth.admin.generateLink({
         type: "magiclink",
-        email,
+        email: authEmail,
       });
 
     if (linkError || !linkData.properties?.hashed_token) {
@@ -92,7 +91,7 @@ serve(async (req) => {
 
     const { data: sessionData, error: sessionError } =
       await supabaseAdmin.auth.verifyOtp({
-        email,
+        email: authEmail,
         token: linkData.properties.hashed_token,
         type: "email",
       });
@@ -102,6 +101,14 @@ serve(async (req) => {
         JSON.stringify({ error: sessionError?.message ?? "Failed to create session" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // 실제 이메일을 동의받은 경우 프로필에 반영 (best-effort)
+    if (realEmail) {
+      await supabaseAdmin
+        .from("users")
+        .update({ email: realEmail })
+        .eq("id", sessionData.session.user.id);
     }
 
     return new Response(

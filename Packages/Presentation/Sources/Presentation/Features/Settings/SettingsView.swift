@@ -167,7 +167,7 @@ public struct SettingsView: View {
                         .font(FMTypography.sectionTitle)
                         .foregroundStyle(.white)
 
-                    Text(store.currentUser.email)
+                    Text(store.currentUser.displayEmail)
                         .font(.caption)
                         .foregroundStyle(.white.opacity(0.76))
                         .lineLimit(1)
@@ -189,7 +189,7 @@ public struct SettingsView: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(store.currentUser.name), \(store.currentUser.email), 프로필 편집")
+        .accessibilityLabel("\(store.currentUser.name), \(store.currentUser.displayEmail), 프로필 편집")
         .accessibilityHint("프로필 정보를 수정하려면 이중 탭하세요")
     }
 }

@@ -175,7 +175,7 @@ public struct ProfileEditView: View {
             .textInputAutocapitalization(.never)
             .autocorrectionDisabled()
 
-            Label(store.currentUser.email, systemImage: "envelope.fill")
+            Label(store.currentUser.displayEmail, systemImage: "envelope.fill")
                 .font(.caption)
                 .foregroundStyle(FMColors.secondaryLabel)
         }
