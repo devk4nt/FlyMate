@@ -110,7 +110,7 @@ public struct VideoUploadView: View {
         HStack(spacing: FMSpacing.md) {
             ZStack {
                 RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous)
-                    .fill(FMColors.warmGradient)
+                    .fill(FMColors.featureGradient)
 
                 Image(systemName: "video.fill")
                     .font(.system(size: 27, weight: .semibold))
@@ -283,7 +283,7 @@ public struct VideoUploadView: View {
         .foregroundStyle(FMColors.destructive)
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(FMSpacing.md)
-        .background(FMColors.destructive.opacity(0.08))
+        .background(FMColors.destructiveSurface)
         .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous))
     }
 

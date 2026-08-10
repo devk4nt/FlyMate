@@ -46,12 +46,10 @@ public struct StudyManagementView: View {
     private var loadingContent: some View {
         ScrollView {
             LazyVStack(spacing: FMSpacing.md) {
-                FMSkeletonView()
-                    .frame(height: 64)
+                FMSkeletonView(height: 64)
 
                 ForEach(0..<3, id: \.self) { _ in
-                    FMSkeletonView()
-                        .frame(height: 176)
+                    FMSkeletonView(height: 176)
                 }
             }
             .padding(FMSpacing.md)
@@ -177,7 +175,7 @@ private struct StudyManagementCard: View {
                     .foregroundStyle(FMColors.destructive)
                     .frame(maxWidth: .infinity)
                     .frame(minHeight: 42)
-                    .background(FMColors.destructive.opacity(0.08), in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous))
+                    .background(FMColors.destructiveSurface, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous))
             }
             .buttonStyle(.plain)
             .accessibilityHint("탈퇴 확인 창을 엽니다")

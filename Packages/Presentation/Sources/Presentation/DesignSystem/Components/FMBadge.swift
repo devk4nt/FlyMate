@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A small badge view displaying a count number in a red circle,
+/// A small badge view displaying a count number in a branded capsule,
 /// typically used for notification indicators.
 public struct FMBadge: View {
     private let count: Int
@@ -15,10 +15,10 @@ public struct FMBadge: View {
         if count > 0 {
             Text(displayText)
                 .font(FMTypography.caption2)
-                .foregroundStyle(.white)
+                .foregroundStyle(FMColors.attentionForeground)
                 .padding(.horizontal, FMSpacing.xxs + 2)
                 .padding(.vertical, FMSpacing.xxxs)
-                .background(FMColors.destructive)
+                .background(FMColors.attentionFill)
                 .clipShape(Capsule())
                 .accessibilityLabel("알림 \(count)개")
         }

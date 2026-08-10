@@ -625,9 +625,13 @@ struct FlyMateApp: App {
 
         // Study
         dependencies.studyClient = StudyClient(
-            fetchMyStudies: { studyStore.value },
+            fetchMyStudies: {
+                try await simulateLoading()
+                return studyStore.value
+            },
             fetchStudy: { id in
-                studyStore.value.first { $0.id == id } ?? studyA
+                try await simulateLoading()
+                return studyStore.value.first { $0.id == id } ?? studyA
             },
             createStudy: { request in
                 let study = Study(
@@ -709,7 +713,8 @@ struct FlyMateApp: App {
                 }
             },
             fetchPendingRequests: { studyID in
-                joinRequestStore.value.filter { $0.studyID == studyID }
+                try await simulateLoading()
+                return joinRequestStore.value.filter { $0.studyID == studyID }
             },
             approveJoinRequest: { requestID in
                 guard let request = joinRequestStore.value.first(where: { $0.id == requestID }) else { return }
@@ -728,6 +733,7 @@ struct FlyMateApp: App {
                 joinRequestStore.withValue { $0.removeAll { $0.id == requestID } }
             },
             fetchMemberStats: { studyID, userID in
+                try await simulateLoading()
                 let stats = memberStats[userID] ?? (given: 0, received: 0, videos: 0)
                 return MemberStats(
                     userID: userID,
@@ -745,12 +751,14 @@ struct FlyMateApp: App {
         let uploadedThumbnailURL = sampleThumbnailURL(999)
         dependencies.videoClient = VideoClient(
             fetchVideos: { studyID, _ in
+                try await simulateLoading()
                 // ponytail: 커서 무시 — 목 데이터는 단일 페이지
-                videoStore.value
+                return videoStore.value
                     .filter { $0.studyID == studyID }
                     .sorted { $0.createdAt > $1.createdAt }
             },
             fetchFeedVideos: { studyIDs, cursor in
+                try await simulateLoading()
                 // ponytail: 커서 무시 — 목 데이터는 단일 페이지
                 guard cursor == nil else { return [] }
                 return videoStore.value
@@ -758,6 +766,7 @@ struct FlyMateApp: App {
                     .sorted { $0.createdAt > $1.createdAt }
             },
             fetchPendingFeedbackVideos: { studyIDs, userID in
+                try await simulateLoading()
                 let completedVideoIDs = Set(
                     feedbackStore.all().filter { $0.authorID == userID }.map(\.videoID)
                 )
@@ -770,7 +779,8 @@ struct FlyMateApp: App {
                     .sorted { $0.createdAt < $1.createdAt }
             },
             fetchVideo: { id in
-                videoStore.value.first { $0.id == id } ?? videos[0]
+                try await simulateLoading()
+                return videoStore.value.first { $0.id == id } ?? videos[0]
             },
             uploadVideo: { request, progress in
                 for step in [0.25, 0.5, 0.75, 1.0] as [Double] {
@@ -799,7 +809,8 @@ struct FlyMateApp: App {
         // Feedback
         dependencies.feedbackClient = FeedbackClient(
             fetchFeedbacks: { videoID in
-                feedbackStore.feedbacks(for: videoID)
+                try await simulateLoading()
+                return feedbackStore.feedbacks(for: videoID)
             },
             createFeedback: { request in
                 let feedback = Feedback(
@@ -817,10 +828,12 @@ struct FlyMateApp: App {
                 return feedback
             },
             fetchReceived: { userID, _ in
-                feedbackStore.all().filter { myVideoIDs.contains($0.videoID) && $0.authorID != userID }
+                try await simulateLoading()
+                return feedbackStore.all().filter { myVideoIDs.contains($0.videoID) && $0.authorID != userID }
             },
             fetchGiven: { userID, _ in
-                feedbackStore.all().filter { $0.authorID == userID }
+                try await simulateLoading()
+                return feedbackStore.all().filter { $0.authorID == userID }
             },
             observeFeedbacks: { videoID in
                 feedbackStore.observe(videoID: videoID)
@@ -833,11 +846,13 @@ struct FlyMateApp: App {
         // Feedback Comment
         dependencies.feedbackCommentClient = FeedbackCommentClient(
             fetchComments: { feedbackID in
-                commentStore.value
+                try await simulateLoading()
+                return commentStore.value
                     .filter { $0.feedbackID == feedbackID }
                     .sorted { $0.createdAt < $1.createdAt }
             },
             fetchLatestComments: { feedbackIDs in
+                try await simulateLoading()
                 let allComments = commentStore.value
                 var latest: [UUID: FeedbackComment] = [:]
                 for feedbackID in feedbackIDs {
@@ -887,7 +902,8 @@ struct FlyMateApp: App {
         // Notification
         dependencies.notificationClient = NotificationClient(
             fetchNotifications: { _, _ in
-                notificationStore.value.sorted { $0.createdAt > $1.createdAt }
+                try await simulateLoading()
+                return notificationStore.value.sorted { $0.createdAt > $1.createdAt }
             },
             fetchUnreadCount: { _ in
                 notificationStore.value.filter { !$0.isRead }.count

@@ -13,10 +13,10 @@ public struct VideoFeedbackSheet: View {
 
     public var body: some View {
         VStack(spacing: 0) {
-            header
             videoInfoSection
             feedbackSection
         }
+        .padding(.top, FMSpacing.sm)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(FMColors.background)
         .safeAreaInset(edge: .bottom) {
@@ -47,25 +47,6 @@ public struct VideoFeedbackSheet: View {
             }
             .presentationDetents([.medium])
         }
-    }
-
-    // MARK: - Header
-
-    private var header: some View {
-        Text("피드백 \(feedbackCount)개")
-            .font(FMTypography.caption1)
-            .fontWeight(.semibold)
-            .foregroundStyle(FMColors.secondaryLabel)
-            .frame(maxWidth: .infinity)
-            .padding(.top, FMSpacing.md)
-            .padding(.bottom, FMSpacing.sm)
-    }
-
-    private var feedbackCount: Int {
-        if case .loaded(let feedbacks) = store.feedbacks {
-            return feedbacks.count
-        }
-        return store.video.feedbackCount
     }
 
     // MARK: - Video Info
@@ -109,13 +90,21 @@ public struct VideoFeedbackSheet: View {
         Group {
             switch store.feedbacks {
             case .idle, .loading:
-                VStack {
-                    ForEach(0..<3, id: \.self) { _ in
-                        FMSkeletonView()
-                            .frame(height: 60)
+                VStack(spacing: 0) {
+                    ForEach(0..<3, id: \.self) { index in
+                        FeedbackRowSkeleton()
+
+                        if index < 2 {
+                            Divider()
+                                .padding(.leading, 44 + (FMSpacing.sm * 2))
+                        }
                     }
                 }
-                .padding(FMSpacing.md)
+                .shimmer(duration: 1.8)
+                .background(FMColors.secondaryBackground)
+                .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous))
+                .padding(.horizontal, FMSpacing.md)
+                .padding(.top, FMSpacing.sm)
                 .frame(maxHeight: .infinity, alignment: .top)
 
             case .loaded(let feedbacks):
@@ -190,6 +179,33 @@ public struct VideoFeedbackSheet: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Feedback Row Skeleton
+
+private struct FeedbackRowSkeleton: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: FMSpacing.xs) {
+            HStack(alignment: .top, spacing: FMSpacing.sm) {
+                FMSkeletonView(
+                    width: 44,
+                    height: 22,
+                    cornerRadius: FMSpacing.CornerRadius.sm,
+                    isShimmering: false
+                )
+
+                VStack(alignment: .leading, spacing: FMSpacing.xs) {
+                    FMSkeletonView(width: 96, height: 12, isShimmering: false)
+                    FMSkeletonView(height: 14, isShimmering: false)
+                    FMSkeletonView(width: 184, height: 14, isShimmering: false)
+                }
+            }
+        }
+        .padding(.horizontal, FMSpacing.sm)
+        .padding(.vertical, FMSpacing.md)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("피드백 불러오는 중")
     }
 }
 

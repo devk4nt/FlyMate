@@ -41,8 +41,7 @@ public struct FeedbackCommentListView: View {
                     case .idle, .loading:
                         VStack(spacing: FMSpacing.sm) {
                             ForEach(0..<3, id: \.self) { _ in
-                                FMSkeletonView()
-                                    .frame(height: 48)
+                                FMSkeletonView(height: 48)
                             }
                         }
                         .padding(FMSpacing.md)
@@ -268,4 +267,3 @@ private struct CommentRow: View {
         FMProfileImage(url: comment.authorProfileURL, name: comment.authorName, size: .xs)
     }
 }
-

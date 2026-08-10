@@ -85,7 +85,7 @@ public struct FMButton: View {
         case .secondary:
             return FMColors.background
         case .destructive:
-            return FMColors.destructive
+            return FMColors.destructiveFill
         case .text:
             return .clear
         }

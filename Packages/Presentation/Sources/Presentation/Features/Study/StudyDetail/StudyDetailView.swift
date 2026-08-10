@@ -55,8 +55,7 @@ public struct StudyDetailView: View {
         ScrollView {
             LazyVStack(spacing: FMSpacing.md) {
                 ForEach(0..<4, id: \.self) { _ in
-                    FMSkeletonView()
-                        .frame(height: 200)
+                    FMSkeletonView(height: 200)
                 }
             }
             .padding(FMSpacing.md)
@@ -331,7 +330,7 @@ public struct StudyDetailView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(FMSpacing.md)
-        .background(FMColors.destructive.opacity(0.08))
+        .background(FMColors.destructiveSurface)
         .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("오류: \(message)")
@@ -345,7 +344,7 @@ public struct StudyDetailView: View {
                 Image(systemName: "trash")
                     .font(.system(size: 16, weight: .semibold))
                     .frame(width: 34, height: 34)
-                    .background(FMColors.destructive.opacity(0.1))
+                    .background(FMColors.destructiveSurface)
                     .clipShape(Circle())
 
                 VStack(alignment: .leading, spacing: FMSpacing.xxxs) {
@@ -368,7 +367,7 @@ public struct StudyDetailView: View {
             .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous)
-                    .stroke(FMColors.destructive.opacity(0.16), lineWidth: 1)
+                    .stroke(FMColors.destructiveBorder, lineWidth: 1)
             }
         }
         .buttonStyle(.plain)

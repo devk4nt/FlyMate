@@ -3,6 +3,8 @@ import SwiftUI
 /// A ViewModifier that adds a shimmer/loading animation effect
 /// using a moving gradient overlay.
 public struct ShimmerModifier: ViewModifier {
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var phase: CGFloat = -1
 
     private let duration: Double
@@ -13,32 +15,38 @@ public struct ShimmerModifier: ViewModifier {
         self.bounce = bounce
     }
 
+    @ViewBuilder
     public func body(content: Content) -> some View {
-        content
-            .overlay {
-                GeometryReader { geometry in
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            .clear,
-                            Color.white.opacity(0.4),
-                            .clear,
-                        ]),
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                    .frame(width: geometry.size.width * 2)
-                    .offset(x: phase * geometry.size.width)
+        if reduceMotion {
+            content
+        } else {
+            content
+                .overlay {
+                    GeometryReader { geometry in
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                .clear,
+                                Color.white.opacity(colorScheme == .dark ? 0.16 : 0.4),
+                                .clear,
+                            ]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                        .frame(width: geometry.size.width * 2)
+                        .offset(x: phase * geometry.size.width)
+                    }
+                    .clipped()
+                    .mask { content }
                 }
-                .clipped()
-            }
-            .onAppear {
-                withAnimation(
-                    .linear(duration: duration)
-                    .repeatForever(autoreverses: bounce)
-                ) {
-                    phase = 1
+                .onAppear {
+                    withAnimation(
+                        .linear(duration: duration)
+                        .repeatForever(autoreverses: bounce)
+                    ) {
+                        phase = 1
+                    }
                 }
-            }
+        }
     }
 }
 

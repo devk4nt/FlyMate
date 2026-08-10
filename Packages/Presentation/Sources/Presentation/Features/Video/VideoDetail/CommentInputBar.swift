@@ -25,7 +25,7 @@ struct CommentInputBar: View {
                 }
                 .padding(.horizontal, FMSpacing.md)
                 .padding(.vertical, FMSpacing.xs)
-                .background(FMColors.destructive.opacity(0.1))
+                .background(FMColors.destructiveSurface)
             }
 
             // 멘션 서제스천

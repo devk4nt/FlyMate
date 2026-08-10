@@ -17,8 +17,7 @@ public struct FeedbackListView: View {
                 ScrollView {
                     LazyVStack(spacing: FMSpacing.md) {
                         ForEach(0..<3, id: \.self) { _ in
-                            FMSkeletonView()
-                                .frame(height: 164)
+                            FMSkeletonView(height: 164)
                         }
                     }
                     .padding(.horizontal, FMSpacing.md)

@@ -21,7 +21,7 @@ public struct SplashView: View {
                 .opacity(isAnimated ? 1 : 0)
 
             Circle()
-                .fill(FMColors.brandRed.opacity(0.3))
+                .fill(FMColors.secondary.opacity(0.28))
                 .frame(width: 130, height: 130)
                 .blur(radius: 6)
                 .offset(x: -155, y: 330)

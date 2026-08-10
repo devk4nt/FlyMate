@@ -199,7 +199,7 @@ public struct ProfileEditView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(FMSpacing.md)
-        .background(FMColors.destructive.opacity(0.08))
+        .background(FMColors.destructiveSurface)
         .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("오류: \(message)")

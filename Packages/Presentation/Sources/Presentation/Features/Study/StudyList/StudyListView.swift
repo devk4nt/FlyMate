@@ -72,8 +72,7 @@ public struct StudyListView: View {
             VStack(alignment: .leading, spacing: FMSpacing.md) {
                 sectionHeader(count: nil)
                 ForEach(0..<2, id: \.self) { _ in
-                    FMSkeletonView()
-                        .frame(height: 168)
+                    FMSkeletonView(height: 168)
                 }
             }
 
@@ -139,7 +138,7 @@ public struct StudyListView: View {
                     .fill(FMColors.brandGradient)
 
                 Circle()
-                    .fill(FMColors.brandRed.opacity(0.38))
+                    .fill(FMColors.secondary.opacity(0.34))
                     .frame(width: 150, height: 150)
                     .blur(radius: 4)
                     .offset(x: 56, y: -62)
@@ -326,7 +325,7 @@ private struct StudyRow: View {
             if let notice = study.notice, !notice.isEmpty {
                 HStack(spacing: FMSpacing.xs) {
                     Image(systemName: "megaphone.fill")
-                        .foregroundStyle(FMColors.brandRed)
+                        .foregroundStyle(FMColors.brandInk)
 
                     Text(notice)
                         .lineLimit(1)
@@ -337,7 +336,7 @@ private struct StudyRow: View {
                 .foregroundStyle(FMColors.secondaryLabel)
                 .padding(.horizontal, FMSpacing.sm)
                 .padding(.vertical, FMSpacing.xs)
-                .background(FMColors.brandRed.opacity(0.07), in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm, style: .continuous))
+                .background(FMColors.primary.opacity(0.09), in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm, style: .continuous))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

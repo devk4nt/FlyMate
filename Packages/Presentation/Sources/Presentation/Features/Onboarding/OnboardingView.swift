@@ -184,7 +184,7 @@ private struct OnboardingArtwork: View {
                 badgeSymbol: "waveform",
                 detailSymbol: "clock.fill",
                 caption: "00:42 피드백",
-                usesWarmGradient: true
+                usesFeatureGradient: true
             )
         case 2:
             ArtworkConfiguration(
@@ -192,7 +192,7 @@ private struct OnboardingArtwork: View {
                 badgeSymbol: "arrow.up.right",
                 detailSymbol: "sparkles",
                 caption: "함께 만드는 성장",
-                usesWarmGradient: false
+                usesFeatureGradient: false
             )
         default:
             ArtworkConfiguration(
@@ -200,7 +200,7 @@ private struct OnboardingArtwork: View {
                 badgeSymbol: "arrow.up",
                 detailSymbol: "record.circle",
                 caption: "나의 모의 면접",
-                usesWarmGradient: false
+                usesFeatureGradient: false
             )
         }
     }
@@ -264,7 +264,7 @@ private struct OnboardingArtwork: View {
 
             Image(systemName: "circle.fill")
                 .font(.system(size: 12))
-                .foregroundStyle(FMColors.brandRed.opacity(0.8))
+                .foregroundStyle(FMColors.secondary.opacity(0.8))
                 .offset(x: -124, y: 86)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -277,9 +277,9 @@ private struct ArtworkConfiguration {
     let badgeSymbol: String
     let detailSymbol: String
     let caption: String
-    let usesWarmGradient: Bool
+    let usesFeatureGradient: Bool
 
     var gradient: LinearGradient {
-        usesWarmGradient ? FMColors.warmGradient : FMColors.brandGradient
+        usesFeatureGradient ? FMColors.featureGradient : FMColors.brandGradient
     }
 }
