@@ -5,6 +5,7 @@ public struct AppView: View {
     let store: StoreOf<AppFeature>
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isShowingSplash = true
+    @State private var bugReportDraft: BugReportDraft?
 
     public init(store: StoreOf<AppFeature>) {
         self.store = store
@@ -13,6 +14,13 @@ public struct AppView: View {
     public var body: some View {
         ZStack {
             appContent
+
+            ShakeDetectorView {
+                guard !isShowingSplash, bugReportDraft == nil else { return }
+                bugReportDraft = BugReportDraft.capture(user: store.currentUser)
+            }
+            .frame(width: 0, height: 0)
+            .allowsHitTesting(false)
 
             if isShowingSplash {
                 SplashView()
@@ -29,6 +37,9 @@ public struct AppView: View {
             withAnimation(reduceMotion ? .linear(duration: 0.15) : .easeOut(duration: 0.4)) {
                 isShowingSplash = false
             }
+        }
+        .sheet(item: $bugReportDraft) { draft in
+            BugReportView(draft: draft)
         }
     }
 

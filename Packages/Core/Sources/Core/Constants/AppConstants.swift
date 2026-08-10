@@ -1,6 +1,12 @@
 import Foundation
 
 public enum AppConstants {
+    /// 사용자 문의를 받는 고객 지원 이메일
+    public static let supportEmail = "flymate.team.contact@gmail.com"
+
+    /// 버그 신고 상세 내용 최대 글자 수
+    public static let maxBugReportLength = 2_000
+
     /// 영상 최대 길이 (초) — 피드백 요청 영상은 최대 3분
     public static let maxVideoDurationSeconds: TimeInterval = 180
 

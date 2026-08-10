@@ -26,6 +26,8 @@ public struct SettingsFeature {
         case profileEditTapped
         case studyManagementTapped
         case subscriptionTapped
+        case developerContactTapped
+        case developerContactOpenResponse(Bool)
         case notificationToggled(Bool)
         case signOutTapped
         case deleteAccountTapped
@@ -89,6 +91,30 @@ public struct SettingsFeature {
                 state.destination = .subscription(
                     SubscriptionFeature.State(currentUserID: state.currentUser.id)
                 )
+                return .none
+
+            case .developerContactTapped:
+                guard let url = Self.developerContactURL(for: state.currentUser) else {
+                    return .send(.developerContactOpenResponse(false))
+                }
+                let open = openURL
+                return .run { send in
+                    await send(.developerContactOpenResponse(await open(url)))
+                }
+
+            case .developerContactOpenResponse(true):
+                return .none
+
+            case .developerContactOpenResponse(false):
+                state.confirmAlert = AlertState {
+                    TextState("메일 앱을 열 수 없어요")
+                } actions: {
+                    ButtonState(role: .cancel) {
+                        TextState("확인")
+                    }
+                } message: {
+                    TextState("메일 앱을 설정한 뒤 다시 시도해 주세요. 문의 주소는 \(AppConstants.supportEmail)입니다.")
+                }
                 return .none
 
             case .notificationToggled(let enabled):
@@ -200,5 +226,29 @@ public struct SettingsFeature {
         }
         .ifLet(\.$destination, action: \.destination)
         .ifLet(\.$confirmAlert, action: \.confirmAlert)
+    }
+
+    private static func developerContactURL(for user: User) -> URL? {
+        var components = URLComponents()
+        components.scheme = "mailto"
+        components.path = AppConstants.supportEmail
+        components.queryItems = [
+            URLQueryItem(name: "subject", value: "[FlyMate 문의] 문의 유형을 입력해 주세요"),
+            URLQueryItem(
+                name: "body",
+                value: """
+                안녕하세요. FlyMate 이용 중 문의드려요.
+
+                문의 내용:
+
+
+                --------------------
+                아래 정보는 문의 확인을 위해 자동으로 입력되었어요.
+                회원 ID: \(user.id.uuidString)
+                계정: \(user.displayEmail)
+                """
+            ),
+        ]
+        return components.url
     }
 }

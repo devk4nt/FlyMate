@@ -63,6 +63,21 @@ public struct SettingsView: View {
                 }
                 .settingsSectionStyle()
 
+                Section("고객 지원") {
+                    Button {
+                        store.send(.developerContactTapped)
+                    } label: {
+                        SettingsActionLabel(
+                            systemImage: "envelope.fill",
+                            title: "개발자에게 문의하기",
+                            description: "버그와 개선 의견을 이메일로 보내요",
+                            tint: FMColors.airBlue
+                        )
+                    }
+                    .accessibilityHint("메일 앱을 열어 문의 메일을 작성합니다")
+                }
+                .settingsSectionStyle()
+
                 Section("계정") {
                     Button {
                         store.send(.signOutTapped)

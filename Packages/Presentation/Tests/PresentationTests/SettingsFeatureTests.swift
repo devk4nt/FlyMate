@@ -46,6 +46,83 @@ struct SettingsFeatureTests {
     }
 
     @Test
+    func 개발자에게_문의하기_메일_열기() async {
+        let openedURL = LockIsolated<URL?>(nil)
+        let store = TestStore(initialState: SettingsFeature.State(currentUser: .settingsMock)) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.openURL = OpenURLEffect { url in
+                openedURL.setValue(url)
+                return true
+            }
+        }
+
+        await store.send(.developerContactTapped)
+        await store.receive(\.developerContactOpenResponse, true)
+
+        let components = openedURL.value.flatMap {
+            URLComponents(url: $0, resolvingAgainstBaseURL: false)
+        }
+        #expect(openedURL.value?.scheme == "mailto")
+        #expect(openedURL.value?.path == AppConstants.supportEmail)
+        #expect(components?.queryItems?.contains(where: { $0.name == "subject" }) == true)
+        #expect(components?.queryItems?.contains(where: {
+            $0.name == "body" && $0.value?.contains(User.settingsMock.id.uuidString) == true
+        }) == true)
+    }
+
+    @Test
+    func 메일_앱을_열_수_없으면_안내_표시() async {
+        let store = TestStore(initialState: SettingsFeature.State(currentUser: .settingsMock)) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.openURL = OpenURLEffect { _ in false }
+        }
+
+        await store.send(.developerContactTapped)
+        await store.receive(\.developerContactOpenResponse, false) {
+            $0.confirmAlert = Self.mailUnavailableAlert
+        }
+    }
+
+    @Test
+    func 버그_신고_메일에_상세내용과_진단정보_포함() {
+        let draft = BugReportDraft(
+            screenshotData: nil,
+            userID: "test-user-id",
+            account: "tester@example.com",
+            appVersion: "1.0.0 (1)",
+            deviceDescription: "iPhone · iOS 17.0"
+        )
+
+        let body = draft.mailBody(detail: "저장 버튼을 누르면 화면이 멈춰요.")
+
+        #expect(body.contains("저장 버튼을 누르면 화면이 멈춰요."))
+        #expect(body.contains("앱 버전: 1.0.0 (1)"))
+        #expect(body.contains("회원 ID: test-user-id"))
+        #expect(body.contains("계정: tester@example.com"))
+    }
+
+    @Test
+    func 버그_신고_대체_메일_URL_생성() {
+        let mailDraft = BugReportMailDraft(
+            recipient: AppConstants.supportEmail,
+            subject: "[FlyMate 버그 신고] 1.0.0",
+            body: "버그 신고 내용",
+            screenshotData: nil
+        )
+
+        let components = mailDraft.mailtoURL.flatMap {
+            URLComponents(url: $0, resolvingAgainstBaseURL: false)
+        }
+
+        #expect(mailDraft.mailtoURL?.scheme == "mailto")
+        #expect(mailDraft.mailtoURL?.path == AppConstants.supportEmail)
+        #expect(components?.queryItems?.first(where: { $0.name == "subject" })?.value == "[FlyMate 버그 신고] 1.0.0")
+        #expect(components?.queryItems?.first(where: { $0.name == "body" })?.value == "버그 신고 내용")
+    }
+
+    @Test
     func 알림_설정_끄기() async {
         let store = TestStore(initialState: SettingsFeature.State(currentUser: .settingsMock)) {
             SettingsFeature()
@@ -276,7 +353,17 @@ struct SettingsFeatureTests {
             TextState("취소")
         }
     } message: {
-        TextState("모든 데이터가 삭제됩니다. 정말 탈퇴하시겠습니까?")
+        TextState("모든 데이터가 삭제됩니다. 방장인 스터디는 가장 오래된 멤버에게 방장이 자동으로 위임됩니다. 정말 탈퇴하시겠습니까?")
+    }
+
+    private static let mailUnavailableAlert = AlertState<SettingsFeature.Action.ConfirmAlert> {
+        TextState("메일 앱을 열 수 없어요")
+    } actions: {
+        ButtonState(role: .cancel) {
+            TextState("확인")
+        }
+    } message: {
+        TextState("메일 앱을 설정한 뒤 다시 시도해 주세요. 문의 주소는 \(AppConstants.supportEmail)입니다.")
     }
 }
 
