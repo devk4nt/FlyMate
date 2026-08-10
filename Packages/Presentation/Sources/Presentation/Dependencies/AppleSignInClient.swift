@@ -12,6 +12,20 @@ public struct AppleSignInResult: Equatable, Sendable {
     public let email: String?
     /// 계정 삭제 시 Sign in with Apple 토큰 revoke에 사용 (5분 내 만료)
     public let authorizationCode: String?
+
+    public init(
+        idToken: String,
+        nonce: String,
+        fullName: PersonNameComponents?,
+        email: String?,
+        authorizationCode: String?
+    ) {
+        self.idToken = idToken
+        self.nonce = nonce
+        self.fullName = fullName
+        self.email = email
+        self.authorizationCode = authorizationCode
+    }
 }
 
 // MARK: - Apple Sign In Client

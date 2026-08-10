@@ -12,7 +12,7 @@ public struct MemberManagementFeature {
         @Presents public var confirmAlert: AlertState<Action.ConfirmAlert>?
         @Presents public var memberStats: MemberStatsFeature.State?
         public var removeMemberState: LoadingState<Bool> = .idle
-        fileprivate var selectedMemberUserID: UUID?
+        var selectedMemberUserID: UUID?
 
         public var isOwner: Bool {
             guard let currentUserID else { return false }
@@ -37,12 +37,16 @@ public struct MemberManagementFeature {
         case memberTapped(StudyMember)
         case memberStats(PresentationAction<MemberStatsFeature.Action>)
         case removeMemberTapped(StudyMember)
+        case transferOwnerTapped(StudyMember)
         case confirmAlert(PresentationAction<ConfirmAlert>)
         case removeMemberResponse(Result<UUID, AppError>)
+        case transferOwnerResponse(Result<UUID, AppError>)
         case memberRemoved(UUID)
+        case ownershipTransferred(Study)
 
         public enum ConfirmAlert: Equatable {
             case confirmRemove
+            case confirmTransfer
         }
     }
 
@@ -79,6 +83,52 @@ public struct MemberManagementFeature {
                 }
                 return .none
 
+            case .transferOwnerTapped(let member):
+                state.selectedMemberUserID = member.userID
+                state.confirmAlert = AlertState {
+                    TextState("방장 위임")
+                } actions: {
+                    ButtonState(action: .confirmTransfer) {
+                        TextState("위임하기")
+                    }
+                    ButtonState(role: .cancel) {
+                        TextState("취소")
+                    }
+                } message: {
+                    TextState("\(member.userName)님에게 방장을 위임하시겠습니까?")
+                }
+                return .none
+
+            case .confirmAlert(.presented(.confirmTransfer)):
+                guard let newOwnerID = state.selectedMemberUserID else { return .none }
+                state.removeMemberState = .loading
+                let studyID = state.study.id
+                let client = studyClient
+                return .run { send in
+                    do {
+                        try await client.transferOwnership(studyID, newOwnerID)
+                        await send(.transferOwnerResponse(.success(newOwnerID)))
+                    } catch {
+                        let appError = error as? AppError ?? .unexpected(error.localizedDescription)
+                        await send(.transferOwnerResponse(.failure(appError)))
+                    }
+                }
+
+            case .transferOwnerResponse(.success(let newOwnerID)):
+                state.removeMemberState = .idle
+                state.selectedMemberUserID = nil
+                state.study.ownerID = newOwnerID
+                for index in state.study.members.indices {
+                    state.study.members[index].role =
+                        state.study.members[index].userID == newOwnerID ? .owner : .member
+                }
+                return .send(.ownershipTransferred(state.study))
+
+            case .transferOwnerResponse(.failure(let error)):
+                state.removeMemberState = .failed(error)
+                state.selectedMemberUserID = nil
+                return .none
+
             case .confirmAlert(.presented(.confirmRemove)):
                 guard let memberUserID = state.selectedMemberUserID else { return .none }
                 state.removeMemberState = .loading
@@ -108,7 +158,7 @@ public struct MemberManagementFeature {
             case .confirmAlert:
                 return .none
 
-            case .memberRemoved:
+            case .memberRemoved, .ownershipTransferred:
                 return .none // Handled by parent
             }
         }

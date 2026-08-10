@@ -46,6 +46,9 @@ public protocol StudyRepository: Sendable {
     /// 스터디 멤버를 제거한다 (소유자만).
     func removeMember(studyID: UUID, userID: UUID) async throws
 
+    /// 스터디 방장을 다른 멤버에게 위임한다 (소유자만).
+    func transferOwnership(studyID: UUID, newOwnerID: UUID) async throws
+
     /// 초대 코드 정보를 조회한다.
 
     /// 스터디 공지사항을 업데이트한다 (소유자만).

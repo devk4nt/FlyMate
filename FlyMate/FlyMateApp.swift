@@ -68,6 +68,7 @@ struct FlyMateApp: App {
             leaveStudy: { try await studyRepo.leaveStudy(id: $0) },
             deleteStudy: { try await studyRepo.deleteStudy(id: $0) },
             removeMember: { try await studyRepo.removeMember(studyID: $0, userID: $1) },
+            transferOwnership: { try await studyRepo.transferOwnership(studyID: $0, newOwnerID: $1) },
             fetchInviteCodeInfo: { try await studyRepo.fetchInviteCodeInfo(code: $0) },
             updateNotice: { try await studyRepo.updateNotice(studyID: $0, notice: $1) },
             fetchPendingRequests: { try await studyRepo.fetchPendingRequests(studyID: $0) },
@@ -336,7 +337,25 @@ struct FlyMateApp: App {
             notice: "영어 답변 영상 위주로 올려주세요."
         )
 
-        let studyStore = LockIsolated([studyA, studyB])
+        // FlyMate-OwnerDelete 스킴: 방장 회원 탈퇴 시나리오.
+        // 혼자 방장인 스터디를 추가해 탈퇴 시 두 케이스를 모두 확인한다:
+        // studyA → 가장 오래된 멤버(김하늘)에게 방장 승계, 혼자 연습방 → 삭제
+        let soloStudy = Study(
+            id: uuid(4),
+            name: "혼자 연습방",
+            description: "방장 혼자인 스터디 — 탈퇴 시 삭제되는 케이스",
+            ownerID: meID,
+            inviteCode: "SOLO01",
+            maxMembers: 4,
+            members: [
+                StudyMember(id: uuid(30), userID: meID, userName: "유나", role: .owner, joinedAt: now.addingTimeInterval(-7 * day)),
+            ],
+            createdAt: now.addingTimeInterval(-7 * day)
+        )
+        let ownerDeleteScenario = ProcessInfo.processInfo.environment["MOCK_OWNER_DELETE"] == "1"
+        let initialStudies = ownerDeleteScenario ? [studyA, studyB, soloStudy] : [studyA, studyB]
+
+        let studyStore = LockIsolated(initialStudies)
 
         // MARK: Videos
         let videos: [Video] = [
@@ -546,13 +565,62 @@ struct FlyMateApp: App {
         // MARK: Client 등록
 
         // Auth
+        // 로그인 성공은 observeAuthState 재방출로 앱에 전파되므로 continuation을 보관한다
+        // (탈퇴 → 로그인 화면 → 재로그인으로 승계 결과를 확인하는 플로우 지원)
+        let authObserver = LockIsolated<AsyncStream<User?>.Continuation?>(nil)
         dependencies.authClient = AuthClient(
             currentUser: { me },
-            signInWithApple: { _, _ in me },
-            signInWithKakao: { _ in me },
+            signInWithApple: { _, _ in
+                authObserver.value?.yield(me)
+                return me
+            },
+            signInWithKakao: { _ in
+                authObserver.value?.yield(me)
+                return me
+            },
             signOut: {},
-            deleteAccount: { _ in },
-            observeAuthState: { AsyncStream { continuation in continuation.yield(me) } }
+            deleteAccount: { _ in
+                // 서버 remove_user_content_all_studies의 방장 승계 시뮬레이션:
+                // 소유 스터디는 가장 오래된 멤버에게 승계, 남은 멤버가 없으면 삭제
+                studyStore.withValue { studies in
+                    for index in studies.indices.reversed() where studies[index].ownerID == meID {
+                        let successor = studies[index].members
+                            .filter { $0.userID != meID }
+                            .min { $0.joinedAt < $1.joinedAt }
+                        if let successor {
+                            studies[index].ownerID = successor.userID
+                            for memberIndex in studies[index].members.indices {
+                                studies[index].members[memberIndex].role =
+                                    studies[index].members[memberIndex].userID == successor.userID ? .owner : .member
+                            }
+                        } else {
+                            studies.remove(at: index)
+                        }
+                    }
+                    for index in studies.indices {
+                        studies[index].members.removeAll { $0.userID == meID }
+                    }
+                }
+            },
+            observeAuthState: {
+                AsyncStream { continuation in
+                    authObserver.setValue(continuation)
+                    continuation.yield(me)
+                }
+            }
+        )
+
+        // Apple 재인증 (회원 탈퇴 시 revoke용 authorization code) — 실제 시트 없이 즉시 성공
+        dependencies.appleSignInClient = AppleSignInClient(
+            signIn: {
+                AppleSignInResult(
+                    idToken: "mock-id-token",
+                    nonce: "mock-nonce",
+                    fullName: nil,
+                    email: nil,
+                    authorizationCode: "mock-authorization-code"
+                )
+            }
         )
 
         // Study
@@ -608,6 +676,16 @@ struct FlyMateApp: App {
                 studyStore.withValue { studies in
                     guard let index = studies.firstIndex(where: { $0.id == studyID }) else { return }
                     studies[index].members.removeAll { $0.userID == userID }
+                }
+            },
+            transferOwnership: { studyID, newOwnerID in
+                studyStore.withValue { studies in
+                    guard let index = studies.firstIndex(where: { $0.id == studyID }) else { return }
+                    studies[index].ownerID = newOwnerID
+                    for memberIndex in studies[index].members.indices {
+                        studies[index].members[memberIndex].role =
+                            studies[index].members[memberIndex].userID == newOwnerID ? .owner : .member
+                    }
                 }
             },
             fetchInviteCodeInfo: { code in

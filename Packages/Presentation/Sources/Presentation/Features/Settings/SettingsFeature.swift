@@ -147,7 +147,7 @@ public struct SettingsFeature {
                         TextState("취소")
                     }
                 } message: {
-                    TextState("모든 데이터가 삭제됩니다. 정말 탈퇴하시겠습니까?")
+                    TextState("모든 데이터가 삭제됩니다. 방장인 스터디는 가장 오래된 멤버에게 방장이 자동으로 위임됩니다. 정말 탈퇴하시겠습니까?")
                 }
                 return .none
 

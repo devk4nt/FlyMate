@@ -4,7 +4,7 @@ public struct Study: Equatable, Identifiable, Sendable, Hashable {
     public let id: UUID
     public let name: String
     public let description: String
-    public let ownerID: UUID
+    public var ownerID: UUID
     public let inviteCode: String
     public let maxMembers: Int
     public var members: [StudyMember]
@@ -50,7 +50,7 @@ public struct StudyMember: Equatable, Identifiable, Sendable, Hashable {
     public let userID: UUID
     public let userName: String
     public let profileImageURL: URL?
-    public let role: MemberRole
+    public var role: MemberRole
     public let joinedAt: Date
 
     public init(

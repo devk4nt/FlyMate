@@ -77,6 +77,17 @@ public struct MemberManagementView: View {
             .buttonStyle(.plain)
 
             if store.isOwner && member.role != .owner {
+                Button {
+                    store.send(.transferOwnerTapped(member))
+                } label: {
+                    Text("방장 위임")
+                        .font(FMTypography.caption1)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .accessibilityLabel("\(member.userName)님에게 방장 위임")
+                .accessibilityHint("방장 권한을 넘깁니다")
+
                 Button(role: .destructive) {
                     store.send(.removeMemberTapped(member))
                 } label: {

@@ -94,6 +94,17 @@ public struct StudyNavigationFeature {
                 }
                 return .none
 
+            case .path(.element(_, action: .memberManagement(.ownershipTransferred(let study)))):
+                // Sync transferred ownership back to StudyDetail
+                if let detailID = state.path.ids.first(where: { id in
+                    if case .studyDetail = state.path[id: id] { return true }
+                    return false
+                }), case .studyDetail(var detailState) = state.path[id: detailID] {
+                    detailState.study = study
+                    state.path[id: detailID] = .studyDetail(detailState)
+                }
+                return .none
+
             case .path(.element(_, action: .memberManagement(.memberRemoved(let removedUserID)))):
                 // Sync removed member back to StudyDetail
                 if let detailID = state.path.ids.first(where: { id in

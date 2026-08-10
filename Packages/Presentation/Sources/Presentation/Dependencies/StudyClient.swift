@@ -10,6 +10,7 @@ public struct StudyClient: Sendable {
     public var leaveStudy: @Sendable (UUID) async throws -> Void
     public var deleteStudy: @Sendable (UUID) async throws -> Void
     public var removeMember: @Sendable (UUID, UUID) async throws -> Void
+    public var transferOwnership: @Sendable (UUID, UUID) async throws -> Void
     public var fetchInviteCodeInfo: @Sendable (String) async throws -> InviteCode
     public var updateNotice: @Sendable (UUID, String?) async throws -> Void
     public var fetchPendingRequests: @Sendable (UUID) async throws -> [JoinRequest]
@@ -26,6 +27,7 @@ public struct StudyClient: Sendable {
         leaveStudy: @escaping @Sendable (UUID) async throws -> Void,
         deleteStudy: @escaping @Sendable (UUID) async throws -> Void,
         removeMember: @escaping @Sendable (UUID, UUID) async throws -> Void,
+        transferOwnership: @escaping @Sendable (UUID, UUID) async throws -> Void,
         fetchInviteCodeInfo: @escaping @Sendable (String) async throws -> InviteCode,
         updateNotice: @escaping @Sendable (UUID, String?) async throws -> Void,
         fetchPendingRequests: @escaping @Sendable (UUID) async throws -> [JoinRequest],
@@ -41,6 +43,7 @@ public struct StudyClient: Sendable {
         self.leaveStudy = leaveStudy
         self.deleteStudy = deleteStudy
         self.removeMember = removeMember
+        self.transferOwnership = transferOwnership
         self.fetchInviteCodeInfo = fetchInviteCodeInfo
         self.updateNotice = updateNotice
         self.fetchPendingRequests = fetchPendingRequests
@@ -60,6 +63,7 @@ extension StudyClient: TestDependencyKey {
         leaveStudy: unimplemented("\(Self.self).leaveStudy"),
         deleteStudy: unimplemented("\(Self.self).deleteStudy"),
         removeMember: unimplemented("\(Self.self).removeMember"),
+        transferOwnership: unimplemented("\(Self.self).transferOwnership"),
         fetchInviteCodeInfo: unimplemented("\(Self.self).fetchInviteCodeInfo"),
         updateNotice: unimplemented("\(Self.self).updateNotice"),
         fetchPendingRequests: unimplemented("\(Self.self).fetchPendingRequests"),

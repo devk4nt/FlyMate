@@ -180,6 +180,17 @@ public struct StudyRepositoryImpl: StudyRepository {
             .execute()
     }
 
+    public func transferOwnership(studyID: UUID, newOwnerID: UUID) async throws {
+        do {
+            try await client.rpc(
+                "transfer_study_ownership",
+                params: ["p_study_id": studyID, "p_new_owner_id": newOwnerID]
+            ).execute()
+        } catch {
+            throw mapRPCError(error)
+        }
+    }
+
     /// 탈퇴/강퇴 멤버의 영상·피드백·댓글 삭제 및 멘션 치환 후,
     /// 삭제된 영상의 Storage 파일 정리 (멤버 삭제 전에 실행)
     private func removeMemberContent(studyID: UUID, userID: UUID) async throws {
