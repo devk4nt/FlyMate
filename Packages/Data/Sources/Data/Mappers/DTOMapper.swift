@@ -208,4 +208,44 @@ enum DTOMapper {
             createdAt: parseDate(dto.createdAt)
         )
     }
+
+    // MARK: - Recruit
+
+    static func toDomain(_ dto: RecruitPostDTO) -> RecruitPost {
+        RecruitPost(
+            id: dto.id,
+            title: dto.title,
+            description: dto.description,
+            field: RecruitField(rawValue: dto.field) ?? .etc,
+            meetingType: RecruitMeetingType(rawValue: dto.meetingType) ?? .online,
+            region: dto.region,
+            schedule: dto.schedule,
+            startDate: parseDate(dto.startDate),
+            endDate: dto.endDate.map(parseDate),
+            maxMembers: dto.maxMembers,
+            deadline: parseDate(dto.deadline),
+            requirement: dto.requirement,
+            contactMethod: dto.contactMethod,
+            linkURL: dto.linkURL.flatMap(URL.init(string:)),
+            authorID: dto.authorID,
+            authorName: dto.authorName,
+            status: RecruitStatus(rawValue: dto.status) ?? .closed,
+            commentCount: dto.commentCount,
+            createdAt: parseDate(dto.createdAt),
+            updatedAt: dto.updatedAt.map(parseDate)
+        )
+    }
+
+    static func toDomain(_ dto: RecruitCommentDTO) -> RecruitComment {
+        RecruitComment(
+            id: dto.id,
+            postID: dto.postID,
+            parentID: dto.parentID,
+            authorID: dto.authorID,
+            authorName: dto.authorName,
+            authorProfileURL: dto.authorProfileURL.flatMap(URL.init(string:)),
+            content: dto.content,
+            createdAt: parseDate(dto.createdAt)
+        )
+    }
 }

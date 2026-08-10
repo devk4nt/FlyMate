@@ -31,6 +31,8 @@ public struct Report: Equatable, Identifiable, Sendable {
 public enum ReportTargetType: String, Equatable, Sendable, CaseIterable {
     case feedback
     case user
+    case recruitPost = "recruit_post"
+    case recruitComment = "recruit_comment"
 }
 
 public enum ReportReason: String, Equatable, Sendable, CaseIterable {

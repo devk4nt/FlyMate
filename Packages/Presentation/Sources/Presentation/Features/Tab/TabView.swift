@@ -26,6 +26,14 @@ public struct MainTabView: View {
             }
             .tag(TabFeature.State.Tab.feed)
 
+            RecruitListView(
+                store: store.scope(state: \.recruit, action: \.recruit)
+            )
+            .tabItem {
+                Label("모집", systemImage: "megaphone")
+            }
+            .tag(TabFeature.State.Tab.recruit)
+
             FeedbackManagementView(
                 store: store.scope(state: \.feedbackManagement, action: \.feedbackManagement)
             )

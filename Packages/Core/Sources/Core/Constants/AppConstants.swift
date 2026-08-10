@@ -52,6 +52,20 @@ public enum AppConstants {
     /// 신고 상세 내용 최대 글자 수
     public static let maxReportDetailLength = 300
 
+    // MARK: - Recruit (스터디원 모집)
+
+    /// 모집 글 제목 최대 글자 수
+    public static let maxRecruitTitleLength = 50
+
+    /// 모집 글 소개 최대 글자 수
+    public static let maxRecruitDescriptionLength = 2_000
+
+    /// 모집 글 최대 모집 인원
+    public static let maxRecruitMembers = 20
+
+    /// 모집 글 댓글 최대 글자 수
+    public static let maxRecruitCommentLength = 300
+
     // MARK: - Subscription
 
     public enum SubscriptionProductID {

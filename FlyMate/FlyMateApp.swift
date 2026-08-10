@@ -192,6 +192,21 @@ struct FlyMateApp: App {
             checkAlreadyReported: { try await reportRepo.checkAlreadyReported(targetType: $0, targetID: $1) }
         )
 
+        // Recruit
+        let recruitRepo = RecruitRepositoryImpl(client: supabaseClient)
+        dependencies.recruitClient = RecruitClient(
+            fetchPosts: { try await recruitRepo.fetchPosts(filter: $0, cursor: $1) },
+            fetchPost: { try await recruitRepo.fetchPost(id: $0) },
+            createPost: { try await recruitRepo.createPost($0) },
+            updatePost: { try await recruitRepo.updatePost(id: $0, draft: $1) },
+            closePost: { try await recruitRepo.closePost(id: $0) },
+            reopenPost: { try await recruitRepo.reopenPost(id: $0, deadline: $1) },
+            deletePost: { try await recruitRepo.deletePost(id: $0) },
+            fetchComments: { try await recruitRepo.fetchComments(postID: $0) },
+            createComment: { try await recruitRepo.createComment($0) },
+            deleteComment: { try await recruitRepo.deleteComment(id: $0) }
+        )
+
         // UserDefaults
         dependencies.userDefaultsClient = UserDefaultsClient(
             boolForKey: { UserDefaults.standard.bool(forKey: $0) },
@@ -226,6 +241,14 @@ struct FlyMateApp: App {
         let now = Date()
         let day: TimeInterval = 86_400
         let hour: TimeInterval = 3_600
+        let loadingDelayMilliseconds = Int(
+            ProcessInfo.processInfo.environment["MOCK_LOADING_DELAY_MS"] ?? "0"
+        ) ?? 0
+
+        @Sendable func simulateLoading() async throws {
+            guard loadingDelayMilliseconds > 0 else { return }
+            try await Task.sleep(for: .milliseconds(loadingDelayMilliseconds))
+        }
 
         // 재현 가능한 고정 UUID (suffix로 구분: 1x 유저, 0x 스터디, 2x 멤버십, 1xx 영상, 2xx 피드백, 3xx 알림, 4xx 댓글, 5xx 가입요청)
         @Sendable func uuid(_ suffix: Int) -> UUID {
@@ -823,6 +846,142 @@ struct FlyMateApp: App {
             checkAlreadyReported: { _, _ in false }
         )
 
+        // Recruit (스터디원 모집 — 인메모리 목)
+        let recruitPostStore = LockIsolated<[RecruitPost]>([
+            RecruitPost(
+                id: uuid(600),
+                title: "국내 항공사 영상면접 스터디원 모집",
+                description: "다음 달 공채 대비로 매주 영상 촬영하고 상호 피드백해요. 꾸준히 참여할 분만!",
+                field: .flightAttendant,
+                meetingType: .hybrid,
+                region: "서울",
+                schedule: "매주 화·목 20시, 주 2회",
+                startDate: now.addingTimeInterval(10 * day),
+                endDate: now.addingTimeInterval(60 * day),
+                maxMembers: 6,
+                deadline: now.addingTimeInterval(7 * day),
+                requirement: "승무원 준비 3개월 이상, 주 1회 영상 업로드 가능",
+                contactMethod: "댓글로 문의해주세요",
+                linkURL: nil,
+                authorID: haneulID,
+                authorName: "김하늘",
+                status: .recruiting,
+                commentCount: 1,
+                createdAt: now.addingTimeInterval(-2 * day)
+            ),
+            RecruitPost(
+                id: uuid(601),
+                title: "아나운서 뉴스리딩 온라인 스터디",
+                description: "뉴스 리딩 영상 올리고 발성·전달력 피드백을 주고받아요.",
+                field: .announcer,
+                meetingType: .online,
+                region: nil,
+                schedule: "매주 토 10시, 주 1회",
+                startDate: now.addingTimeInterval(-20 * day),
+                endDate: nil,
+                maxMembers: 4,
+                deadline: now.addingTimeInterval(-1 * day),
+                requirement: "카메라 앞 리딩 가능하신 분",
+                contactMethod: "오픈채팅으로 문의해주세요",
+                linkURL: URL(string: "https://open.kakao.com/o/example"),
+                authorID: meID,
+                authorName: "유나",
+                status: .recruiting,
+                commentCount: 0,
+                createdAt: now.addingTimeInterval(-25 * day)
+            ),
+        ])
+        let recruitCommentStore = LockIsolated<[RecruitComment]>([
+            RecruitComment(
+                id: uuid(650),
+                postID: uuid(600),
+                parentID: nil,
+                authorID: seoyeonID,
+                authorName: "박서연",
+                authorProfileURL: nil,
+                content: "혹시 온라인만 참여도 가능할까요?",
+                createdAt: now.addingTimeInterval(-1 * day)
+            ),
+        ])
+        dependencies.recruitClient = RecruitClient(
+            fetchPosts: { filter, _ in
+                try await simulateLoading()
+                return recruitPostStore.value
+                    .filter { post in
+                        (!filter.recruitingOnly || post.isRecruiting())
+                            && (filter.field == nil || post.field == filter.field)
+                            && (filter.meetingType == nil || post.meetingType == filter.meetingType)
+                    }
+                    .sorted { $0.createdAt > $1.createdAt }
+            },
+            fetchPost: { id in
+                try await simulateLoading()
+                guard let post = recruitPostStore.value.first(where: { $0.id == id }) else {
+                    throw AppError.business(.notFound)
+                }
+                return post
+            },
+            createPost: { draft in
+                let post = RecruitPost(
+                    id: UUID(), title: draft.title, description: draft.description,
+                    field: draft.field, meetingType: draft.meetingType, region: draft.region,
+                    schedule: draft.schedule, startDate: draft.startDate, endDate: draft.endDate,
+                    maxMembers: draft.maxMembers, deadline: draft.deadline,
+                    requirement: draft.requirement, contactMethod: draft.contactMethod,
+                    linkURL: draft.linkURL, authorID: meID, authorName: me.name,
+                    status: .recruiting, commentCount: 0, createdAt: Date()
+                )
+                recruitPostStore.withValue { $0.insert(post, at: 0) }
+                return post
+            },
+            updatePost: { id, draft in
+                guard let old = recruitPostStore.value.first(where: { $0.id == id }) else {
+                    throw AppError.business(.notFound)
+                }
+                let updated = RecruitPost(
+                    id: id, title: draft.title, description: draft.description,
+                    field: draft.field, meetingType: draft.meetingType, region: draft.region,
+                    schedule: draft.schedule, startDate: draft.startDate, endDate: draft.endDate,
+                    maxMembers: draft.maxMembers, deadline: draft.deadline,
+                    requirement: draft.requirement, contactMethod: draft.contactMethod,
+                    linkURL: draft.linkURL, authorID: old.authorID, authorName: old.authorName,
+                    status: old.status, commentCount: old.commentCount,
+                    createdAt: old.createdAt, updatedAt: Date()
+                )
+                recruitPostStore.withValue { store in
+                    if let index = store.firstIndex(where: { $0.id == id }) { store[index] = updated }
+                }
+                return updated
+            },
+            closePost: { id in
+                try mockUpdateRecruitStatus(recruitPostStore, id: id, status: .closed, deadline: nil)
+            },
+            reopenPost: { id, deadline in
+                try mockUpdateRecruitStatus(recruitPostStore, id: id, status: .recruiting, deadline: deadline)
+            },
+            deletePost: { id in
+                recruitPostStore.withValue { $0.removeAll { $0.id == id } }
+            },
+            fetchComments: { postID in
+                try await simulateLoading()
+                return recruitCommentStore.value
+                    .filter { $0.postID == postID }
+                    .sorted { $0.createdAt < $1.createdAt }
+            },
+            createComment: { request in
+                let comment = RecruitComment(
+                    id: UUID(), postID: request.postID, parentID: request.parentID,
+                    authorID: meID, authorName: me.name, authorProfileURL: nil,
+                    content: request.content, createdAt: Date()
+                )
+                recruitCommentStore.withValue { $0.append(comment) }
+                return comment
+            },
+            deleteComment: { id in
+                recruitCommentStore.withValue { $0.removeAll { $0.id == id || $0.parentID == id } }
+            }
+        )
+
         // UserDefaults — 기본 디버그 실행에서도 실제 앱과 동일하게 온보딩 상태 유지
         dependencies.userDefaultsClient = UserDefaultsClient(
             boolForKey: { UserDefaults.standard.bool(forKey: $0) },
@@ -858,6 +1017,31 @@ struct FlyMateApp: App {
             observeTransactionUpdates: { AsyncStream { continuation in continuation.finish() } },
             restorePurchases: {}
         )
+    }
+
+    nonisolated private static func mockUpdateRecruitStatus(
+        _ store: LockIsolated<[RecruitPost]>,
+        id: UUID,
+        status: RecruitStatus,
+        deadline: Date?
+    ) throws -> RecruitPost {
+        guard let old = store.value.first(where: { $0.id == id }) else {
+            throw AppError.business(.notFound)
+        }
+        let updated = RecruitPost(
+            id: old.id, title: old.title, description: old.description,
+            field: old.field, meetingType: old.meetingType, region: old.region,
+            schedule: old.schedule, startDate: old.startDate, endDate: old.endDate,
+            maxMembers: old.maxMembers, deadline: deadline ?? old.deadline,
+            requirement: old.requirement, contactMethod: old.contactMethod,
+            linkURL: old.linkURL, authorID: old.authorID, authorName: old.authorName,
+            status: status, commentCount: old.commentCount,
+            createdAt: old.createdAt, updatedAt: old.updatedAt
+        )
+        store.withValue { posts in
+            if let index = posts.firstIndex(where: { $0.id == id }) { posts[index] = updated }
+        }
+        return updated
     }
 
     private final class MockFeedbackStore: @unchecked Sendable {

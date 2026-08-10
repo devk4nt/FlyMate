@@ -30,6 +30,8 @@ public enum SupabaseConfig {
         public static let feedbackComments = "feedback_comments"
         public static let subscriptionPlans = "subscription_plans"
         public static let subscriptions = "subscriptions"
+        public static let recruitPosts = "recruit_posts"
+        public static let recruitComments = "recruit_comments"
     }
 
     public enum Bucket {

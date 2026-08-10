@@ -17,7 +17,7 @@ public struct ReportView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: FMSpacing.lg) {
                         // Header
-                        Text(store.targetType == .feedback ? "피드백 신고" : "사용자 신고")
+                        Text(reportTitle)
                             .font(FMTypography.title3)
                             .fontWeight(.bold)
                             .padding(.top, FMSpacing.sm)
@@ -75,6 +75,15 @@ public struct ReportView: View {
         }
         .onAppear { store.send(.onAppear) }
         .presentationDetents([.medium, .large])
+    }
+
+    private var reportTitle: String {
+        switch store.targetType {
+        case .feedback: return "피드백 신고"
+        case .user: return "사용자 신고"
+        case .recruitPost: return "모집 글 신고"
+        case .recruitComment: return "댓글 신고"
+        }
     }
 }
 
