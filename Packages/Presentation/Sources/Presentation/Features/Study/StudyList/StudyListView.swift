@@ -7,6 +7,30 @@ public struct StudyListView: View {
     @Bindable var store: StoreOf<StudyListFeature>
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
+    private static let heroPhrases = [
+        "오늘도 한 번, 더 자신 있게",
+        "카메라 앞에서도 나답게",
+        "연습한 만큼 자연스러워져요",
+        "오늘의 연습이 내일의 합격",
+        "떨림도 준비의 일부예요",
+        "시선은 정면, 마음은 편안하게",
+        "미소가 가장 좋은 첫인상",
+        "한 번 더, 어제보다 나아지게",
+        "목소리에 자신감을 담아서",
+        "준비된 만큼 흔들리지 않아요",
+        "실전처럼, 매일 꾸준히",
+        "나의 속도로, 멈추지 않고",
+        "좋은 피드백이 성장의 지름길",
+        "반복이 실력을 만들어요",
+        "긴장은 잘하고 싶다는 증거",
+        "오늘도 밝게, 또렷하게",
+        "함께 연습하면 더 멀리 가요",
+        "어제의 나와 비교하면 충분해요",
+        "첫 문장부터 당당하게",
+        "합격의 순간을 그리며 한 번 더",
+    ]
+    @State private var heroPhrase = Self.heroPhrases.randomElement() ?? "오늘도 한 번, 더 자신 있게"
+
     public init(store: StoreOf<StudyListFeature>) {
         self.store = store
     }
@@ -115,9 +139,11 @@ public struct StudyListView: View {
                     .tracking(0.8)
                     .foregroundStyle(FMColors.onBrand)
 
-                Text("오늘도 한 번, 더 자신 있게")
+                Text(heroPhrase)
                     .font(FMTypography.sectionTitle)
                     .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
 
             if let studies {
