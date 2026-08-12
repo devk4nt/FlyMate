@@ -13,9 +13,6 @@ public struct FeedbackCommentListView: View {
     public var body: some View {
         VStack(spacing: 0) {
             commentListContent
-
-            Divider()
-
             commentInputBar
         }
         .navigationTitle("댓글")
@@ -75,6 +72,7 @@ public struct FeedbackCommentListView: View {
                 }
             }
             .scrollDismissesKeyboard(.interactively)
+            .dismissKeyboardOnTap()
         }
     }
 
@@ -115,45 +113,63 @@ public struct FeedbackCommentListView: View {
                 mentionSuggestionsView
             }
 
-            HStack(alignment: .bottom, spacing: FMSpacing.sm) {
-                ZStack(alignment: .leading) {
+            HStack(alignment: .bottom, spacing: FMSpacing.xs) {
+                ZStack(alignment: .topLeading) {
                     if store.commentText.isEmpty {
                         Text("댓글을 입력하세요...")
                             .font(FMTypography.callout)
                             .foregroundStyle(FMColors.secondaryLabel)
-                            .padding(.horizontal, FMSpacing.xs)
+                            .padding(.leading, FMSpacing.sm)
+                            .padding(.top, 13)
+                            .allowsHitTesting(false)
                     }
 
                     FMMentionTextEditor(
                         text: $store.commentText.sending(\.commentTextChanged)
                     )
-                    .frame(minHeight: 36, maxHeight: 100)
+                    .frame(height: 44)
                 }
-                .padding(.horizontal, FMSpacing.xs)
                 .background(FMColors.secondaryBackground)
-                .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md))
+                .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
+                        .stroke(FMColors.border.opacity(0.45), lineWidth: 0.5)
+                }
 
                 Button {
                     store.send(.submitTapped)
                 } label: {
-                    if store.isSubmitting {
-                        ProgressView()
-                            .frame(width: 32, height: 32)
-                    } else {
-                        Image(systemName: "arrow.up.circle.fill")
-                            .font(.system(size: FMSizing.IconSize.lg))
-                            .foregroundStyle(
-                                store.isValid
-                                    ? FMColors.accent
-                                    : FMColors.secondaryLabel.opacity(0.5)
-                            )
+                    ZStack {
+                        Circle()
+                            .fill(store.isValid ? FMColors.accentFill : FMColors.secondaryBackground)
+
+                        if store.isSubmitting {
+                            ProgressView()
+                                .tint(.white)
+                        } else {
+                            Image(systemName: "arrow.up")
+                                .font(.system(size: FMSizing.IconSize.sm, weight: .bold))
+                                .foregroundStyle(store.isValid ? .white : FMColors.secondaryLabel.opacity(0.6))
+                        }
+                    }
+                    .frame(width: 44, height: 44)
+                    .overlay {
+                        if !store.isValid {
+                            Circle()
+                                .stroke(FMColors.border.opacity(0.45), lineWidth: 0.5)
+                        }
                     }
                 }
                 .disabled(!store.isValid || store.isSubmitting)
+                .accessibilityLabel("전송")
             }
             .padding(.horizontal, FMSpacing.md)
-            .padding(.vertical, FMSpacing.sm)
+            .padding(.top, FMSpacing.xs)
+            .padding(.bottom, FMSpacing.sm)
             .background(FMColors.background)
+            .overlay(alignment: .top) {
+                Divider()
+            }
         }
     }
 

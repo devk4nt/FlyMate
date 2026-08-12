@@ -193,6 +193,14 @@ struct FlyMateApp: App {
             checkAlreadyReported: { try await reportRepo.checkAlreadyReported(targetType: $0, targetID: $1) }
         )
 
+        // Block
+        let blockRepo = BlockRepositoryImpl(client: supabaseClient)
+        dependencies.blockClient = BlockClient(
+            blockUser: { try await blockRepo.blockUser($0) },
+            unblockUser: { try await blockRepo.unblockUser($0) },
+            fetchBlockedUsers: { try await blockRepo.fetchBlockedUsers() }
+        )
+
         // Recruit
         let recruitRepo = RecruitRepositoryImpl(client: supabaseClient)
         dependencies.recruitClient = RecruitClient(
@@ -233,7 +241,7 @@ struct FlyMateApp: App {
     #if DEBUG
     // MARK: - Mock Dependencies
     //
-    // 시나리오: "유나"는 스터디 A(승무원 영상면접)의 방장이자 스터디 B(아나운서 스피치)의 팀원.
+    // 시나리오: 승무원 지원자 "유나"는 국내·외항사 면접 스터디에서 영상을 주고받는다.
     // - 스터디 A: 멤버 4명, 영상 4개(내 영상 2 + 팀원 영상 2), 가입 대기 요청 1건
     // - 스터디 B: 멤버 3명, 영상 2개(내 영상 1 + 방장 영상 1)
     // - 피드백 10개(다양한 타임스탬프/멘션), 댓글 4개, 알림 4종
@@ -260,8 +268,21 @@ struct FlyMateApp: App {
         @Sendable func sampleVideoURL(_ urlString: String) -> URL {
             URL(string: urlString)!
         }
+        @Sendable func mockAssetURL(_ name: String) -> URL? {
+            Bundle.main.url(forResource: name, withExtension: "jpg", subdirectory: "MockThumbnails")
+                ?? Bundle.main.url(forResource: name, withExtension: "jpg")
+        }
         @Sendable func sampleThumbnailURL(_ suffix: Int) -> URL? {
-            URL(string: "https://picsum.photos/seed/flymate\(suffix)/640/360")
+            let assetName = switch suffix {
+            case 100, 104: "cabin-interview-self-intro"
+            case 101, 102, 105, 106: "cabin-announcement-practice"
+            case 103: "cabin-complaint-roleplay"
+            default: "cabin-english-interview"
+            }
+            return mockAssetURL(assetName)
+        }
+        @Sendable func mockVideoURL(_ assetName: String, fallback: String) -> URL {
+            mockAssetURL(assetName) ?? sampleVideoURL(fallback)
         }
         // ~10분짜리 장편 샘플 — 3분 내 타임스탬프 이동 모두 커버
         let bigBuckBunny = "https://archive.org/download/BigBuckBunny_124/Content/big_buck_bunny_720p_surround.mp4"
@@ -307,8 +328,8 @@ struct FlyMateApp: App {
 
         let studyB = Study(
             id: uuid(2),
-            name: "아나운서 스피치 스터디",
-            description: "뉴스 리딩과 MC 멘트 중심의 스피치 훈련",
+            name: "외항사 영어면접 스터디",
+            description: "영어 자기소개와 상황대처 답변 집중 훈련",
             ownerID: haneulID,
             inviteCode: "ANN456",
             maxMembers: 8,
@@ -318,7 +339,7 @@ struct FlyMateApp: App {
                 StudyMember(id: uuid(27), userID: jiwooID, userName: "최지우", role: .member, joinedAt: now.addingTimeInterval(-15 * day)),
             ],
             createdAt: now.addingTimeInterval(-80 * day),
-            notice: "리딩 영상은 3분 이내로 올려주세요."
+            notice: "영어 답변 영상은 2분 이내로 올려주세요."
         )
 
         // 미가입 스터디 — 초대코드 "CRW789" 입력으로 가입 요청 시나리오 테스트용
@@ -362,7 +383,7 @@ struct FlyMateApp: App {
             Video(
                 id: uuid(100), studyID: studyA.id, uploaderID: meID, uploaderName: "유나",
                 title: "기내 안전 안내 롤플레이",
-                videoURL: sampleVideoURL(bigBuckBunny), thumbnailURL: sampleThumbnailURL(100),
+                videoURL: mockVideoURL("cabin-interview-self-intro", fallback: bigBuckBunny), thumbnailURL: sampleThumbnailURL(100),
                 durationSeconds: 178, feedbackCount: 3,
                 focusPoints: "발음, 시선 처리",
                 feedbackRequest: "미소가 어색하지 않은지 봐주세요!",
@@ -371,14 +392,14 @@ struct FlyMateApp: App {
             Video(
                 id: uuid(101), studyID: studyA.id, uploaderID: meID, uploaderName: "유나",
                 title: "1분 자기소개 스피치",
-                videoURL: sampleVideoURL(sintelTrailer), thumbnailURL: sampleThumbnailURL(101),
+                videoURL: mockVideoURL("cabin-announcement-practice", fallback: sintelTrailer), thumbnailURL: sampleThumbnailURL(101),
                 durationSeconds: 52, feedbackCount: 2,
                 createdAt: now.addingTimeInterval(-1 * day)
             ),
             Video(
                 id: uuid(102), studyID: studyA.id, uploaderID: seoyeonID, uploaderName: "박서연",
                 title: "영어 기내방송 연습",
-                videoURL: sampleVideoURL(elephantsDream), thumbnailURL: sampleThumbnailURL(102),
+                videoURL: mockVideoURL("cabin-announcement-practice", fallback: elephantsDream), thumbnailURL: sampleThumbnailURL(102),
                 durationSeconds: 145, feedbackCount: 2,
                 focusPoints: "영어 발음과 억양",
                 createdAt: now.addingTimeInterval(-2 * day)
@@ -386,22 +407,22 @@ struct FlyMateApp: App {
             Video(
                 id: uuid(103), studyID: studyA.id, uploaderID: minjunID, uploaderName: "이민준",
                 title: "돌발질문 대처 — 컴플레인 응대",
-                videoURL: sampleVideoURL(bipbopHLS), thumbnailURL: sampleThumbnailURL(103),
+                videoURL: mockVideoURL("cabin-complaint-roleplay", fallback: bipbopHLS), thumbnailURL: sampleThumbnailURL(103),
                 durationSeconds: 170, feedbackCount: 1,
                 createdAt: now.addingTimeInterval(-5 * hour)
             ),
             Video(
                 id: uuid(104), studyID: studyB.id, uploaderID: meID, uploaderName: "유나",
-                title: "뉴스 리딩 — 경제 브리핑",
-                videoURL: sampleVideoURL(bigBuckBunny), thumbnailURL: sampleThumbnailURL(104),
+                title: "영어 자기소개 — Why cabin crew?",
+                videoURL: mockVideoURL("cabin-interview-self-intro", fallback: bigBuckBunny), thumbnailURL: sampleThumbnailURL(104),
                 durationSeconds: 120, feedbackCount: 1,
-                focusPoints: "숫자 강세, 문단 전환 톤",
+                focusPoints: "영어 발음, 지원 동기 전달력",
                 createdAt: now.addingTimeInterval(-4 * day)
             ),
             Video(
                 id: uuid(105), studyID: studyB.id, uploaderID: haneulID, uploaderName: "김하늘",
-                title: "행사 MC 오프닝 멘트",
-                videoURL: sampleVideoURL(sintelTrailer720), thumbnailURL: sampleThumbnailURL(105),
+                title: "외항사 면접 — 서비스 경험 답변",
+                videoURL: mockVideoURL("cabin-announcement-practice", fallback: sintelTrailer720), thumbnailURL: sampleThumbnailURL(105),
                 durationSeconds: 52, feedbackCount: 1,
                 createdAt: now.addingTimeInterval(-6 * hour)
             ),
@@ -409,7 +430,7 @@ struct FlyMateApp: App {
             Video(
                 id: uuid(106), studyID: studyA.id, uploaderID: seoyeonID, uploaderName: "박서연",
                 title: "한국어 기내방송 — 이륙 안내",
-                videoURL: sampleVideoURL(sintelTrailer), thumbnailURL: sampleThumbnailURL(106),
+                videoURL: mockVideoURL("cabin-announcement-practice", fallback: sintelTrailer), thumbnailURL: sampleThumbnailURL(106),
                 durationSeconds: 48,
                 focusPoints: "톤 안정성, 속도",
                 feedbackRequest: "이륙 안내 파트 속도가 적당한지 봐주세요",
@@ -417,8 +438,8 @@ struct FlyMateApp: App {
             ),
             Video(
                 id: uuid(107), studyID: studyB.id, uploaderID: jiwooID, uploaderName: "최지우",
-                title: "뉴스 리딩 — 날씨 브리핑",
-                videoURL: sampleVideoURL(sintelTrailer720), thumbnailURL: sampleThumbnailURL(107),
+                title: "영어 상황면접 — 지연 승객 안내",
+                videoURL: mockVideoURL("cabin-english-interview", fallback: sintelTrailer720), thumbnailURL: sampleThumbnailURL(107),
                 durationSeconds: 55,
                 createdAt: now.addingTimeInterval(-2 * hour)
             ),
@@ -473,16 +494,16 @@ struct FlyMateApp: App {
                 content: "컴플레인 상황에서 공감 표현을 먼저 한 게 좋았어요. 해결책 제시 순서도 깔끔!",
                 timestampSeconds: 45, createdAt: now.addingTimeInterval(-3 * hour)
             ),
-            // 영상 104 — 뉴스 리딩 (내 영상, 스터디 B)
+            // 영상 104 — 영어 자기소개 (내 영상, 스터디 B)
             Feedback(
                 id: uuid(208), videoID: uuid(104), studyID: studyB.id, authorID: haneulID, authorName: "김하늘",
-                content: "숫자 읽을 때 강세가 정확해요. 다만 문단 전환에서 톤이 똑같아서 단조롭게 들려요.",
+                content: "지원 동기가 구체적이라 좋아요. 마지막 문장만 조금 더 자신 있게 마무리해보세요.",
                 timestampSeconds: 60, createdAt: now.addingTimeInterval(-3 * day)
             ),
-            // 영상 105 — MC 오프닝 (김하늘 영상, 스터디 B)
+            // 영상 105 — 서비스 경험 답변 (김하늘 영상, 스터디 B)
             Feedback(
                 id: uuid(209), videoID: uuid(105), studyID: studyB.id, authorID: meID, authorName: "유나",
-                content: "오프닝 첫 문장의 임팩트가 좋네요. 관객 호응 유도 멘트도 추가해보면 어떨까요?",
+                content: "상황과 행동이 명확해서 이해하기 쉬워요. 결과를 한 문장 더 강조하면 완벽할 것 같아요.",
                 timestampSeconds: 20, createdAt: now.addingTimeInterval(-2 * hour)
             ),
         ])
@@ -940,6 +961,35 @@ struct FlyMateApp: App {
             checkAlreadyReported: { _, _ in false }
         )
 
+        // Block (인메모리 목)
+        let memberNames: [UUID: String] = Dictionary(
+            (studyA.members + studyB.members).map { ($0.userID, $0.userName) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        let blockedUserStore = LockIsolated<[BlockedUser]>([])
+        dependencies.blockClient = BlockClient(
+            blockUser: { userID in
+                blockedUserStore.withValue { blocked in
+                    guard !blocked.contains(where: { $0.id == userID }) else { return }
+                    blocked.insert(
+                        BlockedUser(
+                            id: userID,
+                            name: memberNames[userID] ?? "알 수 없는 사용자",
+                            profileImageURL: nil,
+                            blockedAt: Date()
+                        ),
+                        at: 0
+                    )
+                }
+            },
+            unblockUser: { userID in
+                blockedUserStore.withValue { blocked in
+                    blocked.removeAll { $0.id == userID }
+                }
+            },
+            fetchBlockedUsers: { blockedUserStore.value }
+        )
+
         // Recruit (스터디원 모집 — 인메모리 목)
         let recruitPostStore = LockIsolated<[RecruitPost]>([
             RecruitPost(
@@ -965,9 +1015,9 @@ struct FlyMateApp: App {
             ),
             RecruitPost(
                 id: uuid(601),
-                title: "아나운서 뉴스리딩 온라인 스터디",
-                description: "뉴스 리딩 영상 올리고 발성·전달력 피드백을 주고받아요.",
-                field: .announcer,
+                title: "외항사 영어면접 온라인 스터디",
+                description: "영어 자기소개와 상황면접 영상을 올리고 피드백을 주고받아요.",
+                field: .flightAttendant,
                 meetingType: .online,
                 region: nil,
                 schedule: "매주 토 10시, 주 1회",
@@ -975,7 +1025,7 @@ struct FlyMateApp: App {
                 endDate: nil,
                 maxMembers: 4,
                 deadline: now.addingTimeInterval(-1 * day),
-                requirement: "카메라 앞 리딩 가능하신 분",
+                requirement: "주 1회 영어 답변 영상 업로드 가능하신 분",
                 contactMethod: "오픈채팅으로 문의해주세요",
                 linkURL: URL(string: "https://open.kakao.com/o/example"),
                 authorID: meID,

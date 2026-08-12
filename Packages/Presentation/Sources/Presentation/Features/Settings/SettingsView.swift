@@ -36,6 +36,17 @@ public struct SettingsView: View {
                             tint: FMColors.brandInk
                         )
                     }
+
+                    Button {
+                        store.send(.blockedUsersTapped)
+                    } label: {
+                        SettingsActionLabel(
+                            systemImage: "person.crop.circle.badge.xmark",
+                            title: "차단한 사용자",
+                            description: "차단한 사용자를 관리해요",
+                            tint: FMColors.secondaryLabel
+                        )
+                    }
                 }
                 .settingsSectionStyle()
 
@@ -45,7 +56,7 @@ public struct SettingsView: View {
                             systemImage: "bell.fill",
                             title: "푸시 알림",
                             description: "새 피드백과 스터디 소식을 받아요",
-                            tint: FMColors.airBlue,
+                            tint: FMColors.accent,
                             showsChevron: false
                         )
                     }
@@ -61,7 +72,7 @@ public struct SettingsView: View {
                             systemImage: "envelope.fill",
                             title: "개발자에게 문의하기",
                             description: "버그와 개선 의견을 이메일로 보내요",
-                            tint: FMColors.airBlue
+                            tint: FMColors.accent
                         )
                     }
                     .accessibilityHint("메일 앱을 열어 문의 메일을 작성합니다")
@@ -139,6 +150,11 @@ public struct SettingsView: View {
                 StudyManagementView(store: mgmtStore)
             }
         }
+        .sheet(item: $store.scope(state: \.destination?.blockedUsers, action: \.destination.blockedUsers)) { blockedStore in
+            NavigationStack {
+                BlockedUsersView(store: blockedStore)
+            }
+        }
         .sheet(item: $store.scope(state: \.destination?.subscription, action: \.destination.subscription)) { subStore in
             NavigationStack {
                 SubscriptionView(store: subStore)
@@ -166,7 +182,7 @@ public struct SettingsView: View {
                     Text("MY FLYMATE")
                         .font(.caption2.weight(.bold))
                         .tracking(0.6)
-                        .foregroundStyle(.white.opacity(0.76))
+                        .foregroundStyle(FMColors.onBrand)
 
                     Text(store.currentUser.name)
                         .font(FMTypography.sectionTitle)
@@ -174,7 +190,7 @@ public struct SettingsView: View {
 
                     Text(store.currentUser.displayEmail)
                         .font(.caption)
-                        .foregroundStyle(.white.opacity(0.76))
+                        .foregroundStyle(FMColors.onBrand)
                         .lineLimit(1)
                 }
 
@@ -243,6 +259,6 @@ private extension View {
     func settingsSectionStyle() -> some View {
         self
             .listRowBackground(FMColors.background)
-            .listRowSeparatorTint(FMColors.airBlue.opacity(0.18))
+            .listRowSeparatorTint(FMColors.accent.opacity(0.18))
     }
 }

@@ -12,6 +12,7 @@ public struct FeedbackListFeature {
         public var feedbacks = PaginatedState<Feedback>()
         public var loadingState: LoadingState<[Feedback]> = .idle
         @Presents public var report: ReportFeature.State?
+        @Presents public var blockAlert: AlertState<Action.BlockAlert>?
         public var showToast = false
         public var toastMessage = ""
 
@@ -36,10 +37,18 @@ public struct FeedbackListFeature {
         case reportFeedbackTapped(Feedback)
         case reportUserTapped(Feedback)
         case report(PresentationAction<ReportFeature.Action>)
+        case blockUserTapped(Feedback)
+        case blockAlert(PresentationAction<BlockAlert>)
+        case blockResponse(Result<UUID, AppError>)
         case dismissToast
+
+        public enum BlockAlert: Equatable {
+            case confirmBlock(userID: UUID)
+        }
     }
 
     @Dependency(\.feedbackClient) private var feedbackClient
+    @Dependency(\.blockClient) private var blockClient
 
     public init() {}
 
@@ -134,6 +143,49 @@ public struct FeedbackListFeature {
             case .report:
                 return .none
 
+            case .blockUserTapped(let feedback):
+                state.blockAlert = AlertState {
+                    TextState("\(feedback.authorName)님을 차단할까요?")
+                } actions: {
+                    ButtonState(role: .destructive, action: .confirmBlock(userID: feedback.authorID)) {
+                        TextState("차단하기")
+                    }
+                    ButtonState(role: .cancel) {
+                        TextState("취소")
+                    }
+                } message: {
+                    TextState("차단한 사용자의 영상과 피드백이 더 이상 보이지 않아요. 설정 > 차단한 사용자에서 해제할 수 있어요.")
+                }
+                return .none
+
+            case .blockAlert(.presented(.confirmBlock(let userID))):
+                let client = blockClient
+                return .run { send in
+                    do {
+                        try await client.blockUser(userID)
+                        await send(.blockResponse(.success(userID)))
+                    } catch {
+                        let appError = error as? AppError ?? .unexpected(error.localizedDescription)
+                        await send(.blockResponse(.failure(appError)))
+                    }
+                }
+
+            case .blockAlert:
+                return .none
+
+            case .blockResponse(.success(let userID)):
+                // 차단한 사용자의 피드백을 목록에서 즉시 제거 (이후 조회는 서버 RLS가 필터)
+                state.feedbacks.items.removeAll { $0.authorID == userID }
+                state.loadingState = .loaded(state.feedbacks.items)
+                state.toastMessage = "사용자를 차단했습니다"
+                state.showToast = true
+                return .none
+
+            case .blockResponse(.failure):
+                state.toastMessage = "차단에 실패했습니다. 다시 시도해 주세요."
+                state.showToast = true
+                return .none
+
             case .dismissToast:
                 state.showToast = false
                 return .none
@@ -142,6 +194,7 @@ public struct FeedbackListFeature {
         .ifLet(\.$report, action: \.report) {
             ReportFeature()
         }
+        .ifLet(\.$blockAlert, action: \.blockAlert)
     }
 
     private func fetchFeedbacks(

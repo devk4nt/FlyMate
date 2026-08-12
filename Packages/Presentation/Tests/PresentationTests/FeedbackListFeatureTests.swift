@@ -225,6 +225,90 @@ struct FeedbackListFeatureTests {
 
         await store.send(.feedbackTapped(Feedback.mock(index: 1)))
     }
+
+    // MARK: - 사용자 차단
+
+    @Test
+    func 사용자_차단_확인시_해당_작성자_피드백_제거_및_토스트() async {
+        let feedbacks = [Feedback.mock(index: 1), Feedback.mock(index: 2)]
+        var state = FeedbackListFeature.State(userID: userID, listType: .received)
+        state.feedbacks.items = feedbacks
+        state.loadingState = .loaded(feedbacks)
+
+        let blockedID = LockIsolated<UUID?>(nil)
+        let store = TestStore(initialState: state) {
+            FeedbackListFeature()
+        } withDependencies: {
+            $0.blockClient.blockUser = { blockedID.setValue($0) }
+        }
+
+        let target = feedbacks[0]
+        await store.send(.blockUserTapped(target)) {
+            $0.blockAlert = AlertState {
+                TextState("\(target.authorName)님을 차단할까요?")
+            } actions: {
+                ButtonState(role: .destructive, action: .confirmBlock(userID: target.authorID)) {
+                    TextState("차단하기")
+                }
+                ButtonState(role: .cancel) {
+                    TextState("취소")
+                }
+            } message: {
+                TextState("차단한 사용자의 영상과 피드백이 더 이상 보이지 않아요. 설정 > 차단한 사용자에서 해제할 수 있어요.")
+            }
+        }
+
+        await store.send(.blockAlert(.presented(.confirmBlock(userID: target.authorID)))) {
+            $0.blockAlert = nil
+        }
+
+        // 두 피드백 모두 같은 작성자 — 전부 제거된다
+        await store.receive(\.blockResponse.success) {
+            $0.feedbacks.items = []
+            $0.loadingState = .loaded([])
+            $0.toastMessage = "사용자를 차단했습니다"
+            $0.showToast = true
+        }
+
+        #expect(blockedID.value == target.authorID)
+    }
+
+    @Test
+    func 사용자_차단_실패시_목록_유지_및_에러_토스트() async {
+        let feedbacks = [Feedback.mock(index: 1)]
+        var state = FeedbackListFeature.State(userID: userID, listType: .received)
+        state.feedbacks.items = feedbacks
+        state.loadingState = .loaded(feedbacks)
+        state.blockAlert = AlertState {
+            TextState("\(feedbacks[0].authorName)님을 차단할까요?")
+        } actions: {
+            ButtonState(role: .destructive, action: .confirmBlock(userID: feedbacks[0].authorID)) {
+                TextState("차단하기")
+            }
+            ButtonState(role: .cancel) {
+                TextState("취소")
+            }
+        }
+
+        let store = TestStore(initialState: state) {
+            FeedbackListFeature()
+        } withDependencies: {
+            $0.blockClient.blockUser = { _ in
+                throw AppError.network(.noConnection)
+            }
+        }
+
+        await store.send(.blockAlert(.presented(.confirmBlock(userID: feedbacks[0].authorID)))) {
+            $0.blockAlert = nil
+        }
+
+        await store.receive(\.blockResponse.failure) {
+            $0.toastMessage = "차단에 실패했습니다. 다시 시도해 주세요."
+            $0.showToast = true
+        }
+
+        #expect(store.state.feedbacks.items == feedbacks)
+    }
 }
 
 // MARK: - Mock Data

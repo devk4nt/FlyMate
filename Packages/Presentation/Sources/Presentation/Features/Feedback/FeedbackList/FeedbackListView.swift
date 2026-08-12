@@ -40,7 +40,10 @@ public struct FeedbackListView: View {
                                     },
                                     onReportUser: {
                                         store.send(.reportUserTapped(feedback))
-                                    }
+                                    },
+                                    onBlockUser: store.listType == .received ? {
+                                        store.send(.blockUserTapped(feedback))
+                                    } : nil
                                 )
                                 .contentShape(Rectangle())
                                 .onTapGesture {
@@ -78,6 +81,7 @@ public struct FeedbackListView: View {
         .sheet(item: $store.scope(state: \.report, action: \.report)) { reportStore in
             ReportView(store: reportStore)
         }
+        .alert($store.scope(state: \.blockAlert, action: \.blockAlert))
         .fmToast(
             isPresented: Binding(
                 get: { store.showToast },
@@ -96,7 +100,7 @@ public struct FeedbackListView: View {
                 .font(.system(size: FMSizing.IconSize.hero, weight: .medium))
                 .foregroundStyle(FMColors.brandInk)
                 .frame(width: 72, height: 72)
-                .background(FMColors.airBlue.opacity(0.12), in: Circle())
+                .background(FMColors.accent.opacity(0.12), in: Circle())
 
             VStack(spacing: FMSpacing.xs) {
                 Text(store.listType == .received
@@ -120,7 +124,7 @@ public struct FeedbackListView: View {
         .background(FMColors.background, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
-                .stroke(FMColors.airBlue.opacity(0.2), lineWidth: 1)
+                .stroke(FMColors.accent.opacity(0.2), lineWidth: 1)
         }
     }
 }
@@ -131,6 +135,7 @@ struct FeedbackManagementRow: View {
     let feedback: Domain.Feedback
     var onReportFeedback: (() -> Void)?
     var onReportUser: (() -> Void)?
+    var onBlockUser: (() -> Void)?
 
     private func highlightedContent(_ content: String) -> Text {
         let pattern = "@\\S+"
@@ -186,7 +191,7 @@ struct FeedbackManagementRow: View {
 
                 Spacer(minLength: 0)
 
-                if onReportFeedback != nil || onReportUser != nil {
+                if onReportFeedback != nil || onReportUser != nil || onBlockUser != nil {
                     Menu {
                         if let onReportFeedback {
                             Button(role: .destructive) {
@@ -200,6 +205,13 @@ struct FeedbackManagementRow: View {
                                 onReportUser()
                             } label: {
                                 Label("사용자 신고", systemImage: "person.crop.circle.badge.exclamationmark")
+                            }
+                        }
+                        if let onBlockUser {
+                            Button(role: .destructive) {
+                                onBlockUser()
+                            } label: {
+                                Label("사용자 차단", systemImage: "person.crop.circle.badge.xmark")
                             }
                         }
                     } label: {
@@ -216,7 +228,7 @@ struct FeedbackManagementRow: View {
 
             HStack(alignment: .top, spacing: FMSpacing.sm) {
                 Capsule()
-                    .fill(FMColors.airBlue)
+                    .fill(FMColors.accent)
                     .frame(width: 3)
 
                 highlightedContent(feedback.content)
@@ -235,7 +247,7 @@ struct FeedbackManagementRow: View {
                 .foregroundStyle(FMColors.brandInk)
                 .padding(.horizontal, FMSpacing.sm)
                 .padding(.vertical, FMSpacing.xs)
-                .background(FMColors.airBlue.opacity(0.12), in: Capsule())
+                .background(FMColors.accent.opacity(0.12), in: Capsule())
 
                 if feedback.commentCount > 0 {
                     Label("답글 \(feedback.commentCount)", systemImage: "bubble.left.fill")
@@ -249,7 +261,7 @@ struct FeedbackManagementRow: View {
                     .font(.caption.weight(.bold))
                     .foregroundStyle(FMColors.brandInk)
                     .frame(width: 30, height: 30)
-                    .background(FMColors.airBlue.opacity(0.1), in: Circle())
+                    .background(FMColors.accent.opacity(0.1), in: Circle())
             }
         }
         .padding(FMSpacing.lg)
@@ -257,7 +269,7 @@ struct FeedbackManagementRow: View {
         .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
-                .stroke(FMColors.airBlue.opacity(0.2), lineWidth: 1)
+                .stroke(FMColors.accent.opacity(0.2), lineWidth: 1)
         }
         .shadow(color: FMColors.brandInk.opacity(0.07), radius: 14, y: 7)
         .accessibilityElement(children: .combine)

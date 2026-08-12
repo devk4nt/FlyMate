@@ -2,6 +2,7 @@ import SwiftUI
 import ComposableArchitecture
 import Core
 import Domain
+import Kingfisher
 
 /// 피드의 개별 페이지 — 풀스크린 플레이어 + 정보 오버레이.
 /// 탭하면 재생/일시정지, 댓글 버튼으로 피드백 시트를 연다.
@@ -15,17 +16,8 @@ public struct VideoPageView: View {
 
     public var body: some View {
         ZStack {
-            VideoPlayerView(
-                url: store.video.videoURL,
-                isPlaying: store.player.isPlaying,
-                seekTime: store.player.currentTime,
-                isSeeking: store.player.isSeeking,
-                isMuted: store.player.isMuted,
-                onCurrentTimeUpdate: { store.send(.currentTimeUpdated($0)) },
-                onDurationUpdate: { store.send(.durationUpdated($0)) },
-                onPlaybackEnded: { store.send(.playerReachedEnd) },
-                onSeekCompleted: { store.send(.seekCompleted) }
-            )
+            mediaBackdrop
+            mediaContent
 
             // 일시정지 인디케이터
             if !store.player.isPlaying {
@@ -71,6 +63,54 @@ public struct VideoPageView: View {
                 .presentationDragIndicator(.visible)
                 .presentationBackground(FMColors.background)
         }
+    }
+
+    @ViewBuilder
+    private var mediaBackdrop: some View {
+        if let thumbnailURL = store.video.thumbnailURL {
+            // scaledToFill은 제안보다 큰 사이즈를 레이아웃에 보고해 페이지 폭을 부풀리므로,
+            // 레이아웃에 참여하지 않는 overlay 안에서 채운다
+            Color.black
+                .overlay {
+                    KFImage(thumbnailURL)
+                        .resizable()
+                        .scaledToFill()
+                        .scaleEffect(1.08)
+                        .blur(radius: 28)
+                }
+                .overlay(Color.black.opacity(0.42))
+                .clipped()
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+        } else {
+            Color.black
+        }
+    }
+
+    @ViewBuilder
+    private var mediaContent: some View {
+        if isStaticMockVideo, let thumbnailURL = store.video.thumbnailURL {
+            KFImage(thumbnailURL)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            VideoPlayerView(
+                url: store.video.videoURL,
+                isPlaying: store.player.isPlaying,
+                seekTime: store.player.currentTime,
+                isSeeking: store.player.isSeeking,
+                isMuted: store.player.isMuted,
+                onCurrentTimeUpdate: { store.send(.currentTimeUpdated($0)) },
+                onDurationUpdate: { store.send(.durationUpdated($0)) },
+                onPlaybackEnded: { store.send(.playerReachedEnd) },
+                onSeekCompleted: { store.send(.seekCompleted) }
+            )
+        }
+    }
+
+    private var isStaticMockVideo: Bool {
+        ["jpg", "jpeg", "png"].contains(store.video.videoURL.pathExtension.lowercased())
     }
 
     // MARK: - Overlay
@@ -183,7 +223,7 @@ public struct VideoPageView: View {
         Button(action: action) {
             Image(systemName: systemImage)
                 .font(.system(size: FMSizing.IconSize.md, weight: .semibold))
-                .foregroundStyle(FMColors.airBlue)
+                .foregroundStyle(FMColors.accent)
                 .frame(width: 48, height: 48)
                 .background(playerControlSurface, in: Circle())
                 .overlay {
@@ -193,13 +233,13 @@ public struct VideoPageView: View {
                 .overlay(alignment: .topTrailing) {
                     if let badgeText {
                         Text(badgeText)
-                            .font(FMTypography.caption2)
+                            .font(FMTypography.caption1)
                             .fontWeight(.semibold)
                             .monospacedDigit()
-                            .foregroundStyle(FMColors.brandInk)
+                            .foregroundStyle(FMColors.deepIndigo)
                             .padding(.horizontal, FMSpacing.xxs)
-                            .frame(minWidth: 20, minHeight: 20)
-                            .background(FMColors.airBlue, in: Capsule())
+                            .frame(minWidth: 22, minHeight: 22)
+                            .background(.white, in: Capsule())
                             .offset(x: 5, y: -4)
                     }
                 }
@@ -218,7 +258,7 @@ public struct VideoPageView: View {
                 ),
                 in: 0...max(store.player.duration, 1)
             )
-            .tint(FMColors.airBlue)
+            .tint(FMColors.accent)
             .controlSize(.small)
             .accessibilityLabel("재생 위치")
             .accessibilityValue(
@@ -227,7 +267,7 @@ public struct VideoPageView: View {
 
             HStack {
                 Text(store.player.currentTime.minuteSecondFormatted)
-                    .foregroundStyle(FMColors.airBlue)
+                    .foregroundStyle(FMColors.accent)
 
                 Spacer()
 
@@ -245,7 +285,7 @@ public struct VideoPageView: View {
     }
 
     private var playerControlBorder: Color {
-        FMColors.airBlue.opacity(0.42)
+        FMColors.accent.opacity(0.42)
     }
 
     private var feedbackCount: Int {

@@ -47,6 +47,10 @@ public struct VideoFeedbackSheet: View {
             }
             .presentationDetents([.medium])
         }
+        .sheet(item: $store.scope(state: \.report, action: \.report)) { reportStore in
+            ReportView(store: reportStore)
+        }
+        .alert($store.scope(state: \.blockAlert, action: \.blockAlert))
     }
 
     // MARK: - Video Info
@@ -154,6 +158,15 @@ public struct VideoFeedbackSheet: View {
                             },
                             onDeleteReply: { comment in
                                 store.send(.deleteReplyTapped(comment))
+                            },
+                            onReportUser: feedback.authorID == store.currentUserID ? nil : {
+                                store.send(.reportUserTapped(authorID: feedback.authorID))
+                            },
+                            onBlockUser: feedback.authorID == store.currentUserID ? nil : {
+                                store.send(.blockUserTapped(
+                                    authorID: feedback.authorID,
+                                    authorName: feedback.authorName
+                                ))
                             }
                         )
                         .id(feedback.id)
@@ -162,6 +175,7 @@ public struct VideoFeedbackSheet: View {
                 .padding(FMSpacing.md)
             }
             .scrollDismissesKeyboard(.interactively)
+            .dismissKeyboardOnTap()
             .onChange(of: store.focusedFeedbackID) { _, focusedID in
                 if let focusedID {
                     withAnimation {
@@ -221,6 +235,8 @@ private struct FeedbackRow: View {
     var onReplyTapped: (() -> Void)?
     var onToggleReplies: (() -> Void)?
     var onDeleteReply: ((FeedbackComment) -> Void)?
+    var onReportUser: (() -> Void)?
+    var onBlockUser: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -251,6 +267,32 @@ private struct FeedbackRow: View {
                 }
 
                 Spacer(minLength: 0)
+
+                if onReportUser != nil || onBlockUser != nil {
+                    Menu {
+                        if let onReportUser {
+                            Button(role: .destructive) {
+                                onReportUser()
+                            } label: {
+                                Label("사용자 신고", systemImage: "person.crop.circle.badge.exclamationmark")
+                            }
+                        }
+                        if let onBlockUser {
+                            Button(role: .destructive) {
+                                onBlockUser()
+                            } label: {
+                                Label("사용자 차단", systemImage: "person.crop.circle.badge.xmark")
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: FMSizing.IconSize.xs))
+                            .foregroundStyle(FMColors.secondaryLabel)
+                            .frame(width: 24, height: 24)
+                            .contentShape(Rectangle())
+                    }
+                    .accessibilityLabel("신고 및 차단 메뉴")
+                }
             }
             .padding(FMSpacing.sm)
 

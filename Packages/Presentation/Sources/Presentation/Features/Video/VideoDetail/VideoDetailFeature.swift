@@ -22,6 +22,8 @@ public struct VideoDetailFeature {
         public var toastType: FMToast.ToastType = .success
         public var showFeedbackSheet = false
         @Presents public var feedbackCommentList: FeedbackCommentListFeature.State?
+        @Presents public var report: ReportFeature.State?
+        @Presents public var blockAlert: AlertState<Action.BlockAlert>?
 
         public init(video: Video, focusedFeedbackID: UUID? = nil, currentUserID: UUID? = nil) {
             self.video = video
@@ -81,6 +83,16 @@ public struct VideoDetailFeature {
         case latestCommentsResponse(Result<[UUID: FeedbackComment], AppError>)
         case commentListTapped(Feedback)
         case feedbackCommentList(PresentationAction<FeedbackCommentListFeature.Action>)
+        // 신고 / 차단
+        case reportUserTapped(authorID: UUID)
+        case report(PresentationAction<ReportFeature.Action>)
+        case blockUserTapped(authorID: UUID, authorName: String)
+        case blockAlert(PresentationAction<BlockAlert>)
+        case blockResponse(Result<UUID, AppError>)
+
+        public enum BlockAlert: Equatable {
+            case confirmBlock(userID: UUID)
+        }
     }
 
     /// 피드에서 페이지별 인스턴스가 공존하므로 영상 단위로 스트림 구독을 취소한다
@@ -91,6 +103,7 @@ public struct VideoDetailFeature {
     @Dependency(\.feedbackClient) private var feedbackClient
     @Dependency(\.feedbackCommentClient) private var feedbackCommentClient
     @Dependency(\.studyClient) private var studyClient
+    @Dependency(\.blockClient) private var blockClient
 
     public init() {}
 
@@ -437,10 +450,91 @@ public struct VideoDetailFeature {
 
             case .feedbackCommentList:
                 return .none
+
+            // MARK: - Report / Block
+
+            case .reportUserTapped(let authorID):
+                state.report = ReportFeature.State(targetType: .user, targetID: authorID)
+                return .none
+
+            case .report(.presented(.delegate(.reportSubmitted))):
+                state.report = nil
+                state.showToast = true
+                state.toastMessage = "신고가 접수되었습니다"
+                state.toastType = .success
+                return .none
+
+            case .report(.presented(.delegate(.alreadyReported))):
+                state.report = nil
+                state.showToast = true
+                state.toastMessage = "이미 신고한 항목입니다"
+                state.toastType = .info
+                return .none
+
+            case .report:
+                return .none
+
+            case .blockUserTapped(let authorID, let authorName):
+                state.blockAlert = AlertState {
+                    TextState("\(authorName)님을 차단할까요?")
+                } actions: {
+                    ButtonState(role: .destructive, action: .confirmBlock(userID: authorID)) {
+                        TextState("차단하기")
+                    }
+                    ButtonState(role: .cancel) {
+                        TextState("취소")
+                    }
+                } message: {
+                    TextState("차단한 사용자의 영상과 피드백이 더 이상 보이지 않아요. 설정 > 차단한 사용자에서 해제할 수 있어요.")
+                }
+                return .none
+
+            case .blockAlert(.presented(.confirmBlock(let userID))):
+                let client = blockClient
+                return .run { send in
+                    do {
+                        try await client.blockUser(userID)
+                        await send(.blockResponse(.success(userID)))
+                    } catch {
+                        let appError = error as? AppError ?? .unexpected(error.localizedDescription)
+                        await send(.blockResponse(.failure(appError)))
+                    }
+                }
+
+            case .blockAlert:
+                return .none
+
+            case .blockResponse(.success(let userID)):
+                // 차단한 사용자의 콘텐츠를 화면에서 즉시 제거 (이후 조회는 서버 RLS가 필터)
+                if case .loaded(var feedbacks) = state.feedbacks {
+                    feedbacks.removeAll { $0.authorID == userID }
+                    state.feedbacks = .loaded(feedbacks)
+                }
+                for (feedbackID, replies) in state.repliesByFeedback {
+                    if case .loaded(var comments) = replies {
+                        comments.removeAll { $0.authorID == userID }
+                        state.repliesByFeedback[feedbackID] = .loaded(comments)
+                    }
+                }
+                state.latestComments = state.latestComments.filter { $0.value.authorID != userID }
+                state.showToast = true
+                state.toastMessage = "사용자를 차단했습니다"
+                state.toastType = .success
+                return .none
+
+            case .blockResponse(.failure(let error)):
+                state.showToast = true
+                state.toastMessage = error.localizedDescription
+                state.toastType = .error
+                return .none
             }
         }
         .ifLet(\.$feedbackCommentList, action: \.feedbackCommentList) {
             FeedbackCommentListFeature()
         }
+        .ifLet(\.$report, action: \.report) {
+            ReportFeature()
+        }
+        .ifLet(\.$blockAlert, action: \.blockAlert)
     }
 }

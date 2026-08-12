@@ -154,7 +154,7 @@ public struct VideoFeedView: View {
                         cornerRadius: FMSpacing.CornerRadius.xl,
                         style: .continuous
                     )
-                    .stroke(FMColors.airBlue.opacity(0.2), lineWidth: 1)
+                    .stroke(FMColors.accent.opacity(0.2), lineWidth: 1)
                 }
                 .padding(.horizontal, FMSpacing.md)
             }
@@ -187,7 +187,7 @@ public struct VideoFeedView: View {
                         cornerRadius: FMSpacing.CornerRadius.xl,
                         style: .continuous
                     )
-                    .stroke(FMColors.airBlue.opacity(0.2), lineWidth: 1)
+                    .stroke(FMColors.accent.opacity(0.2), lineWidth: 1)
                 }
                 .padding(.horizontal, FMSpacing.md)
             }
@@ -232,7 +232,7 @@ public struct VideoFeedView: View {
                 cornerRadius: FMSpacing.CornerRadius.lg,
                 style: .continuous
             )
-            .stroke(FMColors.airBlue.opacity(0.2), lineWidth: 1)
+            .stroke(FMColors.accent.opacity(0.2), lineWidth: 1)
         }
         .padding(.horizontal, FMSpacing.md)
         .accessibilityElement(children: .combine)

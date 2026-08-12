@@ -319,6 +319,96 @@ struct VideoDetailFeatureTests {
         // 실패 시 답글 목록과 commentCount 모두 변경 없음
         await store.receive(\.deleteReplyResponse)
     }
+
+    // MARK: - 사용자 신고 / 차단
+
+    @Test
+    func 사용자_신고_탭시_report_시트_표시() async {
+        let feedback = Feedback.videoDetailMock()
+        var state = VideoDetailFeature.State(video: .videoDetailMock)
+        state.feedbacks = .loaded([feedback])
+
+        let store = TestStore(initialState: state) {
+            VideoDetailFeature()
+        } withDependencies: {
+            // ReportFeature.onAppear가 중복 신고를 조회한다
+            $0.reportClient.checkAlreadyReported = { _, _ in false }
+        }
+
+        await store.send(.reportUserTapped(authorID: feedback.authorID)) {
+            $0.report = ReportFeature.State(targetType: .user, targetID: feedback.authorID)
+        }
+    }
+
+    @Test
+    func 사용자_차단_확인시_피드백_답글_최신댓글에서_모두_제거() async {
+        let blockedAuthorID = UUID(uuidString: "00000000-0000-0000-0000-000000000010")!
+        let otherAuthorID = UUID(uuidString: "00000000-0000-0000-0000-000000000030")!
+
+        let blockedFeedback = Feedback.videoDetailMock()
+        let otherFeedback = Feedback(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000101")!,
+            videoID: blockedFeedback.videoID,
+            studyID: blockedFeedback.studyID,
+            authorID: otherAuthorID,
+            authorName: "다른 유저",
+            content: "목소리가 좋아요",
+            timestampSeconds: 10.0,
+            createdAt: Date(timeIntervalSince1970: 1_700_000_100)
+        )
+        let blockedComment = FeedbackComment.videoDetailMock
+        let otherComment = FeedbackComment(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000201")!,
+            feedbackID: otherFeedback.id,
+            studyID: blockedFeedback.studyID,
+            authorID: otherAuthorID,
+            authorName: "다른 유저",
+            content: "저도 동의해요",
+            createdAt: Date(timeIntervalSince1970: 1_700_000_100)
+        )
+
+        var state = VideoDetailFeature.State(video: .videoDetailMock)
+        state.feedbacks = .loaded([blockedFeedback, otherFeedback])
+        state.repliesByFeedback = [otherFeedback.id: .loaded([blockedComment, otherComment])]
+        state.latestComments = [otherFeedback.id: blockedComment]
+
+        let blockedID = LockIsolated<UUID?>(nil)
+        let store = TestStore(initialState: state) {
+            VideoDetailFeature()
+        } withDependencies: {
+            $0.blockClient.blockUser = { blockedID.setValue($0) }
+        }
+
+        await store.send(.blockUserTapped(authorID: blockedAuthorID, authorName: "김테스트")) {
+            $0.blockAlert = AlertState {
+                TextState("김테스트님을 차단할까요?")
+            } actions: {
+                ButtonState(role: .destructive, action: .confirmBlock(userID: blockedAuthorID)) {
+                    TextState("차단하기")
+                }
+                ButtonState(role: .cancel) {
+                    TextState("취소")
+                }
+            } message: {
+                TextState("차단한 사용자의 영상과 피드백이 더 이상 보이지 않아요. 설정 > 차단한 사용자에서 해제할 수 있어요.")
+            }
+        }
+
+        await store.send(.blockAlert(.presented(.confirmBlock(userID: blockedAuthorID)))) {
+            $0.blockAlert = nil
+        }
+
+        await store.receive(\.blockResponse.success) {
+            $0.feedbacks = .loaded([otherFeedback])
+            $0.repliesByFeedback = [otherFeedback.id: .loaded([otherComment])]
+            $0.latestComments = [:]
+            $0.showToast = true
+            $0.toastMessage = "사용자를 차단했습니다"
+            $0.toastType = .success
+        }
+
+        #expect(blockedID.value == blockedAuthorID)
+    }
 }
 
 // MARK: - Mock Data

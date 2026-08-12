@@ -65,7 +65,7 @@ public struct FeedbackManagementView: View {
         .background(FMColors.background, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous)
-                .stroke(FMColors.airBlue.opacity(0.2), lineWidth: 1)
+                .stroke(FMColors.accent.opacity(0.2), lineWidth: 1)
         }
         .accessibilityElement(children: .combine)
     }
@@ -99,7 +99,7 @@ public struct FeedbackManagementView: View {
             }
         }
         .padding(4)
-        .background(FMColors.airBlue.opacity(0.1), in: Capsule())
+        .background(FMColors.accent.opacity(0.1), in: Capsule())
     }
 
     private func segmentIcon(for segment: FeedbackManagementFeature.State.Segment) -> String {
