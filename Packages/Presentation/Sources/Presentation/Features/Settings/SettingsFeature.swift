@@ -12,6 +12,11 @@ public struct SettingsFeature {
         public var currentUser: User
         public var notificationsEnabled = true
         public var pushAuthorizationStatus: UNAuthorizationStatus = .notDetermined
+        // 재진입 시 목록이 즉시 보이도록 자식 상태를 상주시킨다 (탭 루트 리스트와 동일한 전략)
+        public var studyManagement = StudyManagementFeature.State()
+        public var blockedUsers = BlockedUsersFeature.State()
+        public var isStudyManagementActive = false
+        public var isBlockedUsersActive = false
         @Presents public var destination: Destination.State?
         @Presents public var confirmAlert: AlertState<Action.ConfirmAlert>?
 
@@ -26,6 +31,10 @@ public struct SettingsFeature {
         case profileEditTapped
         case studyManagementTapped
         case blockedUsersTapped
+        case studyManagementActiveChanged(Bool)
+        case blockedUsersActiveChanged(Bool)
+        case studyManagement(StudyManagementFeature.Action)
+        case blockedUsers(BlockedUsersFeature.Action)
         case subscriptionTapped
         case developerContactTapped
         case developerContactOpenResponse(Bool)
@@ -48,8 +57,6 @@ public struct SettingsFeature {
     @Reducer(state: .equatable)
     public enum Destination {
         case profileEdit(ProfileEditFeature)
-        case studyManagement(StudyManagementFeature)
-        case blockedUsers(BlockedUsersFeature)
         case subscription(SubscriptionFeature)
     }
 
@@ -62,6 +69,12 @@ public struct SettingsFeature {
     public init() {}
 
     public var body: some ReducerOf<Self> {
+        Scope(state: \.studyManagement, action: \.studyManagement) {
+            StudyManagementFeature()
+        }
+        Scope(state: \.blockedUsers, action: \.blockedUsers) {
+            BlockedUsersFeature()
+        }
         Reduce { state, action in
             switch action {
             case .onAppear:
@@ -86,11 +99,22 @@ public struct SettingsFeature {
                 return .none
 
             case .studyManagementTapped:
-                state.destination = .studyManagement(StudyManagementFeature.State())
+                state.isStudyManagementActive = true
                 return .none
 
             case .blockedUsersTapped:
-                state.destination = .blockedUsers(BlockedUsersFeature.State())
+                state.isBlockedUsersActive = true
+                return .none
+
+            case .studyManagementActiveChanged(let isActive):
+                state.isStudyManagementActive = isActive
+                return .none
+
+            case .blockedUsersActiveChanged(let isActive):
+                state.isBlockedUsersActive = isActive
+                return .none
+
+            case .studyManagement, .blockedUsers:
                 return .none
 
             case .subscriptionTapped:

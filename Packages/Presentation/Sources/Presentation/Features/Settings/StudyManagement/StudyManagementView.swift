@@ -5,7 +5,6 @@ import Domain
 
 public struct StudyManagementView: View {
     @Bindable var store: StoreOf<StudyManagementFeature>
-    @Environment(\.dismiss) private var dismiss
 
     public init(store: StoreOf<StudyManagementFeature>) {
         self.store = store
@@ -26,7 +25,7 @@ public struct StudyManagementView: View {
 
             case .failed(let error):
                 FMErrorView(error: error) {
-                    store.send(.onAppear)
+                    store.send(.retryTapped)
                 }
             }
         }
@@ -34,14 +33,8 @@ public struct StudyManagementView: View {
         .background(FMColors.canvas)
         .navigationTitle("스터디 관리")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("닫기") { dismiss() }
-            }
-        }
         .onAppear { store.send(.onAppear) }
         .alert($store.scope(state: \.confirmAlert, action: \.confirmAlert))
-        .fmSheetStyle()
     }
 
     private var loadingContent: some View {
@@ -73,7 +66,7 @@ public struct StudyManagementView: View {
             .padding(.bottom, FMSpacing.xxxl)
         }
         .refreshable {
-            store.send(.onAppear)
+            store.send(.refresh)
         }
     }
 

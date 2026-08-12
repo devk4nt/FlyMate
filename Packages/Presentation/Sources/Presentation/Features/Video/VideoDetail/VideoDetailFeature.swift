@@ -117,7 +117,10 @@ public struct VideoDetailFeature {
             case .onAppear:
                 let videoID = state.video.id
                 let studyID = state.video.studyID
-                state.feedbacks = .loading
+                // 재진입(하위 화면 pop, 시트 닫힘) 시 기존 목록을 유지한 채 조용히 갱신
+                if case .loaded = state.feedbacks {} else {
+                    state.feedbacks = .loading
+                }
                 state.player.duration = state.video.durationSeconds
                 let client = feedbackClient
                 let study = studyClient

@@ -135,6 +135,12 @@ public struct SettingsView: View {
             .tint(FMColors.actionForeground)
             .navigationTitle("설정")
             .navigationBarTitleDisplayMode(.inline)
+            .navigationDestination(isPresented: $store.isStudyManagementActive.sending(\.studyManagementActiveChanged)) {
+                StudyManagementView(store: store.scope(state: \.studyManagement, action: \.studyManagement))
+            }
+            .navigationDestination(isPresented: $store.isBlockedUsersActive.sending(\.blockedUsersActiveChanged)) {
+                BlockedUsersView(store: store.scope(state: \.blockedUsers, action: \.blockedUsers))
+            }
         }
         .background(FMColors.softCanvas)
         .onAppear { store.send(.onAppear) }
@@ -148,16 +154,6 @@ public struct SettingsView: View {
                 ProfileEditView(store: editStore)
             }
             .interactiveDismissDisabled(editStore.hasChanges)
-        }
-        .sheet(item: $store.scope(state: \.destination?.studyManagement, action: \.destination.studyManagement)) { mgmtStore in
-            NavigationStack {
-                StudyManagementView(store: mgmtStore)
-            }
-        }
-        .sheet(item: $store.scope(state: \.destination?.blockedUsers, action: \.destination.blockedUsers)) { blockedStore in
-            NavigationStack {
-                BlockedUsersView(store: blockedStore)
-            }
         }
         .sheet(item: $store.scope(state: \.destination?.subscription, action: \.destination.subscription)) { subStore in
             NavigationStack {

@@ -16,6 +16,8 @@ public struct StudyManagementFeature {
 
     public enum Action {
         case onAppear
+        case refresh
+        case retryTapped
         case studiesResponse(Result<[Study], AppError>)
         case leaveStudyTapped(UUID)
         case confirmAlert(PresentationAction<ConfirmAlert>)
@@ -35,17 +37,19 @@ public struct StudyManagementFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                state.studies = .loading
-                let client = studyClient
-                return .run { send in
-                    do {
-                        let studies = try await client.fetchMyStudies()
-                        await send(.studiesResponse(.success(studies)))
-                    } catch {
-                        let appError = error as? AppError ?? .unexpected(error.localizedDescription)
-                        await send(.studiesResponse(.failure(appError)))
-                    }
+                // 첫 진입만 스켈레톤 — 재진입 시 기존 목록을 유지한 채 조용히 갱신
+                if case .idle = state.studies {
+                    state.studies = .loading
                 }
+                return fetchStudies()
+
+            // 기존 콘텐츠를 유지한 채 조용히 재조회 (pull-to-refresh, 탈퇴 후)
+            case .refresh:
+                return fetchStudies()
+
+            case .retryTapped:
+                state.studies = .loading
+                return fetchStudies()
 
             case .studiesResponse(.success(let studies)):
                 state.studies = .loaded(studies)
@@ -86,7 +90,7 @@ public struct StudyManagementFeature {
 
             case .leaveCompleted:
                 state.selectedStudyID = nil
-                return .send(.onAppear)
+                return .send(.refresh)
 
             case .leaveFailed:
                 state.selectedStudyID = nil
@@ -97,5 +101,18 @@ public struct StudyManagementFeature {
             }
         }
         .ifLet(\.$confirmAlert, action: \.confirmAlert)
+    }
+
+    private func fetchStudies() -> Effect<Action> {
+        let client = studyClient
+        return .run { send in
+            do {
+                let studies = try await client.fetchMyStudies()
+                await send(.studiesResponse(.success(studies)))
+            } catch {
+                let appError = error as? AppError ?? .unexpected(error.localizedDescription)
+                await send(.studiesResponse(.failure(appError)))
+            }
+        }
     }
 }

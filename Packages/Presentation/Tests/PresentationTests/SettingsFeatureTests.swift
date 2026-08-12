@@ -41,7 +41,7 @@ struct SettingsFeatureTests {
         }
 
         await store.send(.studyManagementTapped) {
-            $0.destination = .studyManagement(StudyManagementFeature.State())
+            $0.isStudyManagementActive = true
         }
     }
 

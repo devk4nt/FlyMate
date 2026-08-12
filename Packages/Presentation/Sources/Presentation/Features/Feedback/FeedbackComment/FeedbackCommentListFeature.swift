@@ -67,7 +67,10 @@ public struct FeedbackCommentListFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                state.comments = .loading
+                // 재진입(시트 닫힘 등) 시 기존 목록을 유지한 채 조용히 갱신
+                if case .loaded = state.comments {} else {
+                    state.comments = .loading
+                }
                 let feedbackID = state.feedback.id
                 let studyID = state.studyID
                 let client = commentClient

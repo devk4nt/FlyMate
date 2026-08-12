@@ -14,8 +14,14 @@ public struct BlockedUsersView: View {
         Group {
             switch store.blockedUsers {
             case .idle, .loading:
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                ScrollView {
+                    LazyVStack(spacing: FMSpacing.md) {
+                        ForEach(0..<6, id: \.self) { _ in
+                            FMSkeletonView.listRow
+                        }
+                    }
+                    .padding(FMSpacing.md)
+                }
 
             case .loaded(let users):
                 if users.isEmpty {
@@ -53,7 +59,6 @@ public struct BlockedUsersView: View {
             message: store.toastMessage,
             type: .info
         )
-        .fmSheetStyle()
     }
 }
 

@@ -31,8 +31,10 @@ public struct BlockedUsersFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                guard case .idle = state.blockedUsers else { return .none }
-                state.blockedUsers = .loading
+                // 첫 진입만 스켈레톤 — 재진입 시 기존 목록을 유지한 채 조용히 갱신
+                if case .idle = state.blockedUsers {
+                    state.blockedUsers = .loading
+                }
                 return fetchBlockedUsers()
 
             case .retryTapped:
