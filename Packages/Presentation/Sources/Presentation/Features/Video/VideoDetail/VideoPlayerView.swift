@@ -72,6 +72,7 @@ struct VideoPlayerView: UIViewRepresentable {
             self.parent = parent
         }
 
+        @MainActor
         func setupPlayer(url: URL, initialTime: TimeInterval, in view: PlayerUIView) {
             try? AVAudioSession.sharedInstance().setCategory(.playback)
             try? AVAudioSession.sharedInstance().setActive(true)
@@ -95,7 +96,10 @@ struct VideoPlayerView: UIViewRepresentable {
                 guard let self else { return }
                 let seconds = CMTimeGetSeconds(time)
                 guard seconds.isFinite else { return }
-                self.parent.onCurrentTimeUpdate(seconds)
+                // 관찰 큐가 .main이므로 MainActor 격리가 보장됨
+                MainActor.assumeIsolated {
+                    self.parent.onCurrentTimeUpdate(seconds)
+                }
             }
 
             // Observe player item status for duration + initial seek
@@ -118,7 +122,11 @@ struct VideoPlayerView: UIViewRepresentable {
                 object: playerItem,
                 queue: .main
             ) { [weak self] _ in
-                self?.parent.onPlaybackEnded()
+                guard let self else { return }
+                // 관찰 큐가 .main이므로 MainActor 격리가 보장됨
+                MainActor.assumeIsolated {
+                    self.parent.onPlaybackEnded()
+                }
             }
         }
 
@@ -150,6 +158,7 @@ final class PlayerUIView: UIView {
         let textField = UITextField()
         textField.isSecureTextEntry = true
         textField.isUserInteractionEnabled = false
+        textField.backgroundColor = .clear
         return textField
     }()
 
@@ -161,6 +170,9 @@ final class PlayerUIView: UIView {
 
     override init(frame: CGRect) {
         super.init(frame: frame)
+        backgroundColor = .clear
+        avPlayerView.backgroundColor = .clear
+        avPlayerView.playerLayer.backgroundColor = UIColor.clear.cgColor
         setupSecureContainer()
     }
 
@@ -182,6 +194,7 @@ final class PlayerUIView: UIView {
         let targetView: UIView
         if let secureView = secureTextField.subviews.first {
             secureView.isUserInteractionEnabled = true
+            secureView.backgroundColor = .clear
             secureView.translatesAutoresizingMaskIntoConstraints = false
             NSLayoutConstraint.activate([
                 secureView.topAnchor.constraint(equalTo: topAnchor),
