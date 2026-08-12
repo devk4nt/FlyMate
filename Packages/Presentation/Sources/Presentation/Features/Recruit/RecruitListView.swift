@@ -64,6 +64,8 @@ public struct RecruitListView: View {
                         FMSkeletonView(height: 150)
                     }
                 }
+                .frame(maxWidth: FMSizing.ContentWidth.regular)
+                .frame(maxWidth: .infinity)
                 .padding(.horizontal, FMSpacing.md)
                 .padding(.top, FMSpacing.xs)
             }
@@ -97,6 +99,8 @@ public struct RecruitListView: View {
                         }
                     }
                 }
+                .frame(maxWidth: FMSizing.ContentWidth.regular)
+                .frame(maxWidth: .infinity)
                 .padding(.horizontal, FMSpacing.md)
                 .padding(.top, FMSpacing.xs)
                 .padding(.bottom, FMSpacing.xxxl)
@@ -118,7 +122,7 @@ public struct RecruitListView: View {
         VStack(alignment: .leading, spacing: FMSpacing.lg) {
             VStack(alignment: .leading, spacing: FMSpacing.sm) {
                 Label("STUDY TOGETHER", systemImage: "person.3.fill")
-                    .font(.caption.weight(.bold))
+                    .font(FMTypography.badgeStrong)
                     .tracking(0.8)
                     .foregroundStyle(FMColors.onBrand)
 
@@ -127,7 +131,7 @@ public struct RecruitListView: View {
                     .foregroundStyle(.white)
 
                 Text("진행 방식과 일정이 맞는 스터디를 찾거나\n직접 모집 글을 올려보세요.")
-                    .font(.subheadline)
+                    .font(FMTypography.feedBody)
                     .foregroundStyle(FMColors.onBrand)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -136,7 +140,7 @@ public struct RecruitListView: View {
                 store.send(.createTapped)
             } label: {
                 Label("모집 글 작성", systemImage: "square.and.pencil")
-                    .font(.subheadline.weight(.semibold))
+                    .font(FMTypography.authorName)
                     .foregroundStyle(FMColors.brandInk)
                     .frame(maxWidth: .infinity)
                     .frame(minHeight: 48)
@@ -150,7 +154,7 @@ public struct RecruitListView: View {
         .padding(FMSpacing.lg)
         .background {
             ZStack(alignment: .topTrailing) {
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.hero, style: .continuous)
                     .fill(FMColors.brandGradient)
 
                 Circle()
@@ -164,9 +168,9 @@ public struct RecruitListView: View {
                     .frame(width: 90, height: 90)
                     .offset(x: -30, y: 138)
             }
-            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.hero, style: .continuous))
         }
-        .shadow(color: FMColors.brandInk.opacity(0.2), radius: 22, y: 12)
+        .shadow(color: FMShadow.heroColor, radius: FMShadow.heroRadius, y: FMShadow.heroY)
         .accessibilityElement(children: .contain)
     }
 
@@ -233,7 +237,7 @@ public struct RecruitListView: View {
         HStack(spacing: FMSpacing.xxs) {
             Text(title)
             Image(systemName: "chevron.down")
-                .font(.caption2)
+                .font(FMTypography.caption2)
         }
         .font(FMTypography.feedMetaEmphasis)
         .foregroundStyle(isActive ? FMColors.onAccent : FMColors.label)
@@ -260,34 +264,13 @@ public struct RecruitListView: View {
     // MARK: - Empty
 
     private var emptyCard: some View {
-        VStack(spacing: FMSpacing.md) {
-            Image(systemName: "megaphone")
-                .font(.system(size: 40, weight: .medium))
-                .foregroundStyle(FMColors.brandInk)
-                .frame(width: 72, height: 72)
-                .background(FMColors.accent.opacity(0.12), in: Circle())
-
-            VStack(spacing: FMSpacing.xs) {
-                Text("아직 모집 글이 없어요")
-                    .font(.headline)
-                    .foregroundStyle(FMColors.label)
-
-                Text("첫 번째로 스터디원을 모집해보세요.")
-                    .font(.subheadline)
-                    .foregroundStyle(FMColors.secondaryLabel)
-                    .multilineTextAlignment(.center)
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, FMSpacing.xxl)
-        .padding(.horizontal, FMSpacing.lg)
-        .background(
-            FMColors.background,
-            in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
-        )
-        .overlay {
-            RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
-                .stroke(FMColors.accent.opacity(0.2), lineWidth: 1)
+        FMCard(style: .feed, padding: 0) {
+            FMEmptyState(
+                systemImage: "megaphone",
+                title: "아직 모집 글이 없어요",
+                description: "첫 번째로 스터디원을 모집해보세요.",
+                layout: .compact
+            )
         }
     }
 }
@@ -298,63 +281,58 @@ struct RecruitPostRow: View {
     let post: RecruitPost
 
     var body: some View {
-        VStack(alignment: .leading, spacing: FMSpacing.sm) {
-            HStack(spacing: FMSpacing.xs) {
-                statusBadge
+        FMCard(
+            style: .feed,
+            background: post.isRecruiting() ? FMColors.background : FMColors.secondaryBackground,
+            border: post.isRecruiting() ? FMColors.accent.opacity(0.2) : FMColors.border
+        ) {
+            VStack(alignment: .leading, spacing: FMSpacing.sm) {
+                HStack(spacing: FMSpacing.xs) {
+                    statusBadge
 
-                Text(post.field.displayText)
-                    .font(FMTypography.caption1)
-                    .foregroundStyle(FMColors.brandInk)
-                    .padding(.horizontal, FMSpacing.xs)
-                    .padding(.vertical, FMSpacing.xxs)
-                    .background(FMColors.accent.opacity(0.12), in: Capsule())
+                    Text(post.field.displayText)
+                        .font(FMTypography.caption1)
+                        .foregroundStyle(FMColors.brandInk)
+                        .padding(.horizontal, FMSpacing.xs)
+                        .padding(.vertical, FMSpacing.xxs)
+                        .background(FMColors.accent.opacity(0.12), in: Capsule())
 
-                Spacer(minLength: 0)
+                    Spacer(minLength: 0)
 
-                Text(post.createdAt.relativeString)
-                    .font(FMTypography.feedMeta)
-                    .foregroundStyle(FMColors.secondaryLabel)
-            }
-
-            Text(post.title)
-                .font(FMTypography.headline)
-                .foregroundStyle(FMColors.label)
-                .lineLimit(2)
-                .multilineTextAlignment(.leading)
-
-            HStack(spacing: FMSpacing.sm) {
-                Label(meetingText, systemImage: "mappin.and.ellipse")
-                Label("\(post.maxMembers)명", systemImage: "person.2")
-                Label("~\(post.deadline.koreanFormatted)", systemImage: "calendar")
-            }
-            .font(FMTypography.feedMeta)
-            .foregroundStyle(FMColors.secondaryLabel)
-
-            HStack(spacing: FMSpacing.xs) {
-                Text(post.authorName)
-                    .font(FMTypography.feedMeta)
-                    .foregroundStyle(FMColors.secondaryLabel)
-
-                Spacer(minLength: 0)
-
-                if post.commentCount > 0 {
-                    Label("\(post.commentCount)", systemImage: "bubble.left")
+                    Text(post.createdAt.relativeString)
                         .font(FMTypography.feedMeta)
                         .foregroundStyle(FMColors.secondaryLabel)
                 }
+
+                Text(post.title)
+                    .font(FMTypography.headline)
+                    .foregroundStyle(FMColors.label)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+
+                HStack(spacing: FMSpacing.sm) {
+                    Label(meetingText, systemImage: "mappin.and.ellipse")
+                    Label("\(post.maxMembers)명", systemImage: "person.2")
+                    Label("~\(post.deadline.koreanFormatted)", systemImage: "calendar")
+                }
+                .font(FMTypography.feedMeta)
+                .foregroundStyle(FMColors.secondaryLabel)
+
+                HStack(spacing: FMSpacing.xs) {
+                    Text(post.authorName)
+                        .font(FMTypography.feedMeta)
+                        .foregroundStyle(FMColors.secondaryLabel)
+
+                    Spacer(minLength: 0)
+
+                    if post.commentCount > 0 {
+                        Label("\(post.commentCount)", systemImage: "bubble.left")
+                            .font(FMTypography.feedMeta)
+                            .foregroundStyle(FMColors.secondaryLabel)
+                    }
+                }
             }
         }
-        .padding(FMSpacing.lg)
-        .background(post.isRecruiting() ? FMColors.background : FMColors.secondaryBackground)
-        .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
-                .stroke(
-                    post.isRecruiting() ? FMColors.accent.opacity(0.2) : FMColors.border,
-                    lineWidth: 1
-                )
-        }
-        .shadow(color: FMColors.brandInk.opacity(0.07), radius: 14, y: 7)
         .accessibilityElement(children: .combine)
         // VoiceOver: 모집 상태 → 제목 → 진행 방식 → 지역 → 인원 → 마감일 순
         .accessibilityLabel(

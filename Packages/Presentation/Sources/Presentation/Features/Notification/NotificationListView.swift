@@ -69,6 +69,8 @@ public struct NotificationListView: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(FMColors.canvas)
         .navigationTitle("알림")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -82,6 +84,7 @@ public struct NotificationListView: View {
             }
         }
         .onAppear { store.send(.onAppear) }
+        .fmSheetStyle()
     }
 }
 
@@ -120,7 +123,7 @@ private struct NotificationRow: View {
             // Unread indicator
             if !notification.isRead {
                 Circle()
-                    .fill(FMColors.accent)
+                    .fill(FMColors.highlight)
                     .frame(width: 8, height: 8)
                     .accessibilityLabel("읽지 않음")
             }

@@ -23,7 +23,7 @@ public struct SubscriptionView: View {
             .padding(.top, FMSpacing.sm)
             .padding(.bottom, FMSpacing.xxxl)
         }
-        .background(FMColors.softCanvas)
+        .background(FMColors.canvas)
         .navigationTitle("구독 관리")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -32,6 +32,7 @@ public struct SubscriptionView: View {
             }
         }
         .onAppear { store.send(.onAppear) }
+        .fmSheetStyle()
     }
 
     // MARK: - Current Plan
@@ -154,7 +155,7 @@ public struct SubscriptionView: View {
             RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
                 .stroke(FMColors.accent.opacity(0.2), lineWidth: 1)
         }
-        .shadow(color: FMColors.brandInk.opacity(0.06), radius: 12, y: 6)
+        .shadow(color: FMShadow.sectionColor, radius: FMShadow.sectionRadius, y: FMShadow.sectionY)
     }
 
     private func comparisonRow(feature: String, free: String, premium: String, icon: String) -> some View {

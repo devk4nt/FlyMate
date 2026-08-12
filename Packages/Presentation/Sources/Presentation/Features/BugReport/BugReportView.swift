@@ -115,7 +115,7 @@ struct BugReportView: View {
                 }
             }
             .scrollContentBackground(.hidden)
-            .background(FMColors.softCanvas)
+            .background(FMColors.canvas)
             .scrollDismissesKeyboard(.interactively)
             .dismissKeyboardOnTap()
             .navigationTitle("버그 신고")
@@ -129,10 +129,10 @@ struct BugReportView: View {
                 FMButton(title: "메일로 신고하기", isEnabled: canSubmit) {
                     prepareMail()
                 }
-                .padding(FMSpacing.md)
-                .background(.ultraThinMaterial)
+                .fmSheetBottomBar()
             }
         }
+        .fmSheetStyle()
         .presentationDetents([.large])
         .interactiveDismissDisabled(!detail.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         .sheet(item: $mailDraft) { mailDraft in

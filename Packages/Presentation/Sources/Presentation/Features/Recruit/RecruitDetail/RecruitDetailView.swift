@@ -6,6 +6,7 @@ import Domain
 public struct RecruitDetailView: View {
     @Bindable var store: StoreOf<RecruitDetailFeature>
     @FocusState private var isCommentInputFocused: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private static let commentBottomAnchor = "recruit-comment-bottom-anchor"
 
@@ -27,6 +28,8 @@ public struct RecruitDetailView: View {
                         .frame(height: 1)
                         .id(Self.commentBottomAnchor)
                 }
+                .frame(maxWidth: FMSizing.ContentWidth.form)
+                .frame(maxWidth: .infinity)
                 .padding(.horizontal, FMSpacing.md)
                 .padding(.bottom, FMSpacing.xxl)
             }
@@ -34,7 +37,7 @@ public struct RecruitDetailView: View {
             .dismissKeyboardOnTap()
             .onChange(of: store.scrollToCommentID) { _, commentID in
                 guard let commentID else { return }
-                withAnimation {
+                withAnimation(reduceMotion ? nil : .default) {
                     proxy.scrollTo(commentID, anchor: .bottom)
                 }
             }
@@ -44,7 +47,7 @@ public struct RecruitDetailView: View {
                 // Wait for the keyboard-safe-area update before moving the content.
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     guard isCommentInputFocused else { return }
-                    withAnimation(.easeOut(duration: 0.25)) {
+                    withAnimation(reduceMotion ? nil : .easeOut(duration: 0.25)) {
                         proxy.scrollTo(Self.commentBottomAnchor, anchor: .bottom)
                     }
                 }
@@ -156,7 +159,7 @@ public struct RecruitDetailView: View {
             RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
                 .stroke(FMColors.accent.opacity(0.2), lineWidth: 1)
         }
-        .shadow(color: FMColors.brandInk.opacity(0.07), radius: 14, y: 7)
+        .shadow(color: FMShadow.cardColor, radius: FMShadow.cardRadius, y: FMShadow.cardY)
         .padding(.top, FMSpacing.xs)
         .accessibilityElement(children: .combine)
     }
@@ -489,29 +492,31 @@ public struct RecruitDetailView: View {
 
     private var reopenSheet: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: FMSpacing.lg) {
-                Text("새로운 모집 마감일을 설정해주세요.")
-                    .font(FMTypography.body)
-                    .foregroundStyle(FMColors.secondaryLabel)
+            ZStack {
+                FMColors.canvas.ignoresSafeArea()
 
-                DatePicker(
-                    "모집 마감일",
-                    selection: Binding(
-                        get: { store.reopenDeadline },
-                        set: { store.send(.reopenDeadlineChanged($0)) }
-                    ),
-                    in: Date()...,
-                    displayedComponents: .date
-                )
-                .datePickerStyle(.graphical)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: FMSpacing.md) {
+                        Text("새로운 모집 마감일을 설정해주세요.")
+                            .font(FMTypography.callout)
+                            .foregroundStyle(FMColors.secondaryLabel)
 
-                FMButton(title: "모집 재개") {
-                    store.send(.reopenConfirmed)
+                        FMCard {
+                            DatePicker(
+                                "모집 마감일",
+                                selection: Binding(
+                                    get: { store.reopenDeadline },
+                                    set: { store.send(.reopenDeadlineChanged($0)) }
+                                ),
+                                in: Date()...,
+                                displayedComponents: .date
+                            )
+                            .datePickerStyle(.graphical)
+                        }
+                    }
+                    .padding(FMSpacing.md)
                 }
-
-                Spacer()
             }
-            .padding(FMSpacing.md)
             .navigationTitle("모집 재개")
             .navigationBarTitleDisplayMode(.inline)
             .environment(\.locale, Locale(identifier: "ko_KR"))
@@ -522,7 +527,14 @@ public struct RecruitDetailView: View {
                     }
                 }
             }
+            .safeAreaInset(edge: .bottom) {
+                FMButton(title: "모집 재개") {
+                    store.send(.reopenConfirmed)
+                }
+                .fmSheetBottomBar()
+            }
         }
+        .fmSheetStyle()
         .presentationDetents([.medium, .large])
     }
 
@@ -547,6 +559,6 @@ public struct RecruitDetailView: View {
             RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
                 .stroke(FMColors.accent.opacity(0.16), lineWidth: 1)
         }
-        .shadow(color: FMColors.brandInk.opacity(0.05), radius: 12, y: 6)
+        .shadow(color: FMShadow.sectionColor, radius: FMShadow.sectionRadius, y: FMShadow.sectionY)
     }
 }

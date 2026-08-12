@@ -6,6 +6,11 @@ public enum FMSizing {
     /// 카드 내 콘텐츠 영역 표준 높이
     public static let cardStandard: CGFloat = 160
 
+    public enum ContentWidth {
+        public static let regular: CGFloat = 760
+        public static let form: CGFloat = 640
+    }
+
     /// SF Symbol 아이콘 크기 (Font 포인트 단위)
     public enum IconSize {
         /// 메타 정보 인라인 아이콘 (답글 화살표, 경고 등)
@@ -21,6 +26,13 @@ public enum FMSizing {
         /// 일러스트형 아이콘 (빈 화면, 안내 화면)
         public static let hero: CGFloat = 48
     }
+
+    public enum IconContainer {
+        public static let sm: CGFloat = 36
+        public static let md: CGFloat = 40
+        public static let lg: CGFloat = 52
+        public static let hero: CGFloat = 64
+    }
 }
 
 public enum FMOpacity {
@@ -30,5 +42,21 @@ public enum FMOpacity {
 public enum FMShadow {
     public static let cardColor = Color.black.opacity(0.07)
     public static let cardRadius: CGFloat = 14
-    public static let cardY: CGFloat = 6
+    public static let cardY: CGFloat = 7
+
+    public static let heroColor = FMColors.brandInk.opacity(0.2)
+    public static let heroRadius: CGFloat = 22
+    public static let heroY: CGFloat = 12
+
+    public static let sectionColor = FMColors.brandInk.opacity(0.06)
+    public static let sectionRadius: CGFloat = 12
+    public static let sectionY: CGFloat = 6
+
+    public static let floatingColor = FMColors.brandInk.opacity(0.14)
+    public static let floatingRadius: CGFloat = 7
+    public static let floatingY: CGFloat = 4
+
+    public static let avatarColor = FMColors.brandInk.opacity(0.2)
+    public static let avatarRadius: CGFloat = 12
+    public static let avatarY: CGFloat = 6
 }

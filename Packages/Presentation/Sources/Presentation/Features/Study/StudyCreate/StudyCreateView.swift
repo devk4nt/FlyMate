@@ -44,11 +44,9 @@ public struct StudyCreateView: View {
             ) {
                 store.send(.submitTapped)
             }
-            .padding(.horizontal, FMSpacing.md)
-            .padding(.top, FMSpacing.sm)
-            .padding(.bottom, FMSpacing.xs)
-            .background(.ultraThinMaterial)
+            .fmSheetBottomBar()
         }
+        .fmSheetStyle()
         .alert(
             "오류",
             isPresented: Binding(
@@ -126,12 +124,7 @@ public struct StudyCreateView: View {
                         .frame(minHeight: 112)
                         .padding(FMSpacing.xs)
                 }
-                .background(FMColors.secondaryBackground)
-                .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous)
-                        .stroke(FMColors.border.opacity(0.45), lineWidth: 1)
-                }
+                .fmInputSurface()
             }
         }
     }
@@ -141,10 +134,10 @@ public struct StudyCreateView: View {
             HStack(spacing: FMSpacing.md) {
                 ZStack {
                     Circle()
-                        .fill(FMColors.primary.opacity(0.1))
+                        .fill(FMColors.iconAccent.opacity(0.1))
 
                     Image(systemName: "person.2.fill")
-                        .foregroundStyle(FMColors.primary)
+                        .foregroundStyle(FMColors.iconAccent)
                 }
                 .frame(width: 46, height: 46)
 
@@ -160,7 +153,7 @@ public struct StudyCreateView: View {
 
                 Text("\(store.maxMembers)명")
                     .font(FMTypography.title3)
-                    .foregroundStyle(FMColors.primary)
+                    .foregroundStyle(FMColors.badgeForeground)
                     .monospacedDigit()
                     .frame(minWidth: 38)
 
@@ -180,33 +173,27 @@ public struct StudyCreateView: View {
         step: String,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        VStack(alignment: .leading, spacing: FMSpacing.md) {
-            HStack {
-                Text(title)
-                    .font(FMTypography.headline)
-                    .foregroundStyle(FMColors.label)
+        FMCard {
+            VStack(alignment: .leading, spacing: FMSpacing.md) {
+                HStack {
+                    Text(title)
+                        .font(FMTypography.headline)
+                        .foregroundStyle(FMColors.label)
 
-                Spacer()
+                    Spacer()
 
-                Text(step)
-                    .font(FMTypography.feedMetaEmphasis)
-                    .foregroundStyle(FMColors.primary)
-                    .padding(.horizontal, FMSpacing.xs)
-                    .padding(.vertical, FMSpacing.xxs)
-                    .background(FMColors.primary.opacity(0.1))
-                    .clipShape(Capsule())
+                    Text(step)
+                        .font(FMTypography.feedMetaEmphasis)
+                        .foregroundStyle(FMColors.badgeForeground)
+                        .padding(.horizontal, FMSpacing.xs)
+                        .padding(.vertical, FMSpacing.xxs)
+                        .background(FMColors.badgeForeground.opacity(0.1))
+                        .clipShape(Capsule())
+                }
+
+                content()
             }
-
-            content()
         }
-        .padding(FMSpacing.md)
-        .background(FMColors.elevatedBackground)
-        .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous)
-                .stroke(FMColors.border.opacity(0.2), lineWidth: 0.5)
-        }
-        .shadow(color: FMShadow.cardColor, radius: 10, y: 4)
     }
 }
 

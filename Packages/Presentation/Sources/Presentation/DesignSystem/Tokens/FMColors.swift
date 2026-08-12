@@ -24,6 +24,8 @@ public enum FMColors {
     public static let onAccent = Color.white
     public static let highlight = blushCoral
     public static let subtleAccentSurface = iceBlue
+    public static let launchBackground = primary
+    public static let mediaBadgeForeground = deepIndigo
     public static let success = Color(red: 0.12, green: 0.67, blue: 0.42)
     public static let warning = Color(red: 0.96, green: 0.58, blue: 0.12)
 
@@ -70,6 +72,12 @@ public enum FMColors {
     public static let destructiveSurface = Color(red: 0.99, green: 0.93, blue: 0.94)
     public static let destructiveBorder = Color(red: 0.95, green: 0.72, blue: 0.75)
     #endif
+
+    // Semantic roles for non-button interactive and decorative content.
+    public static let iconAccent = actionForeground
+    public static let selection = actionForeground
+    public static let badgeForeground = actionForeground
+    public static let decorativeBrand = brandInk
 
     // Adaptive brand surfaces keep highlighted content readable in both modes.
     #if canImport(UIKit)

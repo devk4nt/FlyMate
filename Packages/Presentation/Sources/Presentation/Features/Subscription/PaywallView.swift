@@ -95,6 +95,7 @@ public struct PaywallView: View {
             }
         }
         .padding(FMSpacing.lg)
+        .fmSheetStyle()
         .onAppear { store.send(.onAppear) }
     }
 

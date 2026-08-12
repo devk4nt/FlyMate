@@ -211,10 +211,10 @@ private struct OnboardingArtwork: View {
                 .fill(FMColors.primary.opacity(0.12))
                 .frame(width: 230, height: 230)
 
-            RoundedRectangle(cornerRadius: 36, style: .continuous)
+            RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.artwork, style: .continuous)
                 .fill(FMColors.elevatedBackground.opacity(0.96))
                 .overlay {
-                    RoundedRectangle(cornerRadius: 36, style: .continuous)
+                    RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.artwork, style: .continuous)
                         .stroke(.white.opacity(0.55), lineWidth: 1)
                 }
                 .shadow(color: FMShadow.cardColor, radius: 24, y: 12)

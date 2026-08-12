@@ -60,7 +60,7 @@ public struct SettingsView: View {
                             showsChevron: false
                         )
                     }
-                    .tint(FMColors.brandInk)
+                    .tint(FMColors.actionForeground)
                 }
                 .settingsSectionStyle()
 
@@ -120,7 +120,7 @@ public struct SettingsView: View {
                         Spacer()
 
                         Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "-")
-                            .font(.subheadline.weight(.semibold))
+                            .font(FMTypography.authorName)
                             .foregroundStyle(FMColors.secondaryLabel)
                     }
                 }
@@ -130,7 +130,7 @@ public struct SettingsView: View {
             .listSectionSpacing(FMSpacing.lg)
             .scrollContentBackground(.hidden)
             .background(FMColors.softCanvas)
-            .tint(FMColors.brandInk)
+            .tint(FMColors.actionForeground)
             .navigationTitle("설정")
             .navigationBarTitleDisplayMode(.inline)
         }
@@ -144,6 +144,7 @@ public struct SettingsView: View {
             NavigationStack {
                 ProfileEditView(store: editStore)
             }
+            .interactiveDismissDisabled(editStore.hasChanges)
         }
         .sheet(item: $store.scope(state: \.destination?.studyManagement, action: \.destination.studyManagement)) { mgmtStore in
             NavigationStack {
@@ -180,7 +181,7 @@ public struct SettingsView: View {
 
                 VStack(alignment: .leading, spacing: FMSpacing.xxs) {
                     Text("MY FLYMATE")
-                        .font(.caption2.weight(.bold))
+                        .font(FMTypography.eyebrow)
                         .tracking(0.6)
                         .foregroundStyle(FMColors.onBrand)
 
@@ -189,7 +190,7 @@ public struct SettingsView: View {
                         .foregroundStyle(.white)
 
                     Text(store.currentUser.displayEmail)
-                        .font(.caption)
+                        .font(FMTypography.caption1)
                         .foregroundStyle(FMColors.onBrand)
                         .lineLimit(1)
                 }
@@ -197,7 +198,7 @@ public struct SettingsView: View {
                 Spacer(minLength: 0)
 
                 Image(systemName: "pencil")
-                    .font(.caption.weight(.bold))
+                    .font(FMTypography.badgeStrong)
                     .foregroundStyle(.white)
                     .frame(width: 34, height: 34)
                     .background(.white.opacity(0.16), in: Circle())
@@ -226,18 +227,18 @@ private struct SettingsActionLabel: View {
     var body: some View {
         HStack(spacing: FMSpacing.sm) {
             Image(systemName: systemImage)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.system(size: FMSizing.IconSize.sm, weight: .semibold))
                 .foregroundStyle(tint)
                 .frame(width: 36, height: 36)
                 .background(tint.opacity(0.1), in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm, style: .continuous))
 
             VStack(alignment: .leading, spacing: FMSpacing.xxxs) {
                 Text(title)
-                    .font(.subheadline.weight(.semibold))
+                    .font(FMTypography.authorName)
                     .foregroundStyle(isDestructive ? FMColors.destructive : FMColors.label)
 
                 Text(description)
-                    .font(.caption)
+                    .font(FMTypography.caption1)
                     .foregroundStyle(FMColors.secondaryLabel)
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
@@ -247,7 +248,7 @@ private struct SettingsActionLabel: View {
                 Spacer(minLength: 0)
 
                 Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
+                    .font(FMTypography.feedMetaEmphasis)
                     .foregroundStyle(FMColors.secondaryLabel.opacity(0.7))
             }
         }

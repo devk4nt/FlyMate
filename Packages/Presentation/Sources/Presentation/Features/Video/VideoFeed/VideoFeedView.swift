@@ -25,27 +25,24 @@ public struct VideoFeedView: View {
 
     // MARK: - Feedback Queue
 
+    // 부모(FeedbackManagementView)의 NavigationStack에 destination을 붙인다
     private var queueNavigation: some View {
-        NavigationStack {
-            queueContent
-                .navigationTitle("피드")
-                .navigationBarTitleDisplayMode(.inline)
-                .navigationDestination(
-                    item: Binding(
-                        get: { store.presentedVideoID },
-                        set: { newValue in
-                            if newValue == nil {
-                                store.send(.playerDismissed)
-                            }
+        queueContent
+            .navigationDestination(
+                item: Binding(
+                    get: { store.presentedVideoID },
+                    set: { newValue in
+                        if newValue == nil {
+                            store.send(.playerDismissed)
                         }
-                    )
-                ) { _ in
-                    immersiveFeed
-                        .toolbar(.hidden, for: .tabBar)
-                        .toolbarBackground(.hidden, for: .navigationBar)
-                        .toolbarColorScheme(.dark, for: .navigationBar)
-                }
-        }
+                    }
+                )
+            ) { _ in
+                immersiveFeed
+                    .toolbar(.hidden, for: .tabBar)
+                    .toolbarBackground(.hidden, for: .navigationBar)
+                    .toolbarColorScheme(.dark, for: .navigationBar)
+            }
     }
 
     @ViewBuilder
@@ -73,8 +70,6 @@ public struct VideoFeedView: View {
     private var loadingQueue: some View {
         ScrollView {
             LazyVStack(spacing: FMSpacing.md) {
-                queueHeader(count: nil)
-
                 ForEach(0..<3, id: \.self) { _ in
                     FMSkeletonView.card
                 }
@@ -88,9 +83,6 @@ public struct VideoFeedView: View {
     private func loadedQueue(_ videos: [Video]) -> some View {
         ScrollView {
             LazyVStack(spacing: 0) {
-                queueHeader(count: videos.count)
-                    .padding(.bottom, FMSpacing.sm)
-
                 ForEach(videos) { video in
                     Button {
                         store.send(.videoTapped(video.id))
@@ -118,46 +110,14 @@ public struct VideoFeedView: View {
 
     private var emptyQueue: some View {
         ScrollView {
-            VStack(spacing: FMSpacing.md) {
-                queueHeader(count: 0)
-
-                VStack(spacing: FMSpacing.md) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: FMSizing.IconSize.hero, weight: .medium))
-                        .foregroundStyle(FMColors.success)
-                        .frame(width: 72, height: 72)
-                        .background(FMColors.success.opacity(0.12), in: Circle())
-
-                    VStack(spacing: FMSpacing.xs) {
-                        Text("모든 피드백을 완료했어요")
-                            .font(.headline)
-                            .foregroundStyle(FMColors.label)
-
-                        Text("스터디원이 새 영상을 올리면 여기에 표시됩니다.")
-                            .font(.subheadline)
-                            .foregroundStyle(FMColors.secondaryLabel)
-                            .multilineTextAlignment(.center)
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, FMSpacing.lg)
-                .padding(.vertical, FMSpacing.xxl)
-                .background(
-                    FMColors.background,
-                    in: RoundedRectangle(
-                        cornerRadius: FMSpacing.CornerRadius.xl,
-                        style: .continuous
-                    )
-                )
-                .overlay {
-                    RoundedRectangle(
-                        cornerRadius: FMSpacing.CornerRadius.xl,
-                        style: .continuous
-                    )
-                    .stroke(FMColors.accent.opacity(0.2), lineWidth: 1)
-                }
-                .padding(.horizontal, FMSpacing.md)
-            }
+            FMEmptyState(
+                systemImage: "checkmark.circle.fill",
+                title: "모든 피드백을 완료했어요",
+                description: "스터디원이 새 영상을 올리면 여기에 표시됩니다.",
+                layout: .card,
+                tint: FMColors.success
+            )
+            .padding(.horizontal, FMSpacing.md)
             .padding(.top, FMSpacing.xs)
             .padding(.bottom, FMSpacing.xxxl)
         }
@@ -169,8 +129,6 @@ public struct VideoFeedView: View {
     private func failedQueue(_ error: AppError) -> some View {
         ScrollView {
             VStack(spacing: FMSpacing.md) {
-                queueHeader(count: nil)
-
                 FMErrorView(error: error) {
                     store.send(.retryTapped)
                 }
@@ -194,48 +152,6 @@ public struct VideoFeedView: View {
             .padding(.top, FMSpacing.xs)
             .padding(.bottom, FMSpacing.xxxl)
         }
-    }
-
-    private func queueHeader(count: Int?) -> some View {
-        HStack(spacing: FMSpacing.sm) {
-            Image(systemName: "play.rectangle.on.rectangle.fill")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: 40, height: 40)
-                .background(FMColors.brandGradient, in: Circle())
-                .shadow(color: FMColors.brandInk.opacity(0.14), radius: 7, y: 4)
-
-            VStack(alignment: .leading, spacing: FMSpacing.xxs) {
-                Text("PRACTICE TOGETHER")
-                    .font(.caption2.weight(.bold))
-                    .tracking(0.5)
-                    .foregroundStyle(FMColors.brandInk)
-
-                Text(count.map { "피드백할 영상 \($0)개" } ?? "피드백할 영상을 확인해요")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(FMColors.label)
-            }
-
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, FMSpacing.md)
-        .padding(.vertical, FMSpacing.sm)
-        .background(
-            FMColors.background,
-            in: RoundedRectangle(
-                cornerRadius: FMSpacing.CornerRadius.lg,
-                style: .continuous
-            )
-        )
-        .overlay {
-            RoundedRectangle(
-                cornerRadius: FMSpacing.CornerRadius.lg,
-                style: .continuous
-            )
-            .stroke(FMColors.accent.opacity(0.2), lineWidth: 1)
-        }
-        .padding(.horizontal, FMSpacing.md)
-        .accessibilityElement(children: .combine)
     }
 
     // MARK: - Immersive Player

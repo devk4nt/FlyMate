@@ -26,8 +26,19 @@ public struct FeedbackListView: View {
 
             case .loaded(let feedbacks):
                 if feedbacks.isEmpty {
-                    emptyFeedbackCard
-                        .padding(.horizontal, FMSpacing.md)
+                    FMEmptyState(
+                        systemImage: store.listType == .received
+                            ? "bubble.left.and.bubble.right.fill"
+                            : "paperplane.fill",
+                        title: store.listType == .received
+                            ? "아직 받은 피드백이 없어요"
+                            : "아직 작성한 피드백이 없어요",
+                        description: store.listType == .received
+                            ? "영상을 올리면 멤버들의 응원과 조언을 받을 수 있어요."
+                            : "다른 멤버의 영상에서 따뜻한 첫 피드백을 남겨보세요.",
+                        layout: .card
+                    )
+                    .padding(.horizontal, FMSpacing.md)
 
                 } else {
                     ScrollView {
@@ -92,41 +103,6 @@ public struct FeedbackListView: View {
         )
     }
 
-    private var emptyFeedbackCard: some View {
-        VStack(spacing: FMSpacing.md) {
-            Image(systemName: store.listType == .received
-                  ? "bubble.left.and.bubble.right.fill"
-                  : "paperplane.fill")
-                .font(.system(size: FMSizing.IconSize.hero, weight: .medium))
-                .foregroundStyle(FMColors.brandInk)
-                .frame(width: 72, height: 72)
-                .background(FMColors.accent.opacity(0.12), in: Circle())
-
-            VStack(spacing: FMSpacing.xs) {
-                Text(store.listType == .received
-                     ? "아직 받은 피드백이 없어요"
-                     : "아직 작성한 피드백이 없어요")
-                    .font(.headline)
-                    .foregroundStyle(FMColors.label)
-
-                Text(store.listType == .received
-                     ? "영상을 올리면 멤버들의 응원과 조언을 받을 수 있어요."
-                     : "다른 멤버의 영상에서 따뜻한 첫 피드백을 남겨보세요.")
-                    .font(.subheadline)
-                    .foregroundStyle(FMColors.secondaryLabel)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.horizontal, FMSpacing.lg)
-        .padding(.vertical, FMSpacing.xxl)
-        .background(FMColors.background, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
-                .stroke(FMColors.accent.opacity(0.2), lineWidth: 1)
-        }
-    }
 }
 
 // MARK: - Feedback Management Row
@@ -171,7 +147,8 @@ struct FeedbackManagementRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: FMSpacing.md) {
+        FMCard(style: .feed) {
+            VStack(alignment: .leading, spacing: FMSpacing.md) {
             HStack(spacing: FMSpacing.sm) {
                 FMProfileImage(
                     url: feedback.authorProfileURL,
@@ -258,20 +235,13 @@ struct FeedbackManagementRow: View {
                 Spacer(minLength: 0)
 
                 Image(systemName: "arrow.up.right")
-                    .font(.caption.weight(.bold))
+                    .font(FMTypography.badgeStrong)
                     .foregroundStyle(FMColors.brandInk)
                     .frame(width: 30, height: 30)
                     .background(FMColors.accent.opacity(0.1), in: Circle())
             }
+            }
         }
-        .padding(FMSpacing.lg)
-        .background(FMColors.background)
-        .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
-                .stroke(FMColors.accent.opacity(0.2), lineWidth: 1)
-        }
-        .shadow(color: FMColors.brandInk.opacity(0.07), radius: 14, y: 7)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(feedback.authorName)의 피드백, \(feedback.content), 영상 \(feedback.timestampSeconds.minuteSecondFormatted), 답글 \(feedback.commentCount)개")
         .accessibilityHint("영상의 해당 시점에서 피드백을 확인하려면 이중 탭하세요")

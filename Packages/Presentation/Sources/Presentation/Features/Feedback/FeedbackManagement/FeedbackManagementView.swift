@@ -1,5 +1,6 @@
 import SwiftUI
 import ComposableArchitecture
+import Core
 
 public struct FeedbackManagementView: View {
     @Bindable var store: StoreOf<FeedbackManagementFeature>
@@ -20,6 +21,10 @@ public struct FeedbackManagementView: View {
                     .padding(.vertical, FMSpacing.sm)
 
                 switch store.selectedSegment {
+                case .pending:
+                    VideoFeedView(
+                        store: store.scope(state: \.pending, action: \.pending)
+                    )
                 case .received:
                     FeedbackListView(
                         store: store.scope(state: \.received, action: \.received)
@@ -37,35 +42,29 @@ public struct FeedbackManagementView: View {
     }
 
     private var feedbackHeader: some View {
-        HStack(spacing: FMSpacing.sm) {
-            Image(systemName: "bubble.left.and.bubble.right.fill")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: 40, height: 40)
-                .background(FMColors.brandGradient, in: Circle())
-                .shadow(color: FMColors.brandInk.opacity(0.14), radius: 7, y: 4)
+        FMCard {
+            HStack(spacing: FMSpacing.sm) {
+                Image(systemName: "bubble.left.and.bubble.right.fill")
+                    .font(.system(size: FMSizing.IconSize.sm, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: FMSizing.IconContainer.md, height: FMSizing.IconContainer.md)
+                    .background(FMColors.brandGradient, in: Circle())
 
-            VStack(alignment: .leading, spacing: FMSpacing.xxs) {
-                Text("GROW TOGETHER")
-                    .font(.caption2.weight(.bold))
-                    .tracking(0.5)
-                    .foregroundStyle(FMColors.brandInk)
+                VStack(alignment: .leading, spacing: FMSpacing.xxs) {
+                    Text("GROW TOGETHER")
+                        .font(FMTypography.eyebrow)
+                        .tracking(0.5)
+                        .foregroundStyle(FMColors.decorativeBrand)
 
-                Text("한마디가 다음 영상을 바꿔요")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(FMColors.label)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.88)
+                    Text("한마디가 다음 영상을 바꿔요")
+                        .font(FMTypography.authorName)
+                        .foregroundStyle(FMColors.label)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.88)
+                }
+
+                Spacer(minLength: 0)
             }
-
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, FMSpacing.md)
-        .padding(.vertical, FMSpacing.sm)
-        .background(FMColors.background, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous)
-                .stroke(FMColors.accent.opacity(0.2), lineWidth: 1)
         }
         .accessibilityElement(children: .combine)
     }
@@ -76,23 +75,30 @@ public struct FeedbackManagementView: View {
                 Button {
                     store.send(.segmentChanged(segment), animation: .snappy)
                 } label: {
-                    Label(segment.rawValue, systemImage: segmentIcon(for: segment))
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(
-                            store.selectedSegment == segment
-                                ? FMColors.brandInk
-                                : FMColors.secondaryLabel
-                        )
-                        .frame(maxWidth: .infinity)
-                        .frame(minHeight: 38)
-                        .background {
-                            if store.selectedSegment == segment {
-                                Capsule()
-                                    .fill(FMColors.background)
-                                    .shadow(color: FMColors.brandInk.opacity(0.1), radius: 8, y: 3)
-                            }
+                    HStack(spacing: FMSpacing.xxs) {
+                        Label(segment.rawValue, systemImage: segmentIcon(for: segment))
+                            .font(FMTypography.authorName)
+                            .foregroundStyle(
+                                store.selectedSegment == segment
+                                    ? FMColors.selection
+                                    : FMColors.secondaryLabel
+                            )
+
+                        if segment == .pending {
+                            FMBadge(count: pendingCount)
+                                .accessibilityLabel("피드백할 영상 \(pendingCount)개")
                         }
-                        .contentShape(Capsule())
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: 38)
+                    .background {
+                        if store.selectedSegment == segment {
+                            Capsule()
+                                .fill(FMColors.background)
+                                .shadow(color: FMColors.brandInk.opacity(0.1), radius: 8, y: 3)
+                        }
+                    }
+                    .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(store.selectedSegment == segment ? .isSelected : [])
@@ -102,8 +108,15 @@ public struct FeedbackManagementView: View {
         .background(FMColors.accent.opacity(0.1), in: Capsule())
     }
 
+    private var pendingCount: Int {
+        guard case .loaded(let videos) = store.pending.loadingState else { return 0 }
+        return videos.count
+    }
+
     private func segmentIcon(for segment: FeedbackManagementFeature.State.Segment) -> String {
         switch segment {
+        case .pending:
+            "play.rectangle.on.rectangle.fill"
         case .received:
             "tray.and.arrow.down.fill"
         case .given:

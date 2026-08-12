@@ -26,6 +26,7 @@ public struct StudyNavigationView: View {
                     .toolbarColorScheme(.dark, for: .navigationBar)
             case .videoUpload(let uploadStore):
                 VideoUploadView(store: uploadStore)
+                    .toolbar(.hidden, for: .tabBar)
             case .memberManagement(let memberStore):
                 MemberManagementView(store: memberStore)
             case .joinRequestManagement(let requestStore):

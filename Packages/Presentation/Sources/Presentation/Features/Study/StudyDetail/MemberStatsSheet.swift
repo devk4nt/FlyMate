@@ -12,6 +12,7 @@ struct MemberStatsSheet: View {
                 .navigationTitle("활동 현황")
                 .navigationBarTitleDisplayMode(.inline)
         }
+        .fmSheetStyle()
         .presentationDetents([.medium])
         .onAppear {
             store.send(.onAppear)

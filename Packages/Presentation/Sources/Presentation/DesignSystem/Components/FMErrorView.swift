@@ -21,6 +21,8 @@ public struct FMErrorView: View {
             Image(systemName: iconName)
                 .font(.system(size: FMSizing.IconSize.hero))
                 .foregroundStyle(iconColor)
+                .frame(width: 80, height: 80)
+                .background(iconColor.opacity(0.12), in: Circle())
                 .accessibilityHidden(true)
 
             VStack(spacing: FMSpacing.xs) {

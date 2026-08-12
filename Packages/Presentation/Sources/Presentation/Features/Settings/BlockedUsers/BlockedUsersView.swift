@@ -41,7 +41,7 @@ public struct BlockedUsersView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(FMColors.softCanvas)
+        .background(FMColors.canvas)
         .navigationTitle("차단한 사용자")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { store.send(.onAppear) }
@@ -53,6 +53,7 @@ public struct BlockedUsersView: View {
             message: store.toastMessage,
             type: .info
         )
+        .fmSheetStyle()
     }
 }
 

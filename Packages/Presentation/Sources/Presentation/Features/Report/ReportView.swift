@@ -13,57 +13,69 @@ public struct ReportView: View {
 
     public var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
+            ZStack {
+                FMColors.canvas.ignoresSafeArea()
+
                 ScrollView {
-                    VStack(alignment: .leading, spacing: FMSpacing.lg) {
-                        // Header
-                        Text(reportTitle)
-                            .font(FMTypography.title3)
-                            .fontWeight(.bold)
-                            .padding(.top, FMSpacing.sm)
+                    VStack(alignment: .leading, spacing: FMSpacing.md) {
+                        HStack(spacing: FMSpacing.md) {
+                            Image(systemName: "exclamationmark.bubble.fill")
+                                .font(.system(size: 24, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .frame(width: 56, height: 56)
+                                .background(FMColors.destructive, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous))
 
-                        Text("신고 사유를 선택해 주세요.")
-                            .font(FMTypography.callout)
-                            .foregroundStyle(FMColors.secondaryLabel)
+                            VStack(alignment: .leading, spacing: FMSpacing.xxs) {
+                                Text(reportTitle)
+                                    .font(FMTypography.title2)
+                                    .foregroundStyle(FMColors.label)
 
-                        // Reason list
-                        VStack(spacing: FMSpacing.xs) {
-                            ForEach(ReportReason.allCases, id: \.self) { reason in
-                                ReportReasonRow(
-                                    reason: reason,
-                                    isSelected: store.selectedReason == reason
-                                ) {
-                                    store.send(.reasonSelected(reason))
+                                Text("신고 사유를 선택해 주세요.")
+                                    .font(FMTypography.callout)
+                                    .foregroundStyle(FMColors.secondaryLabel)
+                            }
+                        }
+                        .padding(.vertical, FMSpacing.sm)
+
+                        FMCard {
+                            VStack(alignment: .leading, spacing: FMSpacing.md) {
+                                Text("신고 사유")
+                                    .font(FMTypography.headline)
+
+                                VStack(spacing: FMSpacing.xs) {
+                                    ForEach(ReportReason.allCases, id: \.self) { reason in
+                                        ReportReasonRow(
+                                            reason: reason,
+                                            isSelected: store.selectedReason == reason
+                                        ) {
+                                            store.send(.reasonSelected(reason))
+                                        }
+                                    }
                                 }
                             }
                         }
 
-                        // Detail input
-                        VStack(alignment: .leading, spacing: FMSpacing.xs) {
-                            Text("상세 내용 (선택)")
-                                .font(FMTypography.caption1)
-                                .foregroundStyle(FMColors.secondaryLabel)
+                        FMCard {
+                            VStack(alignment: .leading, spacing: FMSpacing.xs) {
+                                Text("상세 내용 (선택)")
+                                    .font(FMTypography.headline)
 
-                            TextField("추가 설명을 입력해 주세요", text: $store.detail, axis: .vertical)
-                                .lineLimit(3...6)
-                                .textFieldStyle(.roundedBorder)
-                                .font(FMTypography.body)
+                                TextField("추가 설명을 입력해 주세요", text: $store.detail, axis: .vertical)
+                                    .lineLimit(3...6)
+                                    .font(FMTypography.body)
+                                    .padding(FMSpacing.sm)
+                                    .fmInputSurface()
+                            }
                         }
                     }
-                    .padding(FMSpacing.md)
+                    .padding(.horizontal, FMSpacing.md)
+                    .padding(.top, FMSpacing.xs)
+                    .padding(.bottom, FMSpacing.xxl)
                 }
-
-                // Submit button
-                FMButton(
-                    title: "신고하기",
-                    style: .destructive,
-                    isLoading: store.isSubmitting,
-                    isEnabled: store.canSubmit
-                ) {
-                    store.send(.submitTapped)
-                }
-                .padding(FMSpacing.md)
+                .scrollDismissesKeyboard(.interactively)
+                .dismissKeyboardOnTap()
             }
+            .navigationTitle("신고하기")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -72,7 +84,19 @@ public struct ReportView: View {
                     }
                 }
             }
+            .safeAreaInset(edge: .bottom) {
+                FMButton(
+                    title: "신고하기",
+                    style: .destructive,
+                    isLoading: store.isSubmitting,
+                    isEnabled: store.canSubmit
+                ) {
+                    store.send(.submitTapped)
+                }
+                .fmSheetBottomBar()
+            }
         }
+        .fmSheetStyle()
         .onAppear { store.send(.onAppear) }
         .presentationDetents([.medium, .large])
     }

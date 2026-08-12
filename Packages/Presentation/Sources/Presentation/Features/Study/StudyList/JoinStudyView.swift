@@ -10,14 +10,24 @@ public struct JoinStudyView: View {
     }
 
     public var body: some View {
-        VStack(spacing: FMSpacing.lg) {
-            if store.isRequestSent {
-                requestSentView
-            } else {
-                inputView
+        ZStack {
+            FMColors.canvas.ignoresSafeArea()
+
+            ScrollView {
+                VStack(spacing: FMSpacing.md) {
+                    if store.isRequestSent {
+                        requestSentView
+                    } else {
+                        introHeader
+                        inputView
+                    }
+                }
+                .padding(.horizontal, FMSpacing.md)
+                .padding(.top, FMSpacing.xs)
+                .padding(.bottom, FMSpacing.xxl)
             }
+            .scrollDismissesKeyboard(.interactively)
         }
-        .padding(FMSpacing.md)
         .dismissKeyboardOnTap()
         .navigationTitle("스터디 참여")
         .navigationBarTitleDisplayMode(.inline)
@@ -28,17 +38,48 @@ public struct JoinStudyView: View {
                 }
             }
         }
+        .safeAreaInset(edge: .bottom) {
+            FMButton(
+                title: store.isRequestSent ? "확인" : "참여 요청",
+                isLoading: store.isJoining,
+                isEnabled: store.isRequestSent || store.isCodeValid
+            ) {
+                store.send(store.isRequestSent ? .confirmTapped : .joinTapped)
+            }
+            .fmSheetBottomBar()
+        }
+    }
+
+    private var introHeader: some View {
+        HStack(spacing: FMSpacing.md) {
+            Image(systemName: "person.badge.plus")
+                .font(.system(size: 25, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 60, height: 60)
+                .background(FMColors.brandGradient, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous))
+
+            VStack(alignment: .leading, spacing: FMSpacing.xxs) {
+                Text("팀과 함께 시작해요")
+                    .font(FMTypography.title2)
+                    .foregroundStyle(FMColors.label)
+                Text("스터디장이 공유한 초대 코드가 필요해요.")
+                    .font(FMTypography.callout)
+                    .foregroundStyle(FMColors.secondaryLabel)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, FMSpacing.sm)
     }
 
     private var inputView: some View {
-        VStack(spacing: FMSpacing.lg) {
+        FMCard {
             VStack(alignment: .leading, spacing: FMSpacing.sm) {
-                Text("스터디에 참여하려면 초대 코드를 입력하세요.")
-                    .font(FMTypography.body)
-                    .foregroundStyle(FMColors.secondaryLabel)
+                Text("초대 코드")
+                    .font(FMTypography.headline)
 
                 FMTextField(
-                    title: "초대 코드",
+                    title: "6자리 코드",
                     placeholder: "6자리 코드 입력",
                     text: $store.inviteCode.sending(\.inviteCodeChanged),
                     errorMessage: store.errorMessage,
@@ -47,24 +88,11 @@ public struct JoinStudyView: View {
                 .textInputAutocapitalization(.characters)
                 .autocorrectionDisabled()
             }
-
-            Spacer()
-
-            FMButton(
-                title: "참여 요청",
-                style: .primary,
-                isLoading: store.isJoining,
-                isEnabled: store.isCodeValid
-            ) {
-                store.send(.joinTapped)
-            }
         }
     }
 
     private var requestSentView: some View {
-        VStack(spacing: FMSpacing.lg) {
-            Spacer()
-
+        FMCard {
             VStack(spacing: FMSpacing.md) {
                 Image(systemName: "paperplane.fill")
                     .font(.system(size: FMSizing.IconSize.hero))
@@ -78,15 +106,8 @@ public struct JoinStudyView: View {
                     .foregroundStyle(FMColors.secondaryLabel)
                     .multilineTextAlignment(.center)
             }
-
-            Spacer()
-
-            FMButton(
-                title: "확인",
-                style: .primary
-            ) {
-                store.send(.confirmTapped)
-            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, FMSpacing.xl)
         }
     }
 }

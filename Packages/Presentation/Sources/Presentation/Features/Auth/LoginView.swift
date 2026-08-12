@@ -30,7 +30,7 @@ public struct LoginView: View {
 
                 VStack(spacing: FMSpacing.lg) {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 28, style: .continuous)
+                        RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.hero, style: .continuous)
                             .fill(FMColors.brandGradient)
 
                         Image(systemName: "airplane")

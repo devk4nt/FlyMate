@@ -11,10 +11,12 @@ struct FeedbackManagementFeatureTests {
     private let userID = UUID(uuidString: "00000000-0000-0000-0000-0000000000AA")!
 
     @Test
-    func 초기_상태는_받은_피드백_세그먼트() async {
+    func 초기_상태는_할_일_세그먼트() async {
         let state = FeedbackManagementFeature.State(userID: userID)
 
-        #expect(state.selectedSegment == .received)
+        #expect(state.selectedSegment == .pending)
+        #expect(state.pending.feedScope == .pendingFeedback)
+        #expect(state.pending.currentUserID == userID)
         #expect(state.received.listType == .received)
         #expect(state.given.listType == .given)
         #expect(state.received.userID == userID)

@@ -18,14 +18,6 @@ public struct MainTabView: View {
             }
             .tag(TabFeature.State.Tab.study)
 
-            VideoFeedView(
-                store: store.scope(state: \.feed, action: \.feed)
-            )
-            .tabItem {
-                Label("피드", systemImage: "play.rectangle.on.rectangle")
-            }
-            .tag(TabFeature.State.Tab.feed)
-
             RecruitListView(
                 store: store.scope(state: \.recruit, action: \.recruit)
             )
@@ -50,7 +42,7 @@ public struct MainTabView: View {
             }
             .tag(TabFeature.State.Tab.settings)
         }
-        .tint(FMColors.primary)
+        .tint(FMColors.actionForeground)
         .toolbarBackground(.visible, for: .tabBar)
         .toolbarBackground(.ultraThinMaterial, for: .tabBar)
         .onAppear {

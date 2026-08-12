@@ -45,6 +45,22 @@ public enum FMTypography {
         .system(.caption2)
     }
 
+    public static var eyebrow: Font {
+        .system(.caption2, weight: .bold)
+    }
+
+    public static var cardTitle: Font {
+        .system(.title3, weight: .bold)
+    }
+
+    public static var metric: Font {
+        .system(.headline, weight: .bold)
+    }
+
+    public static var badgeStrong: Font {
+        .system(.caption, weight: .bold)
+    }
+
     // MARK: - Feed (인스타그램형 피드 전용)
 
     /// 피드 작성자명 — Dynamic Type의 subheadline 기준

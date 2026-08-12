@@ -28,7 +28,7 @@ public struct ProfileEditView: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .dismissKeyboardOnTap()
-        .background(FMColors.softCanvas)
+        .background(FMColors.canvas)
         .navigationTitle("프로필 수정")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -39,6 +39,7 @@ public struct ProfileEditView: View {
         .safeAreaInset(edge: .bottom) {
             saveArea
         }
+        .fmSheetStyle()
     }
 
     private var profileHeader: some View {
@@ -47,54 +48,50 @@ public struct ProfileEditView: View {
             matching: .images,
             photoLibrary: .shared()
         ) {
-            HStack(spacing: FMSpacing.lg) {
-                ZStack(alignment: .bottomTrailing) {
-                    avatarImage
-                        .frame(width: 84, height: 84)
-                        .clipShape(Circle())
-                        .overlay {
-                            Circle().stroke(.white, lineWidth: 3)
-                        }
-                        .shadow(color: FMColors.brandInk.opacity(0.2), radius: 12, y: 6)
+            FMCard(style: .feed) {
+                HStack(spacing: FMSpacing.lg) {
+                    ZStack(alignment: .bottomTrailing) {
+                        avatarImage
+                            .frame(width: 84, height: 84)
+                            .clipShape(Circle())
+                            .overlay {
+                                Circle().stroke(.white, lineWidth: 3)
+                            }
+                            .shadow(color: FMShadow.avatarColor, radius: FMShadow.avatarRadius, y: FMShadow.avatarY)
 
-                    Image(systemName: "camera.fill")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 32, height: 32)
-                        .background(FMColors.brandInk)
-                        .clipShape(Circle())
-                        .overlay {
-                            Circle().stroke(FMColors.background, lineWidth: 3)
-                        }
-                }
-
-                VStack(alignment: .leading, spacing: FMSpacing.xs) {
-                    VStack(alignment: .leading, spacing: FMSpacing.xxxs) {
-                        Text("프로필 사진")
-                            .font(FMTypography.headline)
-                            .foregroundStyle(FMColors.label)
-
-                        Text("나를 잘 보여주는 사진을 선택해보세요")
-                            .font(.caption)
-                            .foregroundStyle(FMColors.secondaryLabel)
+                        Image(systemName: "camera.fill")
+                            .font(.system(size: FMSizing.IconSize.xs, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: FMSizing.IconContainer.sm, height: FMSizing.IconContainer.sm)
+                            .background(FMColors.iconAccent)
+                            .clipShape(Circle())
+                            .overlay {
+                                Circle().stroke(FMColors.background, lineWidth: 3)
+                            }
                     }
 
-                    Label("사진 변경", systemImage: "photo.on.rectangle")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(FMColors.brandInk)
+                    VStack(alignment: .leading, spacing: FMSpacing.xs) {
+                        VStack(alignment: .leading, spacing: FMSpacing.xxxs) {
+                            Text("프로필 사진")
+                                .font(FMTypography.headline)
+                                .foregroundStyle(FMColors.label)
+
+                            Text("나를 잘 보여주는 사진을 선택해보세요")
+                                .font(FMTypography.caption1)
+                                .foregroundStyle(FMColors.secondaryLabel)
+                        }
+
+                        Label("사진 변경", systemImage: "photo.on.rectangle")
+                            .font(FMTypography.authorName)
+                            .foregroundStyle(FMColors.iconAccent)
+                    }
+
+                    Spacer(minLength: 0)
+
+                    Image(systemName: "chevron.right")
+                        .font(FMTypography.caption1)
+                        .foregroundStyle(FMColors.secondaryLabel.opacity(0.7))
                 }
-
-                Spacer(minLength: 0)
-
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(FMColors.secondaryLabel.opacity(0.7))
-            }
-            .padding(FMSpacing.lg)
-            .background(FMColors.background, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
-                    .stroke(FMColors.accent.opacity(0.2), lineWidth: 1)
             }
             .contentShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
         }
@@ -158,35 +155,30 @@ public struct ProfileEditView: View {
     }
 
     private var profileInformationCard: some View {
-        VStack(alignment: .leading, spacing: FMSpacing.md) {
-            sectionHeader(
-                icon: "person.text.rectangle.fill",
-                title: "프로필 정보",
-                description: "다른 멤버에게 표시되는 이름이에요."
-            )
+        FMCard(style: .feed) {
+            VStack(alignment: .leading, spacing: FMSpacing.md) {
+                sectionHeader(
+                    icon: "person.text.rectangle.fill",
+                    title: "프로필 정보",
+                    description: "다른 멤버에게 표시되는 이름이에요."
+                )
 
-            Divider()
+                Divider()
 
-            FMTextField(
-                title: "이름",
-                placeholder: "이름을 입력하세요",
-                text: $store.name.sending(\.nameChanged),
-                characterLimit: 30
-            )
-            .textInputAutocapitalization(.never)
-            .autocorrectionDisabled()
+                FMTextField(
+                    title: "이름",
+                    placeholder: "이름을 입력하세요",
+                    text: $store.name.sending(\.nameChanged),
+                    characterLimit: 30
+                )
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
 
-            Label(store.currentUser.displayEmail, systemImage: "envelope.fill")
-                .font(.caption)
-                .foregroundStyle(FMColors.secondaryLabel)
+                Label(store.currentUser.displayEmail, systemImage: "envelope.fill")
+                    .font(FMTypography.caption1)
+                    .foregroundStyle(FMColors.secondaryLabel)
+            }
         }
-        .padding(FMSpacing.lg)
-        .background(FMColors.background, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
-                .stroke(FMColors.accent.opacity(0.2), lineWidth: 1)
-        }
-        .shadow(color: FMColors.brandInk.opacity(0.06), radius: 12, y: 6)
     }
 
     private func errorCard(message: String) -> some View {
@@ -214,10 +206,7 @@ public struct ProfileEditView: View {
         ) {
             store.send(.saveTapped)
         }
-        .padding(.horizontal, FMSpacing.md)
-        .padding(.top, FMSpacing.xs)
-        .padding(.bottom, FMSpacing.xs)
-        .background(.ultraThinMaterial)
+        .fmSheetBottomBar()
     }
 
     private func sectionHeader(icon: String, title: String, description: String) -> some View {

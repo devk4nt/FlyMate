@@ -8,6 +8,7 @@ public struct FMTextField: View {
     @Binding private var text: String
     private let errorMessage: String?
     private let characterLimit: Int?
+    @FocusState private var isFocused: Bool
 
     public init(
         title: String,
@@ -32,13 +33,14 @@ public struct FMTextField: View {
 
             TextField(placeholder, text: $text)
                 .font(FMTypography.body)
+                .focused($isFocused)
+                .frame(minHeight: 48)
                 .padding(.horizontal, FMSpacing.sm)
-                .padding(.vertical, FMSpacing.xs)
                 .background(FMColors.secondaryBackground)
-                .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm))
+                .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous))
                 .overlay {
-                    RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm)
-                        .stroke(borderColor, lineWidth: 1)
+                    RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous)
+                        .stroke(borderColor, lineWidth: borderWidth)
                 }
                 .onChange(of: text) { _, newValue in
                     if let limit = characterLimit, newValue.count > limit {
@@ -74,7 +76,14 @@ public struct FMTextField: View {
         if errorMessage != nil {
             return FMColors.destructive
         }
+        if isFocused {
+            return FMColors.actionForeground
+        }
         return FMColors.border
+    }
+
+    private var borderWidth: CGFloat {
+        errorMessage != nil || isFocused ? 2 : 1
     }
 
     private var characterCountColor: Color {
@@ -83,6 +92,20 @@ public struct FMTextField: View {
             return FMColors.destructive
         }
         return FMColors.secondaryLabel
+    }
+}
+
+public extension View {
+    func fmInputSurface(isError: Bool = false) -> some View {
+        background(FMColors.secondaryBackground)
+            .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous)
+                    .stroke(
+                        isError ? FMColors.destructive : FMColors.border.opacity(0.5),
+                        lineWidth: isError ? 2 : 1
+                    )
+            }
     }
 }
 

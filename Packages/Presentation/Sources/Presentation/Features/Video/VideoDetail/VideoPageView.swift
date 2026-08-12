@@ -61,7 +61,7 @@ public struct VideoPageView: View {
                 .presentationDetents([.medium, .large])
                 .presentationBackgroundInteraction(.enabled(upThrough: .medium))
                 .presentationDragIndicator(.visible)
-                .presentationBackground(FMColors.background)
+                .presentationBackground(FMColors.canvas)
         }
     }
 
@@ -236,7 +236,7 @@ public struct VideoPageView: View {
                             .font(FMTypography.caption1)
                             .fontWeight(.semibold)
                             .monospacedDigit()
-                            .foregroundStyle(FMColors.deepIndigo)
+                            .foregroundStyle(FMColors.mediaBadgeForeground)
                             .padding(.horizontal, FMSpacing.xxs)
                             .frame(minWidth: 22, minHeight: 22)
                             .background(.white, in: Capsule())

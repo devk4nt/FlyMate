@@ -27,6 +27,24 @@
 | DS-005 영상 레터박스 | 완료 | 원본 비율은 유지하면서 썸네일 기반 blur/fill backdrop을 추가하고 실제 AVPlayer의 letterbox 영역을 투명 처리했다. |
 | DS-006 마감 카드 대비 | 완료 | 카드 전체 opacity를 제거하고 비활성 배경·테두리만 semantic color로 구분했다. |
 
+## 디자인 시스템 8단계 정리 결과 (2026-08-12)
+
+버튼 색상 체계 정리 이후, 잔여 디자인 항목을 우선순위 순서대로 개선했다.
+
+| 순서 | 영역 | 상태 | 적용 내용 |
+|---:|---|---|---|
+| 1 | 카드 | 완료 | `FMCard`에 `standard`, `feed`, `hero` 역할을 추가하고 스터디·모집·피드백 카드와 compact empty card를 공통화했다. production 사용은 1곳에서 6곳으로 늘었다. |
+| 2 | Radius·그림자 | 완료 | `hero`, `artwork`, `appIcon` radius와 `card`, `hero`, `section`, `floating`, `avatar` shadow token을 추가했다. 기존 28/36/38pt 직접 radius는 화면 코드에서 제거했다. |
+| 3 | Semantic color | 완료 | launch/media 전용 semantic token을 추가하고 화면의 primitive palette 직접 참조를 제거했다. 읽지 않은 알림 포인트는 Coral `highlight`로 통일했다. |
+| 4 | 입력·선택 컨트롤 | 완료 | `FMTextField`에 48pt 최소 높이, focus/error border를 적용하고 `fmInputSurface`로 TextEditor·상세 입력 surface를 통합했다. Picker/DatePicker tint도 action color에 맞췄다. |
+| 5 | 내비게이션·모달 | 완료 | 전역 tab/navigation action tint를 adaptive `actionForeground`로 통일하고 프로필 편집 Sheet의 변경 중 dismiss를 방지했다. 편집 화면은 `취소`, 읽기/관리 화면은 `닫기` 명칭을 유지했다. |
+| 6 | 타이포그래피 | 완료 | `eyebrow`, `cardTitle`, `metric`, `badgeStrong` semantic typography를 추가하고 주요 피드·카드의 직접 시스템 font 사용을 토큰으로 이동했다. |
+| 7 | 상태 화면 | 완료 | `FMEmptyState`에 compact layout을 추가하고 빈 카드와 오류 아이콘의 크기·surface·색상 계층을 통일했다. |
+| 8 | 접근성·반응형 | 완료 | 주요 피드는 regular width 760pt, 입력/상세 화면은 640pt로 최대 폭을 제한했다. 복사·스크롤·피드백 강조 애니메이션에 Reduce Motion 대응을 추가했다. |
+
+- 정적 검사: `git diff --check` 통과, 화면의 primitive palette 직접 사용 0건, 28/36/38pt 직접 radius 0건.
+- iPhone 17 Pro / iOS 26.3.1 전체 테스트: **212개 통과, 실패 0, skip 0**.
+
 ## Air Blue + Coral 컬러 조정 (2026-08-12)
 
 `Sky Lilac` 시안을 검토한 뒤 앱의 기존 항공 이미지를 더 잘 전달하는 Air Blue 컬러톤으로 롤백했다. 알림과 소량의 강조 포인트에는 Coral Pink를 유지했다.
@@ -34,7 +52,8 @@
 | 역할 | Light | Dark | 적용 범위 |
 |---|---|---|---|
 | Primary / Accent | `#4AA9D8` | `#8DD7EE` | 선택 탭, 링크, 아이콘, 입력 커서 |
-| Brand Gradient | `#306DA6 → #051766` | 동일 | hero, primary button, 프로필 카드 |
+| Action Fill | `#306DA6` | 동일 | primary button, 전송, 승인 |
+| Brand Gradient | `#306DA6 → #051766` | 동일 | hero, 프로필 카드, 브랜드 artwork |
 | Secondary | `#8DD7EE` | `#4AA9D8` | 장식, 부드러운 강조 면 |
 | Feature Gradient | `#306DA6 → #051766` | 동일 | 업로드·온보딩 강조 면 |
 | Highlight | `#FF7F9F` | `#FF9BB5` | 알림 배지와 소량의 포인트 |
@@ -228,6 +247,25 @@
 - 다수의 핵심 컨트롤에 접근성 label/hint/identifier가 이미 적용되어 있다.
 - 최신 iPhone 제출 화면들의 카드 radius, 화면 좌우 여백, 하단 탭 구조는 대체로 일관적이다.
 
+## 시트 디자인 통일 적용 (2026-08-12)
+
+`StudyCreateView`를 시트의 기준 화면으로 정하고 다음 규칙을 공통화했다.
+
+- 배경: 모든 앱 시트에 `FMColors.canvas`와 동일한 presentation background 적용
+- 상호작용 색상: sheet 내부 navigation/control tint를 `FMColors.actionForeground`로 통일
+- 콘텐츠: 입력·선택 영역은 `FMCard`의 standard radius, border, shadow 사용
+- 주요 동작: 화면 하단 `safeAreaInset` + 좌우 `md`/상단 `sm`/하단 `xs` + ultra-thin material 사용
+- 내비게이션: inline title과 cancellation action을 유지하고, 본문에 중복 CTA를 두지 않음
+
+적용 범위:
+
+- 생성·입력: 스터디 만들기, 스터디 참여, 모집 글 생성/수정, 모집 재개, 공지 편집, 신고, 버그 신고, 프로필 수정
+- 조회·관리: 알림, 스터디 관리, 차단 사용자, 멤버 활동 현황, 구독 관리, paywall
+- 피드백: 영상 피드백, 피드백 댓글
+- 시스템 소유 화면인 사진 선택기와 메일 작성기는 iOS 기본 시각 언어를 유지
+
+구조 차이가 컸던 `JoinStudyView`, `ReportView`, 모집 재개 시트는 `설명 헤더 → 카드형 콘텐츠 → 고정 하단 CTA` 구조로 재구성했다.
+
 ## 수행한 검증
 
 ### 정적 검사
@@ -267,6 +305,7 @@
 - 일반 글자 크기 및 `accessibility-extra-large`에서 앱을 직접 실행해 스터디 홈을 캡처 확인했다. 접근성 크기에서 발견한 hero 2열 줄바꿈은 1열 전환으로 보완 후 재확인했다.
 - Xcode beta 27의 generic simulator 빌드는 외부 `xctest-dynamic-overlay`의 `_fail` 심볼 호환 오류로 중단됐으나, iOS 26.3.1 지정 시뮬레이터의 앱 빌드 및 전체 테스트는 성공했다.
 - 잔여 빌드 경고: Supabase/TCA deprecated API와 `VideoPlayerView`/`ProfileEditView`의 Swift 6 actor-isolation 경고. 현재 빌드·테스트를 막지는 않지만 정식 Swift 6 오류 모드 전환 전에 정리 권장.
+- 시트 통일 적용 후 전체 unit test 재실행: **212개 통과, 실패 0, skip 0** (iPhone 17 Pro, iOS 26.3.1 Simulator).
 
 ## 수정 권장 순서
 

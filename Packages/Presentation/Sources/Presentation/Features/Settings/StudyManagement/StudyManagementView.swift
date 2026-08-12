@@ -31,7 +31,7 @@ public struct StudyManagementView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(FMColors.softCanvas)
+        .background(FMColors.canvas)
         .navigationTitle("스터디 관리")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -41,6 +41,7 @@ public struct StudyManagementView: View {
         }
         .onAppear { store.send(.onAppear) }
         .alert($store.scope(state: \.confirmAlert, action: \.confirmAlert))
+        .fmSheetStyle()
     }
 
     private var loadingContent: some View {
@@ -79,18 +80,18 @@ public struct StudyManagementView: View {
     private func managementSummary(count: Int) -> some View {
         HStack(spacing: FMSpacing.sm) {
             Image(systemName: "person.3.fill")
-                .font(.system(size: 16, weight: .semibold))
+                .font(.system(size: FMSizing.IconSize.sm, weight: .semibold))
                 .foregroundStyle(.white)
-                .frame(width: 38, height: 38)
+                .frame(width: FMSizing.IconContainer.md, height: FMSizing.IconContainer.md)
                 .background(FMColors.brandGradient, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm, style: .continuous))
 
             VStack(alignment: .leading, spacing: FMSpacing.xxxs) {
                 Text("참여 중인 스터디 \(count)개")
-                    .font(.subheadline.weight(.semibold))
+                    .font(FMTypography.authorName)
                     .foregroundStyle(FMColors.label)
 
                 Text("더 이상 참여하지 않는 스터디를 정리할 수 있어요")
-                    .font(.caption)
+                    .font(FMTypography.caption1)
                     .foregroundStyle(FMColors.secondaryLabel)
             }
 
@@ -106,32 +107,12 @@ public struct StudyManagementView: View {
     }
 
     private var emptyContent: some View {
-        VStack(spacing: FMSpacing.md) {
-            Image(systemName: "person.3.sequence.fill")
-                .font(.system(size: FMSizing.IconSize.hero, weight: .medium))
-                .foregroundStyle(FMColors.brandInk)
-                .frame(width: 76, height: 76)
-                .background(FMColors.accent.opacity(0.12), in: Circle())
-
-            VStack(spacing: FMSpacing.xs) {
-                Text("관리할 스터디가 없어요")
-                    .font(.headline)
-                    .foregroundStyle(FMColors.label)
-
-                Text("스터디에 참여하면 이곳에서 멤버 현황을 확인하고 관리할 수 있어요.")
-                    .font(.subheadline)
-                    .foregroundStyle(FMColors.secondaryLabel)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(FMSpacing.xxl)
-        .frame(maxWidth: .infinity)
-        .background(FMColors.background, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
-                .stroke(FMColors.accent.opacity(0.2), lineWidth: 1)
-        }
+        FMEmptyState(
+            systemImage: "person.3.sequence.fill",
+            title: "관리할 스터디가 없어요",
+            description: "스터디에 참여하면 이곳에서 멤버 현황을 확인하고 관리할 수 있어요.",
+            layout: .card
+        )
         .padding(FMSpacing.md)
     }
 }
@@ -148,8 +129,8 @@ private struct StudyManagementCard: View {
                 Spacer(minLength: 0)
 
                 Label("\(study.memberCount)/\(study.maxMembers)", systemImage: "person.2.fill")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(FMColors.brandInk)
+                    .font(FMTypography.badgeStrong)
+                    .foregroundStyle(FMColors.badgeForeground)
                     .padding(.horizontal, FMSpacing.sm)
                     .padding(.vertical, FMSpacing.xs)
                     .background(FMColors.accent.opacity(0.12), in: Capsule())
@@ -157,11 +138,11 @@ private struct StudyManagementCard: View {
 
             VStack(alignment: .leading, spacing: FMSpacing.xs) {
                 Text(study.name)
-                    .font(.title3.weight(.bold))
+                    .font(FMTypography.cardTitle)
                     .foregroundStyle(FMColors.label)
 
                 Text(study.description)
-                    .font(.subheadline)
+                    .font(FMTypography.feedBody)
                     .foregroundStyle(FMColors.secondaryLabel)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
@@ -171,7 +152,7 @@ private struct StudyManagementCard: View {
 
             Button(role: .destructive, action: onLeave) {
                 Label("스터디 탈퇴", systemImage: "rectangle.portrait.and.arrow.right")
-                    .font(.subheadline.weight(.semibold))
+                    .font(FMTypography.authorName)
                     .foregroundStyle(FMColors.destructive)
                     .frame(maxWidth: .infinity)
                     .frame(minHeight: 42)
@@ -186,7 +167,7 @@ private struct StudyManagementCard: View {
             RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
                 .stroke(FMColors.accent.opacity(0.2), lineWidth: 1)
         }
-        .shadow(color: FMColors.brandInk.opacity(0.06), radius: 12, y: 6)
+        .shadow(color: FMShadow.sectionColor, radius: FMShadow.sectionRadius, y: FMShadow.sectionY)
     }
 
     private var memberStack: some View {
@@ -204,8 +185,8 @@ private struct StudyManagementCard: View {
 
             if study.memberCount > 3 {
                 Text("+\(study.memberCount - 3)")
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(FMColors.brandInk)
+                    .font(FMTypography.eyebrow)
+                    .foregroundStyle(FMColors.badgeForeground)
                     .frame(width: 32, height: 32)
                     .background(FMColors.softCanvas, in: Circle())
                     .overlay {

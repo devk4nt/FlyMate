@@ -15,9 +15,11 @@ public struct FeedbackCommentListView: View {
             commentListContent
             commentInputBar
         }
+        .background(FMColors.canvas)
         .navigationTitle("댓글")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { store.send(.onAppear) }
+        .fmSheetStyle()
     }
 
     // MARK: - Comment List

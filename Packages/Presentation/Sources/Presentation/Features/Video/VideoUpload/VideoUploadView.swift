@@ -33,6 +33,8 @@ public struct VideoUploadView: View {
                         errorCard(error)
                     }
                 }
+                .frame(maxWidth: FMSizing.ContentWidth.form)
+                .frame(maxWidth: .infinity)
                 .padding(.horizontal, FMSpacing.md)
                 .padding(.top, FMSpacing.xs)
                 .padding(.bottom, FMSpacing.xxl)
@@ -308,8 +310,7 @@ public struct VideoUploadView: View {
                     .frame(minHeight: 88)
                     .padding(FMSpacing.xs)
             }
-            .background(FMColors.secondaryBackground)
-            .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous))
+            .fmInputSurface()
         }
     }
 

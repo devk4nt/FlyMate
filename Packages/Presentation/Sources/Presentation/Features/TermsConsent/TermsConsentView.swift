@@ -38,6 +38,8 @@ public struct TermsConsentView: View {
                         )
                     }
                 }
+                .frame(maxWidth: FMSizing.ContentWidth.form, alignment: .leading)
+                .frame(maxWidth: .infinity)
                 .padding(.horizontal, FMSpacing.lg)
                 .padding(.top, FMSpacing.xxl)
                 .padding(.bottom, FMSpacing.lg)

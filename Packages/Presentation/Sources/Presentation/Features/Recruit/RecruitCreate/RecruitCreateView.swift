@@ -54,12 +54,10 @@ public struct RecruitCreateView: View {
             ) {
                 store.send(.submitTapped)
             }
-            .padding(.horizontal, FMSpacing.md)
-            .padding(.top, FMSpacing.sm)
-            .padding(.bottom, FMSpacing.xs)
-            .background(.ultraThinMaterial)
+            .fmSheetBottomBar()
             .accessibilityIdentifier("스터디_작성_등록")
         }
+        .fmSheetStyle()
         .alert(
             "작성을 그만둘까요?",
             isPresented: Binding(
@@ -117,6 +115,7 @@ public struct RecruitCreateView: View {
                     }
                 }
                 .pickerStyle(.menu)
+                .tint(FMColors.actionForeground)
                 .accessibilityIdentifier("스터디_작성_분야")
             }
 
@@ -130,8 +129,7 @@ public struct RecruitCreateView: View {
                     .scrollContentBackground(.hidden)
                     .frame(minHeight: 112)
                     .padding(FMSpacing.xs)
-                    .background(FMColors.secondaryBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous))
+                    .fmInputSurface()
                     .accessibilityLabel("스터디 소개")
                     .accessibilityIdentifier("스터디_작성_소개")
             }
@@ -146,6 +144,7 @@ public struct RecruitCreateView: View {
                 }
             }
             .pickerStyle(.segmented)
+            .tint(FMColors.actionForeground)
             .accessibilityIdentifier("스터디_작성_진행방식")
 
             if store.needsRegion {
@@ -161,6 +160,7 @@ public struct RecruitCreateView: View {
                         }
                     }
                     .pickerStyle(.menu)
+                    .tint(FMColors.actionForeground)
                     .accessibilityIdentifier("스터디_작성_지역")
                 }
             }
@@ -182,6 +182,7 @@ public struct RecruitCreateView: View {
                 displayedComponents: .date
             )
             .font(FMTypography.body)
+            .tint(FMColors.actionForeground)
             .accessibilityIdentifier("스터디_작성_시작일")
 
             Toggle("종료 예정일 설정", isOn: $store.hasEndDate)
@@ -195,6 +196,7 @@ public struct RecruitCreateView: View {
                     displayedComponents: .date
                 )
                 .font(FMTypography.body)
+                .tint(FMColors.actionForeground)
             }
         }
     }
@@ -278,15 +280,14 @@ public struct RecruitCreateView: View {
         title: String,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        VStack(alignment: .leading, spacing: FMSpacing.md) {
-            Text(title)
-                .font(FMTypography.headline)
-                .foregroundStyle(FMColors.label)
+        FMCard {
+            VStack(alignment: .leading, spacing: FMSpacing.md) {
+                Text(title)
+                    .font(FMTypography.headline)
+                    .foregroundStyle(FMColors.label)
 
-            content()
+                content()
+            }
         }
-        .padding(FMSpacing.md)
-        .background(FMColors.elevatedBackground)
-        .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous))
     }
 }

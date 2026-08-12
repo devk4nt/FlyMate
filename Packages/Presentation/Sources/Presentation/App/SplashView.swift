@@ -9,7 +9,7 @@ public struct SplashView: View {
 
     public var body: some View {
         ZStack {
-            FMColors.primary
+            FMColors.launchBackground
                 .ignoresSafeArea()
 
             Circle()
@@ -32,8 +32,8 @@ public struct SplashView: View {
                 .resizable()
                 .scaledToFill()
                 .frame(width: 176, height: 176)
-                .clipShape(RoundedRectangle(cornerRadius: 38, style: .continuous))
-                .shadow(color: FMColors.deepIndigo.opacity(0.2), radius: 22, y: 12)
+                .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.appIcon, style: .continuous))
+                .shadow(color: FMShadow.heroColor, radius: FMShadow.heroRadius, y: FMShadow.heroY)
                 .scaleEffect(isAnimated ? 1 : 0.86)
                 .opacity(isAnimated ? 1 : 0)
                 .offset(y: isAnimated ? -50 : 0)
@@ -69,7 +69,7 @@ public struct SplashView: View {
     }
 
     private var contentColor: Color {
-        colorScheme == .dark ? FMColors.deepIndigo : .white
+        colorScheme == .dark ? FMColors.mediaBadgeForeground : .white
     }
 }
 

@@ -6,6 +6,7 @@ import Domain
 public struct StudyDetailView: View {
     @Bindable var store: StoreOf<StudyDetailFeature>
     @State private var isDeleteNoticeConfirmationPresented = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(store: StoreOf<StudyDetailFeature>) {
         self.store = store
@@ -196,6 +197,7 @@ public struct StudyDetailView: View {
                     noticeSaveArea
                 }
         }
+        .fmSheetStyle()
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .interactiveDismissDisabled(store.noticeUpdateState.isLoading)
@@ -302,12 +304,7 @@ public struct StudyDetailView: View {
                         .padding(FMSpacing.xs)
                         .frame(minHeight: 150)
                 }
-                .background(FMColors.secondaryBackground)
-                .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous)
-                        .stroke(FMColors.border.opacity(0.5), lineWidth: 1)
-                }
+                .fmInputSurface()
 
                 HStack {
                     Label("모든 멤버에게 공개", systemImage: "person.2.fill")
@@ -383,10 +380,7 @@ public struct StudyDetailView: View {
         ) {
             store.send(.saveNoticeTapped)
         }
-        .padding(.horizontal, FMSpacing.md)
-        .padding(.top, FMSpacing.xs)
-        .padding(.bottom, FMSpacing.xs)
-        .background(.ultraThinMaterial)
+        .fmSheetBottomBar()
     }
 
     // MARK: - Study Info Header
@@ -461,7 +455,7 @@ public struct StudyDetailView: View {
                     .font(FMTypography.caption1)
                     .foregroundStyle(store.isCopied ? FMColors.success : FMColors.label)
                 }
-                .animation(.easeInOut(duration: 0.2), value: store.isCopied)
+                .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: store.isCopied)
             }
         }
         .padding(FMSpacing.md)

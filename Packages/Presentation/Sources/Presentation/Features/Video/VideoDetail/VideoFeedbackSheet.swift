@@ -18,7 +18,7 @@ public struct VideoFeedbackSheet: View {
         }
         .padding(.top, FMSpacing.sm)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(FMColors.background)
+        .background(FMColors.canvas)
         .safeAreaInset(edge: .bottom) {
             CommentInputBar(
                 store: store.scope(state: \.commentInput, action: \.commentInput),
@@ -51,6 +51,7 @@ public struct VideoFeedbackSheet: View {
             ReportView(store: reportStore)
         }
         .alert($store.scope(state: \.blockAlert, action: \.blockAlert))
+        .fmSheetStyle()
     }
 
     // MARK: - Video Info
@@ -226,6 +227,8 @@ private struct FeedbackRowSkeleton: View {
 // MARK: - Feedback Row
 
 private struct FeedbackRow: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     let feedback: Domain.Feedback
     var isHighlighted: Bool = false
     var isExpanded: Bool = false
@@ -346,7 +349,7 @@ private struct FeedbackRow: View {
                 ? FMColors.accent.opacity(0.15)
                 : FMColors.secondaryBackground
         )
-        .animation(.easeInOut(duration: 0.6), value: isHighlighted)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.6), value: isHighlighted)
         .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm))
     }
 

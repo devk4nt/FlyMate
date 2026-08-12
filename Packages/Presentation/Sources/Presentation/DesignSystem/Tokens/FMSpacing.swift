@@ -16,5 +16,8 @@ public enum FMSpacing {
         public static let md: CGFloat = 12
         public static let lg: CGFloat = 16
         public static let xl: CGFloat = 20
+        public static let hero: CGFloat = 28
+        public static let artwork: CGFloat = 36
+        public static let appIcon: CGFloat = 38
     }
 }
