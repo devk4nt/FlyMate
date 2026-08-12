@@ -18,6 +18,7 @@ public struct AppFeature : Sendable {
         public var fcmToken: String?
         public var entitlement: Entitlement?
         public var onboarding: OnboardingFeature.State?
+        public var termsConsent: TermsConsentFeature.State?
 
         public init() {
             self.destination = .login(LoginFeature.State())
@@ -42,6 +43,7 @@ public struct AppFeature : Sendable {
         case pushNotificationTapped([String: String])
         case checkOnboarding
         case onboarding(OnboardingFeature.Action)
+        case termsConsent(TermsConsentFeature.Action)
         case entitlementLoaded(Entitlement)
         case transactionUpdated
 
@@ -117,13 +119,25 @@ public struct AppFeature : Sendable {
             case .onboarding:
                 return .none
 
+            case .termsConsent(.delegate(.consented)):
+                state.termsConsent = nil
+                return .send(.requestPushPermission)
+
+            case .termsConsent:
+                return .none
+
             case .authStateChanged(let user):
                 state.currentUser = user
                 if let user {
                     if case .login = state.destination {
                         state.destination = .tab(TabFeature.State(currentUser: user))
+                        // UGC 이용 전 커뮤니티 가이드라인 동의 필수 (Guideline 1.2)
+                        if !userDefaultsClient.boolForKey(TermsConsentFeature.consentKey) {
+                            state.termsConsent = TermsConsentFeature.State()
+                        }
                         var effects: [Effect<Action>] = [
-                            .send(.requestPushPermission),
+                            // 동의 시트가 떠 있으면 시스템 팝업 중첩 방지 — 동의 완료 후 요청
+                            state.termsConsent == nil ? .send(.requestPushPermission) : .none,
                             // ponytail: 구독 미출시 — entitlement 조회 + Transaction.updates 구독 비활성.
                             // verify-receipt/app-store-webhook 배포 후 아래 주석 복원 (SettingsView 구독 버튼과 함께)
                             // .run { [subClient = subscriptionClient, userID = user.id] send in
@@ -269,6 +283,9 @@ public struct AppFeature : Sendable {
         }
         .ifLet(\.onboarding, action: \.onboarding) {
             OnboardingFeature()
+        }
+        .ifLet(\.termsConsent, action: \.termsConsent) {
+            TermsConsentFeature()
         }
     }
 }

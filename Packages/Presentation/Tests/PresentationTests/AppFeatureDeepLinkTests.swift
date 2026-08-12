@@ -64,6 +64,7 @@ struct AppFeatureDeepLinkTests {
             $0.subscriptionClient.fetchEntitlements = { _ in .free }
             $0.subscriptionClient.observeTransactionUpdates = { .finished }
             $0.pushNotificationClient.requestAuthorization = { false }
+            $0.userDefaultsClient.boolForKey = { _ in true }
         }
         store.exhaustivity = .off
 
@@ -89,6 +90,7 @@ struct AppFeatureDeepLinkTests {
             $0.subscriptionClient.fetchEntitlements = { _ in .free }
             $0.subscriptionClient.observeTransactionUpdates = { .finished }
             $0.pushNotificationClient.requestAuthorization = { false }
+            $0.userDefaultsClient.boolForKey = { _ in true }
         }
         store.exhaustivity = .off
 
@@ -130,5 +132,47 @@ struct AppFeatureDeepLinkTests {
             $0.currentUser = nil
             $0.destination = .login(LoginFeature.State())
         }
+    }
+
+    // MARK: - 이용약관 동의 게이트
+
+    @Test
+    func 약관_미동의_상태로_로그인시_동의_화면_표시() async {
+        var state = AppFeature.State()
+        state.destination = .login(LoginFeature.State())
+
+        let store = TestStore(initialState: state) {
+            AppFeature()
+        } withDependencies: {
+            $0.pushNotificationClient.requestAuthorization = { false }
+            $0.userDefaultsClient.boolForKey = { _ in false }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.authStateChanged(Self.mockUser)) {
+            $0.termsConsent = TermsConsentFeature.State()
+        }
+
+        await store.send(.termsConsent(.delegate(.consented))) {
+            $0.termsConsent = nil
+        }
+    }
+
+    @Test
+    func 약관_동의_완료_상태면_동의_화면_미표시() async {
+        var state = AppFeature.State()
+        state.destination = .login(LoginFeature.State())
+
+        let store = TestStore(initialState: state) {
+            AppFeature()
+        } withDependencies: {
+            $0.pushNotificationClient.requestAuthorization = { false }
+            $0.userDefaultsClient.boolForKey = { _ in true }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.authStateChanged(Self.mockUser))
+
+        #expect(store.state.termsConsent == nil)
     }
 }

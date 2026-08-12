@@ -61,24 +61,35 @@ public struct AppView: View {
         }
         .overlay(alignment: .top) {
             if let toast = store.toast {
-                FMToast(message: toast.message, type: mapToastType(toast.type))
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .onAppear {
-                        Task {
-                            try? await Task.sleep(nanoseconds: 3_000_000_000)
-                            store.send(.toastDismissed, animation: .default)
-                        }
+                FMToast(
+                    message: toast.message,
+                    type: mapToastType(toast.type),
+                    onDismiss: {
+                        store.send(
+                            .toastDismissed,
+                            animation: reduceMotion ? nil : .default
+                        )
                     }
+                )
+                    .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
-        .animation(.default, value: store.toast)
+        .animation(reduceMotion ? nil : .default, value: store.toast)
+        .overlay {
+            // 온보딩보다 아래에 깔린다 — 온보딩 완료 후 노출
+            if let termsStore = store.scope(state: \.termsConsent, action: \.termsConsent) {
+                TermsConsentView(store: termsStore)
+                    .transition(.opacity)
+            }
+        }
         .overlay {
             if let onboardingStore = store.scope(state: \.onboarding, action: \.onboarding) {
                 OnboardingView(store: onboardingStore)
                     .transition(.opacity)
             }
         }
-        .animation(.easeInOut(duration: 0.3), value: store.onboarding != nil)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.3), value: store.onboarding != nil)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.3), value: store.termsConsent != nil)
     }
 
     private func mapToastType(_ type: ToastState.ToastType) -> FMToast.ToastType {
