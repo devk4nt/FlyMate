@@ -17,9 +17,10 @@ public struct VideoFeedbackSheet: View {
             videoInfoSection
             feedbackSection
         }
-        .padding(.top, FMSpacing.sm)
+        // 시스템 드래그 인디케이터가 첫 번째 안내 문구와 겹치지 않도록 헤더 영역을 확보한다
+        .padding(.top, FMSpacing.xxl)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(FMColors.canvas)
+        .background(FMColors.background)
         .safeAreaInset(edge: .bottom) {
             CommentInputBar(
                 store: store.scope(state: \.commentInput, action: \.commentInput),
@@ -52,7 +53,8 @@ public struct VideoFeedbackSheet: View {
             ReportView(store: reportStore)
         }
         .alert($store.scope(state: \.blockAlert, action: \.blockAlert))
-        .fmSheetStyle()
+        .background(FMColors.background.ignoresSafeArea())
+        .tint(FMColors.actionForeground)
     }
 
     // MARK: - Video Info

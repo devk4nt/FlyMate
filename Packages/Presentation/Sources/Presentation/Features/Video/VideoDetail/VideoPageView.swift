@@ -61,7 +61,7 @@ public struct VideoPageView: View {
                 .presentationDetents([.medium, .large])
                 .presentationBackgroundInteraction(.enabled(upThrough: .medium))
                 .presentationDragIndicator(.visible)
-                .presentationBackground(FMColors.canvas)
+                .presentationBackground(FMColors.background)
         }
     }
 
