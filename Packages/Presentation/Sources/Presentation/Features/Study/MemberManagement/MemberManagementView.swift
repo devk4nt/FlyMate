@@ -84,6 +84,7 @@ public struct MemberManagementView: View {
                         .font(FMTypography.caption1)
                 }
                 .buttonStyle(.bordered)
+                .tint(FMColors.actionForeground)
                 .controlSize(.small)
                 .accessibilityLabel("\(member.userName)님에게 방장 위임")
                 .accessibilityHint("방장 권한을 넘깁니다")
@@ -95,6 +96,7 @@ public struct MemberManagementView: View {
                         .font(FMTypography.caption1)
                 }
                 .buttonStyle(.bordered)
+                .tint(FMColors.destructive)
                 .controlSize(.small)
             }
         }

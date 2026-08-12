@@ -232,6 +232,7 @@ public struct StudyDetailView: View {
             .padding(.bottom, FMSpacing.xxxl)
         }
         .scrollDismissesKeyboard(.interactively)
+        .dismissKeyboardOnTap()
         .background(FMColors.canvas)
     }
 

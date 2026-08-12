@@ -29,8 +29,6 @@ public struct FMToast: View {
     private let duration: TimeInterval
     private let onDismiss: (() -> Void)?
 
-    @State private var isVisible = false
-
     public init(
         message: String,
         type: ToastType,
@@ -44,44 +42,31 @@ public struct FMToast: View {
     }
 
     public var body: some View {
-        if isVisible {
-            HStack(spacing: FMSpacing.xs) {
-                Image(systemName: type.iconName)
-                    .foregroundStyle(type.tintColor)
+        HStack(spacing: FMSpacing.xs) {
+            Image(systemName: type.iconName)
+                .foregroundStyle(type.tintColor)
 
-                Text(message)
-                    .font(FMTypography.callout)
-                    .foregroundStyle(FMColors.label)
-                    .lineLimit(2)
-            }
-            .padding(.horizontal, FMSpacing.md)
-            .padding(.vertical, FMSpacing.sm)
-            .background(FMColors.secondaryBackground)
-            .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm))
-            .shadow(color: Color.black.opacity(0.12), radius: 8, x: 0, y: 4)
-            .transition(.move(edge: .top).combined(with: .opacity))
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("\(type.accessibilityPrefix): \(message)")
+            Text(message)
+                .font(FMTypography.callout)
+                .foregroundStyle(FMColors.label)
+                .lineLimit(2)
         }
-    }
-
-    /// Shows the toast and schedules auto-dismiss.
-    public func show() -> some View {
-        self.onAppear {
-            withAnimation(.easeInOut(duration: 0.3)) {
-                isVisible = true
+        .padding(.horizontal, FMSpacing.md)
+        .padding(.vertical, FMSpacing.sm)
+        .background(FMColors.secondaryBackground)
+        .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm))
+        .shadow(color: Color.black.opacity(0.12), radius: 8, x: 0, y: 4)
+        .transition(.move(edge: .top).combined(with: .opacity))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(type.accessibilityPrefix): \(message)")
+        .task {
+            do {
+                try await Task.sleep(for: .seconds(duration))
+                guard !Task.isCancelled else { return }
+                onDismiss?()
+            } catch {
+                return
             }
-            scheduleAutoDismiss()
-        }
-    }
-
-    private func scheduleAutoDismiss() {
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(duration))
-            withAnimation(.easeInOut(duration: 0.3)) {
-                isVisible = false
-            }
-            onDismiss?()
         }
     }
 }
@@ -117,7 +102,6 @@ public struct FMToastModifier: ViewModifier {
                         duration: duration,
                         onDismiss: { isPresented = false }
                     )
-                    .show()
                     .padding(.top, FMSpacing.xl)
                 }
             }
@@ -163,11 +147,8 @@ extension FMToast.ToastType {
 #Preview {
     VStack {
         FMToast(message: "저장되었습니다.", type: .success)
-            .show()
         FMToast(message: "오류가 발생했습니다.", type: .error)
-            .show()
         FMToast(message: "새 알림이 있습니다.", type: .info)
-            .show()
     }
     .padding()
 }

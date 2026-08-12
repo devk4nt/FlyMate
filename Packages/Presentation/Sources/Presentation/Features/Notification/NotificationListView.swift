@@ -147,15 +147,6 @@ private struct NotificationRow: View {
     }
 
     private var iconColor: Color {
-        switch notification.type {
-        case .feedbackOnMyVideo:
-            return FMColors.primary
-        case .mentionedInFeedback:
-            return FMColors.accent
-        case .replyOnMyFeedback:
-            return FMColors.primary
-        case .mentionedInFeedbackComment:
-            return FMColors.accent
-        }
+        FMColors.highlight
     }
 }

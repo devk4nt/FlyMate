@@ -88,6 +88,7 @@ public struct JoinRequestManagementView: View {
                             .font(FMTypography.caption1)
                     }
                     .buttonStyle(.bordered)
+                    .tint(FMColors.actionForeground)
                     .controlSize(.small)
 
                     Button {
@@ -97,6 +98,7 @@ public struct JoinRequestManagementView: View {
                             .font(FMTypography.caption1)
                     }
                     .buttonStyle(.borderedProminent)
+                    .tint(FMColors.accentFill)
                     .controlSize(.small)
                 }
             }

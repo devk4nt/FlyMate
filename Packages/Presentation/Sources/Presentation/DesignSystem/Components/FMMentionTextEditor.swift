@@ -20,12 +20,11 @@ public struct FMMentionTextEditor: UIViewRepresentable {
         textView.delegate = context.coordinator
         textView.backgroundColor = .clear
         textView.textContainerInset = UIEdgeInsets(top: 8, left: 4, bottom: 8, right: 4)
-        textView.font = .systemFont(ofSize: 16, weight: .regular)
-        textView.tintColor = .systemBlue
-        textView.typingAttributes = [
-            .font: UIFont.systemFont(ofSize: 16, weight: .regular),
-            .foregroundColor: UIColor.label
-        ]
+        textView.adjustsFontForContentSizeCategory = true
+        textView.font = Self.scaledBodyFont()
+        textView.tintColor = Self.mentionColor
+        textView.typingAttributes = Self.baseAttributes
+        context.coordinator.lastContentSizeCategory = textView.traitCollection.preferredContentSizeCategory
         return textView
     }
 
@@ -46,10 +45,16 @@ public struct FMMentionTextEditor: UIViewRepresentable {
     public func updateUIView(_ textView: UITextView, context: Context) {
         context.coordinator.isFocused = isFocused
 
-        if textView.text != text {
+        let contentSizeCategory = textView.traitCollection.preferredContentSizeCategory
+        if textView.text != text || context.coordinator.lastContentSizeCategory != contentSizeCategory {
+            let selectedRange = textView.selectedRange
+            let textChanged = textView.text != text
             applyHighlighting(to: textView, with: text)
-            let endPosition = textView.text.count
-            textView.selectedRange = NSRange(location: endPosition, length: 0)
+            let textLength = (text as NSString).length
+            let safeLocation = textChanged ? textLength : min(selectedRange.location, textLength)
+            let safeLength = textChanged ? 0 : min(selectedRange.length, textLength - safeLocation)
+            textView.selectedRange = NSRange(location: safeLocation, length: safeLength)
+            context.coordinator.lastContentSizeCategory = contentSizeCategory
         }
 
         // 포커스 관리
@@ -67,30 +72,49 @@ public struct FMMentionTextEditor: UIViewRepresentable {
     }
 
     private func applyHighlighting(to textView: UITextView, with text: String) {
-        let baseAttributes: [NSAttributedString.Key: Any] = [
-            .font: UIFont.systemFont(ofSize: 16, weight: .regular),
+        textView.attributedText = Self.highlightedText(text)
+        textView.typingAttributes = Self.baseAttributes
+    }
+
+    private static var baseAttributes: [NSAttributedString.Key: Any] {
+        [
+            .font: scaledBodyFont(),
             .foregroundColor: UIColor.label
         ]
-        let attributed = NSMutableAttributedString(string: text, attributes: baseAttributes)
+    }
 
-        let mentionAttributes: [NSAttributedString.Key: Any] = [
-            .foregroundColor: UIColor.systemBlue,
-            .font: UIFont.systemFont(ofSize: 16, weight: .semibold)
+    private static var mentionAttributes: [NSAttributedString.Key: Any] {
+        [
+            .foregroundColor: mentionColor,
+            .font: scaledBodyFont(weight: .semibold)
         ]
+    }
 
+    private static var mentionColor: UIColor {
+        UIColor(named: "Primary", in: .module, compatibleWith: nil) ?? .systemBlue
+    }
+
+    private static func scaledBodyFont(weight: UIFont.Weight = .regular) -> UIFont {
+        UIFontMetrics(forTextStyle: .body).scaledFont(
+            for: UIFont.systemFont(ofSize: 16, weight: weight)
+        )
+    }
+
+    private static func highlightedText(_ text: String) -> NSAttributedString {
+        let attributed = NSMutableAttributedString(string: text, attributes: baseAttributes)
         if let regex = try? NSRegularExpression(pattern: "@\\S+") {
-            let matches = regex.matches(in: text, range: NSRange(location: 0, length: (text as NSString).length))
-            for match in matches {
+            let range = NSRange(location: 0, length: (text as NSString).length)
+            for match in regex.matches(in: text, range: range) {
                 attributed.addAttributes(mentionAttributes, range: match.range)
             }
         }
-
-        textView.attributedText = attributed
+        return attributed
     }
 
     public final class Coordinator: NSObject, UITextViewDelegate {
         @Binding var text: String
         var isFocused: Binding<Bool>?
+        var lastContentSizeCategory: UIContentSizeCategory?
 
         init(text: Binding<String>, isFocused: Binding<Bool>?) {
             _text = text
@@ -103,31 +127,12 @@ public struct FMMentionTextEditor: UIViewRepresentable {
 
             text = newText
 
-            let baseAttributes: [NSAttributedString.Key: Any] = [
-                .font: UIFont.systemFont(ofSize: 16, weight: .regular),
-                .foregroundColor: UIColor.label
-            ]
-            let attributed = NSMutableAttributedString(string: newText, attributes: baseAttributes)
+            textView.attributedText = FMMentionTextEditor.highlightedText(newText)
+            textView.typingAttributes = FMMentionTextEditor.baseAttributes
 
-            let mentionAttributes: [NSAttributedString.Key: Any] = [
-                .foregroundColor: UIColor.systemBlue,
-                .font: UIFont.systemFont(ofSize: 16, weight: .semibold)
-            ]
-
-            if let regex = try? NSRegularExpression(pattern: "@\\S+") {
-                let matches = regex.matches(
-                    in: newText,
-                    range: NSRange(location: 0, length: (newText as NSString).length)
-                )
-                for match in matches {
-                    attributed.addAttributes(mentionAttributes, range: match.range)
-                }
-            }
-
-            textView.attributedText = attributed
-
-            let safeLocation = min(selectedRange.location, newText.count)
-            let safeLength = min(selectedRange.length, newText.count - safeLocation)
+            let textLength = (newText as NSString).length
+            let safeLocation = min(selectedRange.location, textLength)
+            let safeLength = min(selectedRange.length, textLength - safeLocation)
             textView.selectedRange = NSRange(location: safeLocation, length: safeLength)
         }
 

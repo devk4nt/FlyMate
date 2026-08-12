@@ -33,7 +33,7 @@ public struct SplashView: View {
                 .scaledToFill()
                 .frame(width: 176, height: 176)
                 .clipShape(RoundedRectangle(cornerRadius: 38, style: .continuous))
-                .shadow(color: FMColors.koreanAirDarkBlue.opacity(0.2), radius: 22, y: 12)
+                .shadow(color: FMColors.deepIndigo.opacity(0.2), radius: 22, y: 12)
                 .scaleEffect(isAnimated ? 1 : 0.86)
                 .opacity(isAnimated ? 1 : 0)
                 .offset(y: isAnimated ? -50 : 0)
@@ -69,7 +69,7 @@ public struct SplashView: View {
     }
 
     private var contentColor: Color {
-        colorScheme == .dark ? FMColors.koreanAirDarkBlue : .white
+        colorScheme == .dark ? FMColors.deepIndigo : .white
     }
 }
 

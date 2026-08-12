@@ -24,6 +24,7 @@ public struct FMNotificationBell: View {
                 }
             }
             .frame(width: 32, height: 32)
+            .frame(width: 44, height: 44)
             .contentShape(Rectangle())
         }
         .accessibilityLabel("알림")

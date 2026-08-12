@@ -38,16 +38,10 @@ public struct VideoUploadView: View {
                 .padding(.bottom, FMSpacing.xxl)
             }
             .scrollDismissesKeyboard(.interactively)
+            .dismissKeyboardOnTap()
         }
         .navigationTitle("영상 업로드")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("취소") {
-                    store.send(.cancelTapped)
-                }
-            }
-        }
         .safeAreaInset(edge: .bottom) {
             FMButton(
                 title: "영상 업로드",

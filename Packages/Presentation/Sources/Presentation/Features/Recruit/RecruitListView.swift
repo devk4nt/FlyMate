@@ -120,7 +120,7 @@ public struct RecruitListView: View {
                 Label("STUDY TOGETHER", systemImage: "person.3.fill")
                     .font(.caption.weight(.bold))
                     .tracking(0.8)
-                    .foregroundStyle(.white.opacity(0.82))
+                    .foregroundStyle(FMColors.onBrand)
 
                 Text("함께 연습할 동료를 찾아보세요")
                     .font(FMTypography.sectionTitle)
@@ -128,7 +128,7 @@ public struct RecruitListView: View {
 
                 Text("진행 방식과 일정이 맞는 스터디를 찾거나\n직접 모집 글을 올려보세요.")
                     .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.82))
+                    .foregroundStyle(FMColors.onBrand)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
@@ -236,10 +236,10 @@ public struct RecruitListView: View {
                 .font(.caption2)
         }
         .font(FMTypography.feedMetaEmphasis)
-        .foregroundStyle(isActive ? .white : FMColors.label)
+        .foregroundStyle(isActive ? FMColors.onAccent : FMColors.label)
         .padding(.horizontal, FMSpacing.sm)
         .padding(.vertical, FMSpacing.xs)
-        .background(isActive ? FMColors.primary : FMColors.background, in: Capsule())
+        .background(isActive ? FMColors.accentFill : FMColors.background, in: Capsule())
         .overlay {
             Capsule().stroke(FMColors.border.opacity(0.4), lineWidth: isActive ? 0 : 1)
         }
@@ -248,10 +248,10 @@ public struct RecruitListView: View {
     private func chipLabel(title: String, isActive: Bool) -> some View {
         Text(title)
             .font(FMTypography.feedMetaEmphasis)
-            .foregroundStyle(isActive ? .white : FMColors.label)
+            .foregroundStyle(isActive ? FMColors.onAccent : FMColors.label)
             .padding(.horizontal, FMSpacing.sm)
             .padding(.vertical, FMSpacing.xs)
-            .background(isActive ? FMColors.primary : FMColors.background, in: Capsule())
+            .background(isActive ? FMColors.accentFill : FMColors.background, in: Capsule())
             .overlay {
                 Capsule().stroke(FMColors.border.opacity(0.4), lineWidth: isActive ? 0 : 1)
             }
@@ -265,7 +265,7 @@ public struct RecruitListView: View {
                 .font(.system(size: 40, weight: .medium))
                 .foregroundStyle(FMColors.brandInk)
                 .frame(width: 72, height: 72)
-                .background(FMColors.airBlue.opacity(0.12), in: Circle())
+                .background(FMColors.accent.opacity(0.12), in: Circle())
 
             VStack(spacing: FMSpacing.xs) {
                 Text("아직 모집 글이 없어요")
@@ -287,7 +287,7 @@ public struct RecruitListView: View {
         )
         .overlay {
             RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
-                .stroke(FMColors.airBlue.opacity(0.2), lineWidth: 1)
+                .stroke(FMColors.accent.opacity(0.2), lineWidth: 1)
         }
     }
 }
@@ -307,7 +307,7 @@ struct RecruitPostRow: View {
                     .foregroundStyle(FMColors.brandInk)
                     .padding(.horizontal, FMSpacing.xs)
                     .padding(.vertical, FMSpacing.xxs)
-                    .background(FMColors.airBlue.opacity(0.12), in: Capsule())
+                    .background(FMColors.accent.opacity(0.12), in: Capsule())
 
                 Spacer(minLength: 0)
 
@@ -345,14 +345,16 @@ struct RecruitPostRow: View {
             }
         }
         .padding(FMSpacing.lg)
-        .background(FMColors.background)
+        .background(post.isRecruiting() ? FMColors.background : FMColors.secondaryBackground)
         .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
-                .stroke(FMColors.airBlue.opacity(0.2), lineWidth: 1)
+                .stroke(
+                    post.isRecruiting() ? FMColors.accent.opacity(0.2) : FMColors.border,
+                    lineWidth: 1
+                )
         }
         .shadow(color: FMColors.brandInk.opacity(0.07), radius: 14, y: 7)
-        .opacity(post.isRecruiting() ? 1 : 0.65)
         .accessibilityElement(children: .combine)
         // VoiceOver: 모집 상태 → 제목 → 진행 방식 → 지역 → 인원 → 마감일 순
         .accessibilityLabel(
@@ -371,11 +373,11 @@ struct RecruitPostRow: View {
     private var statusBadge: some View {
         Text(post.isRecruiting() ? "모집 중" : "모집 마감")
             .font(FMTypography.caption1.weight(.semibold))
-            .foregroundStyle(post.isRecruiting() ? .white : FMColors.secondaryLabel)
+            .foregroundStyle(post.isRecruiting() ? FMColors.onAccent : FMColors.secondaryLabel)
             .padding(.horizontal, FMSpacing.xs)
             .padding(.vertical, FMSpacing.xxs)
             .background(
-                post.isRecruiting() ? FMColors.primary : FMColors.secondaryBackground,
+                post.isRecruiting() ? FMColors.accentFill : FMColors.secondaryBackground,
                 in: Capsule()
             )
     }

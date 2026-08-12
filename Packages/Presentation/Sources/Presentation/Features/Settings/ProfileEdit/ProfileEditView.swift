@@ -27,6 +27,7 @@ public struct ProfileEditView: View {
             .padding(.bottom, FMSpacing.xxxl)
         }
         .scrollDismissesKeyboard(.interactively)
+        .dismissKeyboardOnTap()
         .background(FMColors.softCanvas)
         .navigationTitle("프로필 수정")
         .navigationBarTitleDisplayMode(.inline)
@@ -93,7 +94,7 @@ public struct ProfileEditView: View {
             .background(FMColors.background, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
-                    .stroke(FMColors.airBlue.opacity(0.2), lineWidth: 1)
+                    .stroke(FMColors.accent.opacity(0.2), lineWidth: 1)
             }
             .contentShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
         }
@@ -183,7 +184,7 @@ public struct ProfileEditView: View {
         .background(FMColors.background, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
-                .stroke(FMColors.airBlue.opacity(0.2), lineWidth: 1)
+                .stroke(FMColors.accent.opacity(0.2), lineWidth: 1)
         }
         .shadow(color: FMColors.brandInk.opacity(0.06), radius: 12, y: 6)
     }
@@ -225,7 +226,7 @@ public struct ProfileEditView: View {
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(FMColors.brandInk)
                 .frame(width: 36, height: 36)
-                .background(FMColors.airBlue.opacity(0.12))
+                .background(FMColors.accent.opacity(0.12))
                 .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm, style: .continuous))
 
             VStack(alignment: .leading, spacing: FMSpacing.xxxs) {

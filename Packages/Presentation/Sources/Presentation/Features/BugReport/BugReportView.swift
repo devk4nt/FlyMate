@@ -117,6 +117,7 @@ struct BugReportView: View {
             .scrollContentBackground(.hidden)
             .background(FMColors.softCanvas)
             .scrollDismissesKeyboard(.interactively)
+            .dismissKeyboardOnTap()
             .navigationTitle("버그 신고")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

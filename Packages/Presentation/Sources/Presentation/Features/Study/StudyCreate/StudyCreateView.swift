@@ -25,6 +25,7 @@ public struct StudyCreateView: View {
                 .padding(.bottom, FMSpacing.xxl)
             }
             .scrollDismissesKeyboard(.interactively)
+            .dismissKeyboardOnTap()
         }
         .navigationTitle("스터디 만들기")
         .navigationBarTitleDisplayMode(.inline)

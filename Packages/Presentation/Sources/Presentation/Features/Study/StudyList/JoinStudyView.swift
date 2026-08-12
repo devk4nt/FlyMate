@@ -18,6 +18,7 @@ public struct JoinStudyView: View {
             }
         }
         .padding(FMSpacing.md)
+        .dismissKeyboardOnTap()
         .navigationTitle("스터디 참여")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

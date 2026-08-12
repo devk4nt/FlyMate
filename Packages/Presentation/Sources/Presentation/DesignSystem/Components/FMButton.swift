@@ -48,25 +48,19 @@ public struct FMButton: View {
             .frame(maxWidth: .infinity)
             .frame(minHeight: 52)
             .padding(.horizontal, FMSpacing.md)
-            .background {
-                if style == .primary {
-                    FMColors.brandGradient
-                } else {
-                    backgroundColor
-                }
-            }
+            .background(backgroundColor)
             .foregroundStyle(foregroundColor)
             .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous))
             .overlay {
                 if style == .secondary {
                     RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous)
-                        .stroke(FMColors.border.opacity(0.55), lineWidth: 1)
+                        .stroke(FMColors.actionForeground.opacity(0.42), lineWidth: 1)
                 }
             }
             .shadow(
-                color: style == .primary ? FMColors.primary.opacity(0.22) : .clear,
-                radius: 10,
-                y: 5
+                color: style == .primary ? FMColors.accentFill.opacity(0.18) : .clear,
+                radius: 8,
+                y: 4
             )
         }
         .disabled(!isEnabled || isLoading)
@@ -81,7 +75,7 @@ public struct FMButton: View {
     private var backgroundColor: Color {
         switch style {
         case .primary:
-            return FMColors.accent
+            return FMColors.accentFill
         case .secondary:
             return FMColors.background
         case .destructive:
@@ -94,13 +88,13 @@ public struct FMButton: View {
     private var foregroundColor: Color {
         switch style {
         case .primary:
-            return .white
+            return FMColors.onAccent
         case .secondary:
-            return FMColors.label
+            return FMColors.actionForeground
         case .destructive:
             return .white
         case .text:
-            return FMColors.accent
+            return FMColors.actionForeground
         }
     }
 }

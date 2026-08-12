@@ -58,6 +58,7 @@ public struct FeedbackWriteView: View {
             Spacer()
         }
         .padding(.top, FMSpacing.md)
+        .dismissKeyboardOnTap()
         .navigationTitle("피드백 작성")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

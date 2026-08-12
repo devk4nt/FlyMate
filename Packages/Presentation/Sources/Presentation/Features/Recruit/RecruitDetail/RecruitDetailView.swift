@@ -31,6 +31,7 @@ public struct RecruitDetailView: View {
                 .padding(.bottom, FMSpacing.xxl)
             }
             .scrollDismissesKeyboard(.interactively)
+            .dismissKeyboardOnTap()
             .onChange(of: store.scrollToCommentID) { _, commentID in
                 guard let commentID else { return }
                 withAnimation {
@@ -145,7 +146,7 @@ public struct RecruitDetailView: View {
                     .fill(FMColors.background)
 
                 Circle()
-                    .fill(FMColors.airBlue.opacity(0.12))
+                    .fill(FMColors.accent.opacity(0.12))
                     .frame(width: 120, height: 120)
                     .offset(x: 44, y: -54)
             }
@@ -153,7 +154,7 @@ public struct RecruitDetailView: View {
         }
         .overlay {
             RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
-                .stroke(FMColors.airBlue.opacity(0.2), lineWidth: 1)
+                .stroke(FMColors.accent.opacity(0.2), lineWidth: 1)
         }
         .shadow(color: FMColors.brandInk.opacity(0.07), radius: 14, y: 7)
         .padding(.top, FMSpacing.xs)
@@ -163,11 +164,11 @@ public struct RecruitDetailView: View {
     private var statusBadge: some View {
         Text(store.post.isRecruiting() ? "모집 중" : "모집 마감")
             .font(FMTypography.caption1.weight(.semibold))
-            .foregroundStyle(store.post.isRecruiting() ? .white : FMColors.secondaryLabel)
+            .foregroundStyle(store.post.isRecruiting() ? FMColors.onAccent : FMColors.secondaryLabel)
             .padding(.horizontal, FMSpacing.xs)
             .padding(.vertical, FMSpacing.xxs)
             .background(
-                store.post.isRecruiting() ? FMColors.primary : FMColors.secondaryBackground,
+                store.post.isRecruiting() ? FMColors.accentFill : FMColors.secondaryBackground,
                 in: Capsule()
             )
             .accessibilityIdentifier("스터디_상세_모집상태")
@@ -544,7 +545,7 @@ public struct RecruitDetailView: View {
         .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
-                .stroke(FMColors.airBlue.opacity(0.16), lineWidth: 1)
+                .stroke(FMColors.accent.opacity(0.16), lineWidth: 1)
         }
         .shadow(color: FMColors.brandInk.opacity(0.05), radius: 12, y: 6)
     }

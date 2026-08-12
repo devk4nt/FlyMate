@@ -49,7 +49,7 @@ public struct SubscriptionView: View {
                 VStack(alignment: .leading, spacing: FMSpacing.xxs) {
                     Text("현재 이용 중인 플랜")
                         .font(FMTypography.caption1)
-                        .foregroundStyle(.white.opacity(0.78))
+                        .foregroundStyle(FMColors.onBrand)
 
                     Text(store.isPremium ? "FlyMate 프리미엄" : "무료 플랜")
                         .font(FMTypography.title1)
@@ -87,7 +87,7 @@ public struct SubscriptionView: View {
                         .tint(.white)
                     Text("플랜 정보를 불러오는 중이에요")
                         .font(FMTypography.callout)
-                        .foregroundStyle(.white.opacity(0.84))
+                        .foregroundStyle(FMColors.onBrand)
                 }
             }
         }
@@ -102,7 +102,7 @@ public struct SubscriptionView: View {
         VStack(alignment: .leading, spacing: FMSpacing.xxs) {
             Label(title, systemImage: icon)
                 .font(FMTypography.caption1)
-                .foregroundStyle(.white.opacity(0.76))
+                .foregroundStyle(FMColors.onBrand)
 
             Text(value)
                 .font(FMTypography.headline)
@@ -152,7 +152,7 @@ public struct SubscriptionView: View {
         .background(FMColors.background, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
-                .stroke(FMColors.airBlue.opacity(0.2), lineWidth: 1)
+                .stroke(FMColors.accent.opacity(0.2), lineWidth: 1)
         }
         .shadow(color: FMColors.brandInk.opacity(0.06), radius: 12, y: 6)
     }
@@ -211,7 +211,7 @@ public struct SubscriptionView: View {
                 VStack(alignment: .leading, spacing: FMSpacing.xxs) {
                     Text(badge)
                         .font(FMTypography.caption1)
-                        .foregroundStyle(emphasized ? .white.opacity(0.8) : FMColors.brandInk)
+                        .foregroundStyle(emphasized ? .white.opacity(0.8) : FMColors.actionForeground)
 
                     Text(product.displayName)
                         .font(FMTypography.headline)
@@ -234,7 +234,7 @@ public struct SubscriptionView: View {
             .padding(FMSpacing.md)
             .background {
                 if emphasized {
-                    FMColors.brandGradient
+                    FMColors.accentFill
                 } else {
                     FMColors.background
                 }
@@ -242,16 +242,16 @@ public struct SubscriptionView: View {
             .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous)
-                    .stroke(emphasized ? Color.clear : FMColors.airBlue.opacity(0.25), lineWidth: 1)
+                    .stroke(emphasized ? Color.clear : FMColors.actionForeground.opacity(0.42), lineWidth: 1)
             }
-            .shadow(color: emphasized ? FMColors.brandInk.opacity(0.2) : FMColors.brandInk.opacity(0.06), radius: 10, y: 5)
+            .shadow(color: emphasized ? FMColors.accentFill.opacity(0.18) : FMColors.brandInk.opacity(0.06), radius: 8, y: 4)
         }
         .disabled(store.purchaseInProgress)
         .opacity(store.purchaseInProgress ? 0.6 : 1.0)
         .overlay {
             if store.purchaseInProgress {
                 ProgressView()
-                    .tint(emphasized ? .white : FMColors.brandInk)
+                    .tint(emphasized ? .white : FMColors.actionForeground)
             }
         }
         .accessibilityLabel("\(product.displayName) \(product.displayPrice)로 구독하기")
@@ -266,7 +266,7 @@ public struct SubscriptionView: View {
             } label: {
                 Label("이전 구매 복원", systemImage: "arrow.clockwise")
                     .font(FMTypography.callout)
-                    .foregroundStyle(FMColors.brandInk)
+                    .foregroundStyle(FMColors.actionForeground)
             }
             .disabled(store.purchaseInProgress)
 
@@ -285,7 +285,7 @@ public struct SubscriptionView: View {
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(FMColors.brandInk)
                 .frame(width: 36, height: 36)
-                .background(FMColors.airBlue.opacity(0.12))
+                .background(FMColors.accent.opacity(0.12))
                 .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm, style: .continuous))
 
             VStack(alignment: .leading, spacing: FMSpacing.xxxs) {

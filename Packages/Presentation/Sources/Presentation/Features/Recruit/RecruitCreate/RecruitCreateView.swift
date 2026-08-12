@@ -34,6 +34,7 @@ public struct RecruitCreateView: View {
                 .padding(.bottom, FMSpacing.xxl)
             }
             .scrollDismissesKeyboard(.interactively)
+            .dismissKeyboardOnTap()
         }
         .environment(\.locale, Locale(identifier: "ko_KR"))
         .navigationTitle(store.isEditMode ? "모집 글 수정" : "스터디원 모집")

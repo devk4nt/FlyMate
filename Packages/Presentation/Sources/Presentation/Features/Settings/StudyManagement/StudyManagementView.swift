@@ -100,7 +100,7 @@ public struct StudyManagementView: View {
         .background(FMColors.background, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous)
-                .stroke(FMColors.airBlue.opacity(0.2), lineWidth: 1)
+                .stroke(FMColors.accent.opacity(0.2), lineWidth: 1)
         }
         .accessibilityElement(children: .combine)
     }
@@ -111,7 +111,7 @@ public struct StudyManagementView: View {
                 .font(.system(size: FMSizing.IconSize.hero, weight: .medium))
                 .foregroundStyle(FMColors.brandInk)
                 .frame(width: 76, height: 76)
-                .background(FMColors.airBlue.opacity(0.12), in: Circle())
+                .background(FMColors.accent.opacity(0.12), in: Circle())
 
             VStack(spacing: FMSpacing.xs) {
                 Text("관리할 스터디가 없어요")
@@ -130,7 +130,7 @@ public struct StudyManagementView: View {
         .background(FMColors.background, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
-                .stroke(FMColors.airBlue.opacity(0.2), lineWidth: 1)
+                .stroke(FMColors.accent.opacity(0.2), lineWidth: 1)
         }
         .padding(FMSpacing.md)
     }
@@ -152,7 +152,7 @@ private struct StudyManagementCard: View {
                     .foregroundStyle(FMColors.brandInk)
                     .padding(.horizontal, FMSpacing.sm)
                     .padding(.vertical, FMSpacing.xs)
-                    .background(FMColors.airBlue.opacity(0.12), in: Capsule())
+                    .background(FMColors.accent.opacity(0.12), in: Capsule())
             }
 
             VStack(alignment: .leading, spacing: FMSpacing.xs) {
@@ -184,7 +184,7 @@ private struct StudyManagementCard: View {
         .background(FMColors.background, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
-                .stroke(FMColors.airBlue.opacity(0.2), lineWidth: 1)
+                .stroke(FMColors.accent.opacity(0.2), lineWidth: 1)
         }
         .shadow(color: FMColors.brandInk.opacity(0.06), radius: 12, y: 6)
     }

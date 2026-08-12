@@ -9,16 +9,21 @@ public enum FMColors {
     public static let primary = Color("Primary", bundle: .module)
     public static let secondary = Color("Secondary", bundle: .module)
 
-    // Brand palette. Dark blue is sampled from Korean Air's official new-CI image;
-    // the supporting colors are FlyMate adaptations for digital UI.
+    // MARK: - Air Blue palette
+
     public static let koreanAirDarkBlue = Color(red: 0.019608, green: 0.090196, blue: 0.400000)
     public static let airBlue = Color(red: 0.290196, green: 0.662745, blue: 0.847059)
-    /// Legacy CI color. Reserve this for official brand artwork rather than UI state.
-    public static let brandRed = Color(red: 0.850980, green: 0.211765, blue: 0.243137)
+    public static let iceBlue = Color(red: 0.552941, green: 0.843137, blue: 0.933333)
+    public static let blushCoral = Color(red: 1.000000, green: 0.498039, blue: 0.623529)
+    public static let deepIndigo = koreanAirDarkBlue
+    public static let brandRed = blushCoral
 
-    // Semantic brand colors. Air blue is the primary interaction color across
-    // icons, controls, buttons, and selected states.
+    // Semantic brand colors.
     public static let accent = primary
+    public static let accentFill = Color(red: 0.188235, green: 0.427451, blue: 0.650980)
+    public static let onAccent = Color.white
+    public static let highlight = blushCoral
+    public static let subtleAccentSurface = iceBlue
     public static let success = Color(red: 0.12, green: 0.67, blue: 0.42)
     public static let warning = Color(red: 0.96, green: 0.58, blue: 0.12)
 
@@ -27,14 +32,19 @@ public enum FMColors {
     public static let destructiveFill = Color(red: 0.780392, green: 0.207843, blue: 0.270588)
 
     #if canImport(UIKit)
-    public static let attentionFill = Color(UIColor { traits in
+    public static let actionForeground = Color(UIColor { traits in
         traits.userInterfaceStyle == .dark
             ? UIColor(red: 0.55, green: 0.84, blue: 0.93, alpha: 1)
-            : UIColor(red: 0.02, green: 0.09, blue: 0.40, alpha: 1)
+            : UIColor(red: 0.188235, green: 0.427451, blue: 0.650980, alpha: 1)
+    })
+    public static let attentionFill = Color(UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 1.00, green: 0.61, blue: 0.71, alpha: 1)
+            : UIColor(red: 0.71, green: 0.25, blue: 0.44, alpha: 1)
     })
     public static let attentionForeground = Color(UIColor { traits in
         traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.02, green: 0.09, blue: 0.40, alpha: 1)
+            ? UIColor(red: 0.14, green: 0.14, blue: 0.21, alpha: 1)
             : .white
     })
     public static let destructive = Color(UIColor { traits in
@@ -53,7 +63,8 @@ public enum FMColors {
             : UIColor(red: 0.95, green: 0.72, blue: 0.75, alpha: 1)
     })
     #else
-    public static let attentionFill = koreanAirDarkBlue
+    public static let actionForeground = accentFill
+    public static let attentionFill = Color(red: 0.71, green: 0.25, blue: 0.44)
     public static let attentionForeground = Color.white
     public static let destructive = Color(red: 0.78, green: 0.21, blue: 0.27)
     public static let destructiveSurface = Color(red: 0.99, green: 0.93, blue: 0.94)
@@ -77,11 +88,19 @@ public enum FMColors {
     public static let softCanvas = Color(red: 0.95, green: 0.98, blue: 1.00)
     #endif
 
+    /// High-contrast brand surface intended for white foreground content.
+    /// Both stops keep normal white text above WCAG AA 4.5:1.
     public static let brandGradient = LinearGradient(
-        colors: [airBlue, secondary],
+        colors: [
+            Color(red: 0.188235, green: 0.427451, blue: 0.650980),
+            koreanAirDarkBlue
+        ],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
+
+    /// Foreground token for content placed on `brandGradient`.
+    public static let onBrand = Color.white
 
     public static let featureGradient = LinearGradient(
         colors: [
@@ -98,7 +117,7 @@ public enum FMColors {
     public static let label = Color(UIColor.label)
     public static let secondaryLabel = Color(UIColor.secondaryLabel)
     public static let border = Color(UIColor.separator)
-    public static let canvas = Color(UIColor.systemGroupedBackground)
+    public static let canvas = softCanvas
     public static let elevatedBackground = Color(UIColor.secondarySystemGroupedBackground)
     #else
     public static let background = Color(nsColor: .windowBackgroundColor)
@@ -106,7 +125,7 @@ public enum FMColors {
     public static let label = Color(nsColor: .labelColor)
     public static let secondaryLabel = Color(nsColor: .secondaryLabelColor)
     public static let border = Color(nsColor: .separatorColor)
-    public static let canvas = Color(nsColor: .underPageBackgroundColor)
+    public static let canvas = softCanvas
     public static let elevatedBackground = Color(nsColor: .controlBackgroundColor)
     #endif
 }
