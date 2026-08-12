@@ -33,9 +33,9 @@ func module(
 
 /// 실제 Supabase 테스트 계정으로 로그인하는 디버그 스킴.
 /// 비밀번호는 커밋되지 않도록 tuist generate 시점의 환경변수에서 읽는다:
-/// `FLYMATE_TEST_PASSWORD=<pw> tuist generate`
+/// `TUIST_TEST_PASSWORD=<pw> tuist generate`
 func testAccountScheme(_ role: String, email: String) -> Scheme {
-    let testPassword = ProcessInfo.processInfo.environment["FLYMATE_TEST_PASSWORD"] ?? ""
+    let testPassword = Environment.testPassword.getString(default: "")
     return .scheme(
         name: "FlyMate-\(role)",
         shared: true,
