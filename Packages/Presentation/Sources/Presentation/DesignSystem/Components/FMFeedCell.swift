@@ -104,7 +104,6 @@ public struct FMFeedCell: View {
         .aspectRatio(16 / 9, contentMode: .fit)
         .clipped()
         .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous))
-        .padding(.horizontal, FMSpacing.sm)
         .overlay(alignment: .bottomTrailing) {
             Text(durationText)
                 .font(FMTypography.feedMetaEmphasis)
@@ -116,6 +115,7 @@ public struct FMFeedCell: View {
                 .clipShape(Capsule())
                 .padding(FMSpacing.xs)
         }
+        .padding(.horizontal, FMSpacing.sm)
     }
 
     // MARK: - Footer
