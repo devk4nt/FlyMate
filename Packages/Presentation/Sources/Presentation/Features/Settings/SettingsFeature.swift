@@ -29,6 +29,7 @@ public struct SettingsFeature {
         case onAppear
         case pushStatusResponse(UNAuthorizationStatus)
         case profileEditTapped
+        case myActivityTapped
         case studyManagementTapped
         case blockedUsersTapped
         case studyManagementActiveChanged(Bool)
@@ -57,6 +58,7 @@ public struct SettingsFeature {
     @Reducer(state: .equatable)
     public enum Destination {
         case profileEdit(ProfileEditFeature)
+        case myActivity(MyActivityFeature)
         case subscription(SubscriptionFeature)
     }
 
@@ -95,6 +97,12 @@ public struct SettingsFeature {
             case .profileEditTapped:
                 state.destination = .profileEdit(
                     ProfileEditFeature.State(currentUser: state.currentUser)
+                )
+                return .none
+
+            case .myActivityTapped:
+                state.destination = .myActivity(
+                    MyActivityFeature.State(currentUser: state.currentUser)
                 )
                 return .none
 

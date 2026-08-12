@@ -101,4 +101,32 @@ public struct UserRepositoryImpl: UserRepository {
             .eq("id", value: userID)
             .execute()
     }
+
+    public func fetchMyActivityStats() async throws -> MyActivityStats {
+        let response: MyActivityStatsResponse = try await client.rpc("get_my_activity_stats")
+            .single()
+            .execute()
+            .value
+
+        return MyActivityStats(
+            studiesCount: response.studiesCount,
+            videosUploadedCount: response.videosUploadedCount,
+            feedbackReceivedCount: response.feedbackReceivedCount,
+            feedbackGivenCount: response.feedbackGivenCount
+        )
+    }
+}
+
+private struct MyActivityStatsResponse: Codable, Sendable {
+    let studiesCount: Int
+    let videosUploadedCount: Int
+    let feedbackReceivedCount: Int
+    let feedbackGivenCount: Int
+
+    enum CodingKeys: String, CodingKey {
+        case studiesCount = "studies_count"
+        case videosUploadedCount = "videos_uploaded_count"
+        case feedbackReceivedCount = "feedback_received_count"
+        case feedbackGivenCount = "feedback_given_count"
+    }
 }

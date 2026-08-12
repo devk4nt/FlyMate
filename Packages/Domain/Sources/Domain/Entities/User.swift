@@ -34,3 +34,23 @@ public enum AuthProvider: String, Equatable, Sendable, Codable {
     case apple
     case kakao
 }
+
+/// 참여 중인 모든 스터디를 합산한 본인 활동 통계
+public struct MyActivityStats: Equatable, Sendable {
+    public let studiesCount: Int
+    public let videosUploadedCount: Int
+    public let feedbackReceivedCount: Int
+    public let feedbackGivenCount: Int
+
+    public init(
+        studiesCount: Int,
+        videosUploadedCount: Int,
+        feedbackReceivedCount: Int,
+        feedbackGivenCount: Int
+    ) {
+        self.studiesCount = studiesCount
+        self.videosUploadedCount = videosUploadedCount
+        self.feedbackReceivedCount = feedbackReceivedCount
+        self.feedbackGivenCount = feedbackGivenCount
+    }
+}

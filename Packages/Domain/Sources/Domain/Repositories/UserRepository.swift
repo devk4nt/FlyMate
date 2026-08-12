@@ -25,4 +25,7 @@ public protocol UserRepository: Sendable {
 
     /// 알림 설정을 업데이트한다.
     func updateNotificationSettings(enabled: Bool) async throws
+
+    /// 참여 중인 모든 스터디를 합산한 본인 활동 통계를 조회한다.
+    func fetchMyActivityStats() async throws -> MyActivityStats
 }
