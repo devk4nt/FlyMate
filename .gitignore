@@ -57,3 +57,11 @@ supabase/.temp/
 
 # Serena MCP
 .serena/
+
+# 로컬 환경 (테스트 계정 비밀번호 등)
+mise.local.toml
+
+# Fastlane
+build/
+fastlane/report.xml
+fastlane/README.md

@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: jdx/mise-action@v2 # mise.toml 기준으로 tuist 설치
+
+      - name: Create Secrets.xcconfig
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          KAKAO_APP_KEY: ${{ secrets.KAKAO_APP_KEY }}
+        run: |
+          printf 'SUPABASE_URL = %s\nSUPABASE_ANON_KEY = %s\nKAKAO_APP_KEY = %s\n' \
+            "$SUPABASE_URL" "$SUPABASE_ANON_KEY" "$KAKAO_APP_KEY" > Secrets.xcconfig
+
+      - name: Run tests
+        run: fastlane test
