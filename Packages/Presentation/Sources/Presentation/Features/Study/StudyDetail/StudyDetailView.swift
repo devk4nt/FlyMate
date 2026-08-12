@@ -403,19 +403,20 @@ public struct StudyDetailView: View {
                             store.send(.memberManagementTapped)
                         } label: {
                             HStack(spacing: FMSpacing.xxs) {
-                                Label("\(store.study.memberCount)명", systemImage: "person.2")
-                                    .font(FMTypography.caption1)
+                                Label("스터디원 \(store.study.memberCount)명", systemImage: "person.2.fill")
 
-                                if store.isOwner {
-                                    Image(systemName: "chevron.right")
-                                        .font(FMTypography.caption2)
-                                        .foregroundStyle(FMColors.secondaryLabel)
-                                }
+                                Image(systemName: "chevron.right")
+                                    .font(FMTypography.caption2)
                             }
-                            .foregroundStyle(FMColors.label)
-                            .contentShape(Rectangle())
+                            .font(FMTypography.caption1)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(FMColors.actionForeground)
+                            .padding(.horizontal, FMSpacing.sm)
+                            .frame(minHeight: FMSizing.IconContainer.sm)
+                            .background(FMColors.primary.opacity(0.1), in: Capsule())
                         }
                         .buttonStyle(.plain)
+                        .accessibilityHint("스터디원 목록을 엽니다")
 
                         if store.isOwner && store.pendingRequestCount > 0 {
                             Button {
@@ -435,123 +436,29 @@ public struct StudyDetailView: View {
 
                     Spacer(minLength: 0)
 
-                    HStack(spacing: FMSpacing.xxs) {
-                        Button {
-                            store.send(.inviteCodeInfoTapped)
-                        } label: {
-                            Image(systemName: "info.circle")
-                                .font(FMTypography.caption1)
-                                .foregroundStyle(FMColors.secondaryLabel)
-                                .frame(width: 32, height: 32)
-                                .contentShape(Circle())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("초대 코드 정보")
-                        .popover(
-                            isPresented: Binding(
-                                get: { store.isInviteCodePopoverPresented },
-                                set: { newValue in
-                                    if !newValue { store.send(.dismissInviteCodePopover) }
-                                }
-                            ),
-                            arrowEdge: .bottom
-                        ) {
-                            inviteCodeInfoPopoverContent
-                                .presentationCompactAdaptation(.popover)
-                        }
-
-                        Button {
-                            store.send(.copyInviteCode)
-                        } label: {
-                            Label(
-                                store.isCopied ? "복사됨" : "초대 코드 복사",
-                                systemImage: store.isCopied ? "checkmark" : "doc.on.doc"
-                            )
-                            .font(FMTypography.caption1)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(store.isCopied ? FMColors.success : FMColors.actionForeground)
-                            .padding(.horizontal, FMSpacing.sm)
-                            .frame(minHeight: 32)
-                            .background(
-                                (store.isCopied ? FMColors.success : FMColors.primary).opacity(0.1),
-                                in: Capsule()
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityHint("초대 코드를 클립보드에 복사합니다")
-                        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: store.isCopied)
+                    Button {
+                        store.send(.copyInviteCode)
+                    } label: {
+                        Label(
+                            store.isCopied ? "복사됨" : "초대 코드 복사",
+                            systemImage: store.isCopied ? "checkmark" : "doc.on.doc"
+                        )
+                        .font(FMTypography.caption1)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(store.isCopied ? FMColors.success : FMColors.actionForeground)
+                        .padding(.horizontal, FMSpacing.sm)
+                        .frame(minHeight: FMSizing.IconContainer.sm)
+                        .background(
+                            (store.isCopied ? FMColors.success : FMColors.primary).opacity(0.1),
+                            in: Capsule()
+                        )
                     }
+                    .buttonStyle(.plain)
+                    .accessibilityHint("초대 코드를 클립보드에 복사합니다")
+                    .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: store.isCopied)
                 }
             }
         }
-    }
-
-    // MARK: - Invite Code Info Popover
-
-    @ViewBuilder
-    private var inviteCodeInfoPopoverContent: some View {
-        switch store.inviteCodeInfo {
-        case .idle, .loading:
-            ProgressView()
-                .frame(width: 180, height: 80)
-
-        case .loaded(let info):
-            VStack(alignment: .leading, spacing: FMSpacing.sm) {
-                inviteCodeStatusBadge(info)
-
-                if !info.isExpired {
-                    Label(expirationText(info.expiresAt), systemImage: "calendar")
-                        .font(FMTypography.caption1)
-                        .foregroundStyle(FMColors.secondaryLabel)
-                } else {
-                    Label("만료됨", systemImage: "calendar.badge.exclamationmark")
-                        .font(FMTypography.caption1)
-                        .foregroundStyle(FMColors.destructive)
-                }
-            }
-            .padding(FMSpacing.md)
-
-        case .failed:
-            VStack(spacing: FMSpacing.sm) {
-                Text("정보를 불러올 수 없습니다")
-                    .font(FMTypography.caption1)
-                    .foregroundStyle(FMColors.secondaryLabel)
-
-                Button {
-                    store.send(.inviteCodeInfoTapped)
-                } label: {
-                    Text("다시 시도")
-                        .font(FMTypography.caption1)
-                        .foregroundStyle(FMColors.accent)
-                }
-            }
-            .padding(FMSpacing.md)
-        }
-    }
-
-    private func inviteCodeStatusBadge(_ info: InviteCode) -> some View {
-        let (text, color): (String, Color) = if info.isValid {
-            ("활성", FMColors.success)
-        } else if info.isExpired {
-            ("만료됨", FMColors.destructive)
-        } else {
-            ("비활성", FMColors.secondaryLabel)
-        }
-
-        return Text(text)
-            .font(FMTypography.caption2)
-            .foregroundStyle(color)
-            .padding(.horizontal, FMSpacing.xs)
-            .padding(.vertical, FMSpacing.xxs)
-            .background(color.opacity(0.12))
-            .clipShape(Capsule())
-    }
-
-    private func expirationText(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ko_KR")
-        formatter.dateFormat = "M월 d일까지"
-        return formatter.string(from: date)
     }
 
     // MARK: - Feed Cell

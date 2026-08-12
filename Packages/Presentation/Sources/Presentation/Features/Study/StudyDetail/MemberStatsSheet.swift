@@ -13,7 +13,8 @@ struct MemberStatsSheet: View {
                 .navigationBarTitleDisplayMode(.inline)
         }
         .fmSheetStyle()
-        .presentationDetents([.medium])
+        .presentationDetents([.fraction(0.68), .large])
+        .presentationDragIndicator(.visible)
         .onAppear {
             store.send(.onAppear)
         }
@@ -34,50 +35,26 @@ struct MemberStatsSheet: View {
     }
 
     private var loadingView: some View {
-        VStack(spacing: FMSpacing.lg) {
-            profileHeader
-            LazyVGrid(columns: gridColumns, spacing: FMSpacing.sm) {
-                ForEach(0..<4, id: \.self) { _ in
-                    FMSkeletonView(height: 80, cornerRadius: FMSpacing.CornerRadius.md)
-                }
+        ScrollView {
+            VStack(spacing: FMSpacing.lg) {
+                profileHeader
+                FMSkeletonView(height: 224, cornerRadius: FMSpacing.CornerRadius.lg)
+                    .padding(.horizontal, FMSpacing.md)
             }
-            .padding(.horizontal, FMSpacing.md)
-            Spacer()
+            .padding(.top, FMSpacing.lg)
+            .padding(.bottom, FMSpacing.xxl)
         }
-        .padding(.top, FMSpacing.lg)
     }
 
     private func loadedView(stats: MemberStats) -> some View {
-        VStack(spacing: FMSpacing.lg) {
-            profileHeader
-
-            LazyVGrid(columns: gridColumns, spacing: FMSpacing.sm) {
-                statCard(
-                    icon: "calendar",
-                    title: "참여 시작일",
-                    value: formattedDate(stats.joinedAt)
-                )
-                statCard(
-                    icon: "video",
-                    title: "올린 영상",
-                    value: "\(stats.videosUploadedCount)"
-                )
-                statCard(
-                    icon: "envelope.open",
-                    title: "받은 피드백",
-                    value: "\(stats.feedbackReceivedCount)"
-                )
-                statCard(
-                    icon: "text.bubble",
-                    title: "남긴 피드백",
-                    value: "\(stats.feedbackGivenCount)"
-                )
+        ScrollView {
+            VStack(spacing: FMSpacing.lg) {
+                profileHeader
+                activityCard(stats: stats)
             }
-            .padding(.horizontal, FMSpacing.md)
-
-            Spacer()
+            .padding(.top, FMSpacing.lg)
+            .padding(.bottom, FMSpacing.xxl)
         }
-        .padding(.top, FMSpacing.lg)
     }
 
     // MARK: - Profile Header
@@ -106,36 +83,81 @@ struct MemberStatsSheet: View {
         .accessibilityLabel("\(store.member.userName)\(store.member.role == .owner ? ", 방장" : "")")
     }
 
-    // MARK: - Stat Card
+    // MARK: - Activity Card
 
-    private func statCard(icon: String, title: String, value: String) -> some View {
-        FMCard(padding: FMSpacing.sm) {
-            VStack(spacing: FMSpacing.xs) {
-                Image(systemName: icon)
-                    .font(FMTypography.title3)
-                    .foregroundStyle(FMColors.primary)
-                    .accessibilityHidden(true)
+    private func activityCard(stats: MemberStats) -> some View {
+        VStack(alignment: .leading, spacing: FMSpacing.sm) {
+            Text("스터디 활동")
+                .font(FMTypography.headline)
+                .foregroundStyle(FMColors.label)
 
-                Text(value)
-                    .font(FMTypography.headline)
-                    .foregroundStyle(FMColors.label)
+            FMCard(padding: 0) {
+                VStack(spacing: 0) {
+                    statRow(
+                        icon: "calendar",
+                        title: "참여 시작일",
+                        value: formattedDate(stats.joinedAt)
+                    )
 
-                Text(title)
-                    .font(FMTypography.caption1)
-                    .foregroundStyle(FMColors.secondaryLabel)
+                    Divider()
+                        .padding(.leading, FMSizing.IconContainer.md + FMSpacing.md * 2)
+
+                    statRow(
+                        icon: "video",
+                        title: "올린 영상",
+                        value: "\(stats.videosUploadedCount)개"
+                    )
+
+                    Divider()
+                        .padding(.leading, FMSizing.IconContainer.md + FMSpacing.md * 2)
+
+                    statRow(
+                        icon: "envelope.open",
+                        title: "받은 피드백",
+                        value: "\(stats.feedbackReceivedCount)개"
+                    )
+
+                    Divider()
+                        .padding(.leading, FMSizing.IconContainer.md + FMSpacing.md * 2)
+
+                    statRow(
+                        icon: "text.bubble",
+                        title: "남긴 피드백",
+                        value: "\(stats.feedbackGivenCount)개"
+                    )
+                }
             }
-            .frame(maxWidth: .infinity)
-            .frame(minHeight: 56)
         }
+        .padding(.horizontal, FMSpacing.md)
+    }
+
+    private func statRow(icon: String, title: String, value: String) -> some View {
+        HStack(spacing: FMSpacing.md) {
+            Image(systemName: icon)
+                .font(.system(size: FMSizing.IconSize.sm, weight: .semibold))
+                .foregroundStyle(FMColors.iconAccent)
+                .frame(width: FMSizing.IconContainer.md, height: FMSizing.IconContainer.md)
+                .background(FMColors.primary.opacity(0.1), in: Circle())
+                .accessibilityHidden(true)
+
+            Text(title)
+                .font(FMTypography.body)
+                .foregroundStyle(FMColors.label)
+
+            Spacer(minLength: FMSpacing.sm)
+
+            Text(value)
+                .font(FMTypography.headline)
+                .foregroundStyle(FMColors.label)
+                .multilineTextAlignment(.trailing)
+        }
+        .padding(.horizontal, FMSpacing.md)
+        .padding(.vertical, FMSpacing.xs)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title) \(value)")
     }
 
     // MARK: - Helpers
-
-    private var gridColumns: [GridItem] {
-        [GridItem(.flexible()), GridItem(.flexible())]
-    }
 
     private func formattedDate(_ date: Date) -> String {
         let formatter = DateFormatter()
