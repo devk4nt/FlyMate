@@ -69,6 +69,7 @@ serve(async (req) => {
     });
 
     if (createError && !createError.message.includes("already been registered")) {
+      console.error("createUser failed:", createError.message);
       return new Response(
         JSON.stringify({ error: createError.message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -83,6 +84,7 @@ serve(async (req) => {
       });
 
     if (linkError || !linkData.properties?.hashed_token) {
+      console.error("generateLink failed:", linkError?.message ?? "no hashed_token");
       return new Response(
         JSON.stringify({ error: linkError?.message ?? "Failed to generate session" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -91,12 +93,12 @@ serve(async (req) => {
 
     const { data: sessionData, error: sessionError } =
       await supabaseAdmin.auth.verifyOtp({
-        email: authEmail,
-        token: linkData.properties.hashed_token,
+        token_hash: linkData.properties.hashed_token,
         type: "email",
       });
 
     if (sessionError || !sessionData.session) {
+      console.error("verifyOtp failed:", sessionError?.message ?? "no session");
       return new Response(
         JSON.stringify({ error: sessionError?.message ?? "Failed to create session" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -119,6 +121,7 @@ serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
+    console.error("unhandled error:", (err as Error).message);
     return new Response(
       JSON.stringify({ error: (err as Error).message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
