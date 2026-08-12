@@ -88,7 +88,6 @@ private struct FMSheetStyleModifier: ViewModifier {
         content
             .background(FMColors.canvas.ignoresSafeArea())
             .tint(FMColors.actionForeground)
-            .presentationBackground(FMColors.canvas)
     }
 }
 
