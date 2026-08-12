@@ -23,5 +23,10 @@ jobs:
           printf 'SUPABASE_URL = %s\nSUPABASE_ANON_KEY = %s\nKAKAO_APP_KEY = %s\n' \
             "$SUPABASE_URL" "$SUPABASE_ANON_KEY" "$KAKAO_APP_KEY" > Secrets.xcconfig
 
+      - name: Create GoogleService-Info.plist
+        env:
+          GOOGLE_SERVICE_INFO_PLIST: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}
+        run: echo "$GOOGLE_SERVICE_INFO_PLIST" | base64 -d > FlyMate/GoogleService-Info.plist
+
       - name: Run tests
         run: fastlane test
