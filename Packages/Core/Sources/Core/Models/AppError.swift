@@ -83,7 +83,7 @@ public enum BusinessError: Equatable, Sendable {
         case .invalidInviteCode:
             return "유효하지 않은 초대 코드입니다."
         case .inviteCodeExpired:
-            return "만료된 초대 코드입니다. 스터디장에게 새 코드를 요청해주세요."
+            return "만료된 초대 코드입니다. 스터디 팀장에게 새 코드를 요청해주세요."
         case .inviteCodeInactive:
             return "비활성화된 초대 코드입니다."
         case .alreadyJoined:

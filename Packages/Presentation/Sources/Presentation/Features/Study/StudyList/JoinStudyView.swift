@@ -62,7 +62,7 @@ public struct JoinStudyView: View {
                 Text("팀과 함께 시작해요")
                     .font(FMTypography.title2)
                     .foregroundStyle(FMColors.label)
-                Text("스터디장이 공유한 초대 코드가 필요해요.")
+                Text("스터디 팀장이 공유한 초대 코드가 필요해요.")
                     .font(FMTypography.callout)
                     .foregroundStyle(FMColors.secondaryLabel)
             }
@@ -101,7 +101,7 @@ public struct JoinStudyView: View {
                 Text("참여 요청이 전송되었습니다")
                     .font(FMTypography.title3)
 
-                Text("스터디장이 승인하면 참여할 수 있습니다.")
+                Text("스터디 팀장이 승인하면 참여할 수 있습니다.")
                     .font(FMTypography.body)
                     .foregroundStyle(FMColors.secondaryLabel)
                     .multilineTextAlignment(.center)
