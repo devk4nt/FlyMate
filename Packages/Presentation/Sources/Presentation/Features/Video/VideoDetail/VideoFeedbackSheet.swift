@@ -6,6 +6,7 @@ import Domain
 /// 피드 페이지에서 올라오는 시트 — 촬영 포인트/피드백 요청, 피드백 목록, 댓글 입력.
 public struct VideoFeedbackSheet: View {
     @Bindable var store: StoreOf<VideoDetailFeature>
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(store: StoreOf<VideoDetailFeature>) {
         self.store = store
@@ -179,7 +180,7 @@ public struct VideoFeedbackSheet: View {
             .dismissKeyboardOnTap()
             .onChange(of: store.focusedFeedbackID) { _, focusedID in
                 if let focusedID {
-                    withAnimation {
+                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) {
                         proxy.scrollTo(focusedID, anchor: .center)
                     }
                 }
@@ -187,7 +188,7 @@ public struct VideoFeedbackSheet: View {
             .onAppear {
                 if let focusedID = store.focusedFeedbackID {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        withAnimation {
+                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) {
                             proxy.scrollTo(focusedID, anchor: .center)
                         }
                     }

@@ -1245,6 +1245,7 @@ struct FlyMateApp: App {
     var body: some Scene {
         WindowGroup {
             AppView(store: store)
+                .environment(\.locale, Locale(identifier: "ko_KR"))
                 .onOpenURL { url in
                     if url.scheme == "flymate" {
                         if let deepLink = DeepLinkParser.parse(url: url) {

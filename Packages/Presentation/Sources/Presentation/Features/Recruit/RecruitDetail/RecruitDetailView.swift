@@ -365,8 +365,8 @@ public struct RecruitDetailView: View {
             if let replyTarget = store.replyTarget {
                 HStack(spacing: FMSpacing.xs) {
                     Image(systemName: "arrowshape.turn.up.left.fill")
-                        .font(.caption)
-                        .foregroundStyle(FMColors.accent)
+                        .font(FMTypography.caption1)
+                        .foregroundStyle(FMColors.selection)
 
                     Text("\(replyTarget.authorName)님에게 답글 남기는 중")
                         .font(FMTypography.caption1)
@@ -406,9 +406,8 @@ public struct RecruitDetailView: View {
                 .lineLimit(1...4)
                 .focused($isCommentInputFocused)
                 .padding(.horizontal, FMSpacing.sm)
-                .padding(.vertical, 10)
-                .background(FMColors.secondaryBackground)
-                .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous))
+                .padding(.vertical, FMSpacing.xs)
+                .fmComposerSurface(isFocused: isCommentInputFocused)
                 .accessibilityLabel("댓글 입력")
                 .accessibilityIdentifier("스터디_상세_댓글작성")
 

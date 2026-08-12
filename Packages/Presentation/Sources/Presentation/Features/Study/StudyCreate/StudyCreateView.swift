@@ -74,8 +74,8 @@ public struct StudyCreateView: View {
                     .font(.system(size: 26, weight: .semibold))
                     .foregroundStyle(.white)
             }
-            .frame(width: 64, height: 64)
-            .shadow(color: FMColors.primary.opacity(0.24), radius: 12, y: 6)
+            .frame(width: FMSizing.IconContainer.hero, height: FMSizing.IconContainer.hero)
+            .shadow(color: FMShadow.floatingColor, radius: FMShadow.floatingRadius, y: FMShadow.floatingY)
 
             VStack(alignment: .leading, spacing: FMSpacing.xxs) {
                 Text("새로운 팀을 시작해요")
@@ -114,7 +114,7 @@ public struct StudyCreateView: View {
                             .font(FMTypography.body)
                             .foregroundStyle(FMColors.secondaryLabel.opacity(0.65))
                             .padding(.horizontal, FMSpacing.sm)
-                            .padding(.vertical, 14)
+                            .padding(.vertical, FMSpacing.sm)
                             .allowsHitTesting(false)
                     }
 

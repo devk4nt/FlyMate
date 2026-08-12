@@ -126,6 +126,8 @@ public struct SettingsView: View {
                 }
                 .settingsSectionStyle()
             }
+            .frame(maxWidth: FMSizing.ContentWidth.regular)
+            .frame(maxWidth: .infinity)
             .contentMargins(.top, 0, for: .scrollContent)
             .listSectionSpacing(FMSpacing.lg)
             .scrollContentBackground(.hidden)
@@ -134,6 +136,7 @@ public struct SettingsView: View {
             .navigationTitle("설정")
             .navigationBarTitleDisplayMode(.inline)
         }
+        .background(FMColors.softCanvas)
         .onAppear { store.send(.onAppear) }
         // 시스템 설정에서 권한 변경 후 복귀 시 토글 상태 재동기화
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
@@ -200,13 +203,13 @@ public struct SettingsView: View {
                 Image(systemName: "pencil")
                     .font(FMTypography.badgeStrong)
                     .foregroundStyle(.white)
-                    .frame(width: 34, height: 34)
+                    .frame(width: FMSizing.IconContainer.sm, height: FMSizing.IconContainer.sm)
                     .background(.white.opacity(0.16), in: Circle())
             }
             .padding(FMSpacing.lg)
             .background(FMColors.brandGradient)
             .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
-            .shadow(color: FMColors.brandInk.opacity(0.18), radius: 16, y: 8)
+            .shadow(color: FMShadow.heroColor, radius: FMShadow.heroRadius, y: FMShadow.heroY)
             .contentShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
         }
         .buttonStyle(.plain)
@@ -229,7 +232,7 @@ private struct SettingsActionLabel: View {
             Image(systemName: systemImage)
                 .font(.system(size: FMSizing.IconSize.sm, weight: .semibold))
                 .foregroundStyle(tint)
-                .frame(width: 36, height: 36)
+                .frame(width: FMSizing.IconContainer.sm, height: FMSizing.IconContainer.sm)
                 .background(tint.opacity(0.1), in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm, style: .continuous))
 
             VStack(alignment: .leading, spacing: FMSpacing.xxxs) {

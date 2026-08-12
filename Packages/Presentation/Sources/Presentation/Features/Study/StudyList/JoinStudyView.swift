@@ -55,7 +55,7 @@ public struct JoinStudyView: View {
             Image(systemName: "person.badge.plus")
                 .font(.system(size: 25, weight: .semibold))
                 .foregroundStyle(.white)
-                .frame(width: 60, height: 60)
+                .frame(width: FMSizing.IconContainer.hero, height: FMSizing.IconContainer.hero)
                 .background(FMColors.brandGradient, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous))
 
             VStack(alignment: .leading, spacing: FMSpacing.xxs) {
@@ -96,7 +96,7 @@ public struct JoinStudyView: View {
             VStack(spacing: FMSpacing.md) {
                 Image(systemName: "paperplane.fill")
                     .font(.system(size: FMSizing.IconSize.hero))
-                    .foregroundStyle(FMColors.primary)
+                    .foregroundStyle(FMColors.iconAccent)
 
                 Text("참여 요청이 전송되었습니다")
                     .font(FMTypography.title3)

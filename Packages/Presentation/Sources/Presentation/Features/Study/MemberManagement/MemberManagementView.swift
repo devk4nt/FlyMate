@@ -20,6 +20,8 @@ public struct MemberManagementView: View {
                     .font(FMTypography.caption1)
             }
         }
+        .frame(maxWidth: FMSizing.ContentWidth.form)
+        .frame(maxWidth: .infinity)
         .listStyle(.insetGrouped)
         .navigationTitle("스터디원 관리")
         .navigationBarTitleDisplayMode(.inline)
@@ -57,15 +59,15 @@ public struct MemberManagementView: View {
                             if member.role == .owner {
                                 Text("방장")
                                     .font(FMTypography.caption2)
-                                    .foregroundStyle(FMColors.primary)
+                                    .foregroundStyle(FMColors.badgeForeground)
                                     .padding(.horizontal, FMSpacing.xxs)
                                     .padding(.vertical, FMSpacing.xxxs)
-                                    .background(FMColors.primary.opacity(0.12))
+                                    .background(FMColors.badgeForeground.opacity(0.12))
                                     .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm / 2))
                             }
                         }
 
-                        Text(member.joinedAt.formatted(date: .abbreviated, time: .omitted))
+                        Text(member.joinedAt.koreanAbbreviated)
                             .font(FMTypography.caption1)
                             .foregroundStyle(FMColors.secondaryLabel)
                     }

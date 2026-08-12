@@ -107,6 +107,18 @@ public extension View {
                     )
             }
     }
+
+    func fmComposerSurface(isFocused: Bool = false) -> some View {
+        background(FMColors.secondaryBackground)
+            .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
+                    .stroke(
+                        isFocused ? FMColors.selection : FMColors.border.opacity(0.5),
+                        lineWidth: isFocused ? 1.5 : 1
+                    )
+            }
+    }
 }
 
 #Preview {

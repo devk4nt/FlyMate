@@ -11,6 +11,9 @@ public struct JoinRequestManagementView: View {
 
     public var body: some View {
         contentView
+            .frame(maxWidth: FMSizing.ContentWidth.form)
+            .frame(maxWidth: .infinity)
+            .background(FMColors.canvas)
             .navigationTitle("참여 요청 관리")
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {
@@ -23,8 +26,14 @@ public struct JoinRequestManagementView: View {
     private var contentView: some View {
         switch store.requests {
         case .idle, .loading:
-            ProgressView()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            ScrollView {
+                LazyVStack(spacing: FMSpacing.md) {
+                    ForEach(0..<4, id: \.self) { _ in
+                        FMSkeletonView.listRow
+                    }
+                }
+                .padding(FMSpacing.md)
+            }
 
         case .loaded(let requests):
             if requests.isEmpty {
@@ -69,7 +78,7 @@ public struct JoinRequestManagementView: View {
                     .font(FMTypography.headline)
                     .foregroundStyle(FMColors.label)
 
-                Text(request.createdAt.formatted(date: .abbreviated, time: .omitted))
+                Text(request.createdAt.koreanAbbreviated)
                     .font(FMTypography.caption1)
                     .foregroundStyle(FMColors.secondaryLabel)
             }

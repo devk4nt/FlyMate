@@ -119,7 +119,7 @@ public struct RecruitListView: View {
     // MARK: - Hero
 
     private var recruitmentHero: some View {
-        VStack(alignment: .leading, spacing: FMSpacing.lg) {
+        VStack(alignment: .leading, spacing: FMSpacing.sm) {
             VStack(alignment: .leading, spacing: FMSpacing.sm) {
                 Label("STUDY TOGETHER", systemImage: "person.3.fill")
                     .font(FMTypography.badgeStrong)
@@ -129,11 +129,6 @@ public struct RecruitListView: View {
                 Text("함께 연습할 동료를 찾아보세요")
                     .font(FMTypography.sectionTitle)
                     .foregroundStyle(.white)
-
-                Text("진행 방식과 일정이 맞는 스터디를 찾거나\n직접 모집 글을 올려보세요.")
-                    .font(FMTypography.feedBody)
-                    .foregroundStyle(FMColors.onBrand)
-                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Button {
@@ -141,7 +136,7 @@ public struct RecruitListView: View {
             } label: {
                 Label("모집 글 작성", systemImage: "square.and.pencil")
                     .font(FMTypography.authorName)
-                    .foregroundStyle(FMColors.brandInk)
+                    .foregroundStyle(FMColors.iconAccent)
                     .frame(maxWidth: .infinity)
                     .frame(minHeight: 48)
                     .contentShape(Rectangle())
@@ -151,7 +146,8 @@ public struct RecruitListView: View {
             .accessibilityHint("새 스터디원 모집 글을 작성합니다")
             .accessibilityIdentifier("스터디_목록_히어로_모집글작성")
         }
-        .padding(FMSpacing.lg)
+        .padding(.horizontal, FMSpacing.lg)
+        .padding(.vertical, FMSpacing.md)
         .background {
             ZStack(alignment: .topTrailing) {
                 RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.hero, style: .continuous)
@@ -166,7 +162,7 @@ public struct RecruitListView: View {
                 Circle()
                     .fill(.white.opacity(0.13))
                     .frame(width: 90, height: 90)
-                    .offset(x: -30, y: 138)
+                    .offset(x: -30, y: 88)
             }
             .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.hero, style: .continuous))
         }
@@ -292,10 +288,10 @@ struct RecruitPostRow: View {
 
                     Text(post.field.displayText)
                         .font(FMTypography.caption1)
-                        .foregroundStyle(FMColors.brandInk)
+                        .foregroundStyle(FMColors.badgeForeground)
                         .padding(.horizontal, FMSpacing.xs)
                         .padding(.vertical, FMSpacing.xxs)
-                        .background(FMColors.accent.opacity(0.12), in: Capsule())
+                        .background(FMColors.badgeForeground.opacity(0.12), in: Capsule())
 
                     Spacer(minLength: 0)
 

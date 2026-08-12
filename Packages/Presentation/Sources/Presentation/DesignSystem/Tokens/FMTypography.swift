@@ -53,10 +53,6 @@ public enum FMTypography {
         .system(.title3, weight: .bold)
     }
 
-    public static var metric: Font {
-        .system(.headline, weight: .bold)
-    }
-
     public static var badgeStrong: Font {
         .system(.caption, weight: .bold)
     }

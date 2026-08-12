@@ -266,6 +266,43 @@
 
 구조 차이가 컸던 `JoinStudyView`, `ReportView`, 모집 재개 시트는 `설명 헤더 → 카드형 콘텐츠 → 고정 하단 CTA` 구조로 재구성했다.
 
+## 버튼·시트 외 디자인 통일 적용 (2026-08-12)
+
+사용자가 빈 계정과 일반 탐색 과정에서 자주 접하는 화면부터 다음 순서로 개선했다.
+
+1. 상태 화면
+   - 피드백 목록, 피드백 대기열, 스터디 관리의 별도 빈 화면을 `FMEmptyState`로 통합
+   - `fullScreen`, `compact`, `card` layout과 의미 색상 tint를 지원
+   - 참여 요청의 초기 중앙 spinner를 list skeleton으로 변경
+2. 카드 표면
+   - 스터디 생성, 모집 글 생성, 영상 업로드 form card를 `FMCard.standard`로 통합
+   - 피드백 헤더와 프로필 정보 영역을 공통 card variant로 이동
+3. 타이포그래피·색상
+   - 설정 및 관리 화면의 직접 system text style을 `FMTypography` 역할로 이동
+   - `iconAccent`, `selection`, `badgeForeground`, `decorativeBrand` semantic color 추가
+4. 입력·아이콘
+   - 댓글 composer를 `fmComposerSurface`로 통합해 background, radius, border, focus 표현 일치
+   - `FMSizing.IconContainer`의 `sm/md/lg/hero` 규격 추가
+5. 반응형·내비게이션
+   - 설정, 피드백 관리, 스터디 상세, 참여 요청·멤버 관리에 최대 콘텐츠 폭 적용
+   - 스터디 상세 navigation title을 inline으로 통일
+6. 모션·그림자·간격
+   - 영상 피드백 자동 스크롤에 Reduce Motion 적용
+   - 헤더/hero 그림자를 `FMShadow` 역할 토큰으로 이동
+   - 13/14pt placeholder 보정값을 spacing token으로 정리
+
+정적 지표 변화:
+
+| 항목 | 적용 전 | 적용 후 |
+|---|---:|---:|
+| `FMCard` feature 사용 | 12 | 18 |
+| 직접 구현 rounded surface | 59 | 47 |
+| 직접 semantic/system font 지정 | 69 | 45 |
+| feature shadow 호출 | 29 | 25 |
+| `FMSizing.ContentWidth` 적용 | 6 | 11 |
+
+미디어 overlay, 앱 hero artwork, 시스템 목록처럼 역할상 별도 표현이 필요한 화면은 공통 카드로 강제하지 않았다.
+
 ## 수행한 검증
 
 ### 정적 검사
@@ -306,6 +343,7 @@
 - Xcode beta 27의 generic simulator 빌드는 외부 `xctest-dynamic-overlay`의 `_fail` 심볼 호환 오류로 중단됐으나, iOS 26.3.1 지정 시뮬레이터의 앱 빌드 및 전체 테스트는 성공했다.
 - 잔여 빌드 경고: Supabase/TCA deprecated API와 `VideoPlayerView`/`ProfileEditView`의 Swift 6 actor-isolation 경고. 현재 빌드·테스트를 막지는 않지만 정식 Swift 6 오류 모드 전환 전에 정리 권장.
 - 시트 통일 적용 후 전체 unit test 재실행: **212개 통과, 실패 0, skip 0** (iPhone 17 Pro, iOS 26.3.1 Simulator).
+- 버튼·시트 외 통일 및 한국어 날짜 포맷 테스트 추가 후 전체 unit test 재실행: **213개 통과, 실패 0, skip 0** (iPhone 17 Pro, iOS 26.3.1 Simulator).
 
 ## 수정 권장 순서
 
@@ -318,4 +356,4 @@
 - 디자인 정적 감사 및 P1 개선: **완료**
 - 제출 이미지 시각 감사: **완료**
 - 빌드: **성공** (`FlyMate.xcworkspace`, Debug, iOS Simulator)
-- 단위 테스트: **212/212 통과**
+- 단위 테스트: **213/213 통과**

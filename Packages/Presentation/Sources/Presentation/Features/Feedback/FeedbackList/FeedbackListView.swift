@@ -134,7 +134,7 @@ struct FeedbackManagementRow: View {
                 result = result + Text(content[currentIndex..<range.lowerBound])
             }
             result = result + Text(content[range])
-                .foregroundColor(FMColors.brandInk)
+                .foregroundColor(FMColors.selection)
                 .fontWeight(.semibold)
             currentIndex = range.upperBound
         }
@@ -205,7 +205,7 @@ struct FeedbackManagementRow: View {
 
             HStack(alignment: .top, spacing: FMSpacing.sm) {
                 Capsule()
-                    .fill(FMColors.accent)
+                    .fill(FMColors.selection)
                     .frame(width: 3)
 
                 highlightedContent(feedback.content)
@@ -221,10 +221,10 @@ struct FeedbackManagementRow: View {
                     systemImage: "play.fill"
                 )
                 .font(FMTypography.feedMetaEmphasis)
-                .foregroundStyle(FMColors.brandInk)
+                .foregroundStyle(FMColors.badgeForeground)
                 .padding(.horizontal, FMSpacing.sm)
                 .padding(.vertical, FMSpacing.xs)
-                .background(FMColors.accent.opacity(0.12), in: Capsule())
+                .background(FMColors.badgeForeground.opacity(0.12), in: Capsule())
 
                 if feedback.commentCount > 0 {
                     Label("답글 \(feedback.commentCount)", systemImage: "bubble.left.fill")
@@ -236,9 +236,9 @@ struct FeedbackManagementRow: View {
 
                 Image(systemName: "arrow.up.right")
                     .font(FMTypography.badgeStrong)
-                    .foregroundStyle(FMColors.brandInk)
+                    .foregroundStyle(FMColors.iconAccent)
                     .frame(width: 30, height: 30)
-                    .background(FMColors.accent.opacity(0.1), in: Circle())
+                    .background(FMColors.iconAccent.opacity(0.1), in: Circle())
             }
             }
         }

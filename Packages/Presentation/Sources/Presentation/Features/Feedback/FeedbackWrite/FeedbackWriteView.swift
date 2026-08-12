@@ -15,7 +15,7 @@ public struct FeedbackWriteView: View {
             // 타임스탬프 표시
             HStack {
                 Image(systemName: "clock")
-                    .foregroundStyle(FMColors.accent)
+                    .foregroundStyle(FMColors.iconAccent)
                 Text(store.timestampSeconds.minuteSecondFormatted)
                     .font(FMTypography.headline)
                 Spacer()
@@ -30,8 +30,7 @@ public struct FeedbackWriteView: View {
                     )
                     .frame(minHeight: 120)
                     .padding(FMSpacing.xs)
-                    .background(FMColors.secondaryBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm))
+                    .fmInputSurface()
 
                     if store.showMentionSuggestions {
                         mentionSuggestionsView
@@ -92,7 +91,7 @@ public struct FeedbackWriteView: View {
                         HStack(spacing: FMSpacing.sm) {
                             Image(systemName: "person.3.fill")
                                 .font(FMTypography.caption1)
-                                .foregroundStyle(FMColors.accent)
+                                .foregroundStyle(FMColors.selection)
                                 .frame(width: 28, height: 28)
 
                             Text("전체 (@전체)")
@@ -141,4 +140,3 @@ public struct FeedbackWriteView: View {
         FMProfileImage(url: member.profileImageURL, name: member.userName, size: .sm)
     }
 }
-

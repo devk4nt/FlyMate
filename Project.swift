@@ -9,6 +9,7 @@ let destinations: Destinations = [.iPhone, .iPad]
 let baseSettings: SettingsDictionary = [
     "SWIFT_VERSION": "6.0",
     "IPHONEOS_DEPLOYMENT_TARGET": "17.0",
+    "DEVELOPMENT_LANGUAGE": "ko",
     "DEVELOPMENT_TEAM": "4Y2567YJY8",
     "CODE_SIGN_STYLE": "Automatic",
 ]
@@ -55,6 +56,10 @@ func testAccountScheme(_ role: String, email: String) -> Scheme {
 
 let project = Project(
     name: "FlyMate",
+    options: .options(
+        defaultKnownRegions: ["ko"],
+        developmentRegion: "ko"
+    ),
     settings: .settings(base: baseSettings),
     targets: [
         // MARK: 모듈 (Core → Domain → Data/Presentation 방향으로만 의존)

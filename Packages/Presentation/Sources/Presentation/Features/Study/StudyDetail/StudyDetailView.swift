@@ -14,7 +14,10 @@ public struct StudyDetailView: View {
 
     public var body: some View {
         contentView
+            .frame(maxWidth: FMSizing.ContentWidth.regular)
+            .frame(maxWidth: .infinity)
             .navigationTitle(store.study.name)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button {
@@ -243,10 +246,10 @@ public struct StudyDetailView: View {
             Image(systemName: "megaphone.fill")
                 .font(.system(size: 21, weight: .semibold))
                 .foregroundStyle(.white)
-                .frame(width: 52, height: 52)
+                .frame(width: FMSizing.IconContainer.lg, height: FMSizing.IconContainer.lg)
                 .background(FMColors.brandGradient)
                 .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous))
-                .shadow(color: FMColors.primary.opacity(0.2), radius: 9, y: 5)
+                .shadow(color: FMShadow.floatingColor, radius: FMShadow.floatingRadius, y: FMShadow.floatingY)
 
             VStack(alignment: .leading, spacing: FMSpacing.xxxs) {
                 Text("멤버에게 중요한 소식을 알려주세요")
@@ -269,8 +272,8 @@ public struct StudyDetailView: View {
                 HStack(spacing: FMSpacing.sm) {
                     Image(systemName: "text.alignleft")
                         .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(FMColors.primary)
-                        .frame(width: 36, height: 36)
+                        .foregroundStyle(FMColors.iconAccent)
+                        .frame(width: FMSizing.IconContainer.sm, height: FMSizing.IconContainer.sm)
                         .background(FMColors.primary.opacity(0.1))
                         .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm, style: .continuous))
 
@@ -293,7 +296,7 @@ public struct StudyDetailView: View {
                             .font(FMTypography.body)
                             .foregroundStyle(FMColors.secondaryLabel.opacity(0.72))
                             .padding(.horizontal, FMSpacing.sm)
-                            .padding(.vertical, FMSpacing.sm + 1)
+                            .padding(.vertical, FMSpacing.sm)
                             .allowsHitTesting(false)
                     }
 
@@ -341,7 +344,7 @@ public struct StudyDetailView: View {
             HStack(spacing: FMSpacing.sm) {
                 Image(systemName: "trash")
                     .font(.system(size: 16, weight: .semibold))
-                    .frame(width: 34, height: 34)
+                    .frame(width: FMSizing.IconContainer.sm, height: FMSizing.IconContainer.sm)
                     .background(FMColors.destructiveSurface)
                     .clipShape(Circle())
 
@@ -386,81 +389,101 @@ public struct StudyDetailView: View {
     // MARK: - Study Info Header
 
     private var studyInfoHeader: some View {
-        VStack(alignment: .leading, spacing: FMSpacing.xs) {
-            Text(store.study.description)
-                .font(FMTypography.body)
-                .foregroundStyle(FMColors.secondaryLabel)
+        FMCard {
+            VStack(alignment: .leading, spacing: FMSpacing.sm) {
+                Text(store.study.description)
+                    .font(FMTypography.body)
+                    .foregroundStyle(FMColors.secondaryLabel)
 
-            HStack {
-                Button {
-                    store.send(.memberManagementTapped)
-                } label: {
+                Divider()
+
+                HStack(spacing: FMSpacing.sm) {
+                    HStack(spacing: FMSpacing.sm) {
+                        Button {
+                            store.send(.memberManagementTapped)
+                        } label: {
+                            HStack(spacing: FMSpacing.xxs) {
+                                Label("\(store.study.memberCount)명", systemImage: "person.2")
+                                    .font(FMTypography.caption1)
+
+                                if store.isOwner {
+                                    Image(systemName: "chevron.right")
+                                        .font(FMTypography.caption2)
+                                        .foregroundStyle(FMColors.secondaryLabel)
+                                }
+                            }
+                            .foregroundStyle(FMColors.label)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+
+                        if store.isOwner && store.pendingRequestCount > 0 {
+                            Button {
+                                store.send(.joinRequestManagementTapped)
+                            } label: {
+                                HStack(spacing: FMSpacing.xxs) {
+                                    Label("대기", systemImage: "person.badge.clock")
+                                        .font(FMTypography.caption1)
+                                        .foregroundStyle(FMColors.primary)
+
+                                    FMBadge(count: store.pendingRequestCount)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+
+                    Spacer(minLength: 0)
+
                     HStack(spacing: FMSpacing.xxs) {
-                        Label("\(store.study.memberCount)명", systemImage: "person.2")
-                            .font(FMTypography.caption1)
-
-                        if store.isOwner {
-                            Image(systemName: "chevron.right")
-                                .font(FMTypography.caption2)
-                                .foregroundStyle(FMColors.secondaryLabel)
-                        }
-                    }
-                }
-                .buttonStyle(.plain)
-
-                if store.isOwner && store.pendingRequestCount > 0 {
-                    Button {
-                        store.send(.joinRequestManagementTapped)
-                    } label: {
-                        HStack(spacing: FMSpacing.xxs) {
-                            Label("대기", systemImage: "person.badge.clock")
+                        Button {
+                            store.send(.inviteCodeInfoTapped)
+                        } label: {
+                            Image(systemName: "info.circle")
                                 .font(FMTypography.caption1)
-                                .foregroundStyle(FMColors.primary)
-
-                            FMBadge(count: store.pendingRequestCount)
+                                .foregroundStyle(FMColors.secondaryLabel)
+                                .frame(width: 32, height: 32)
+                                .contentShape(Circle())
                         }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("초대 코드 정보")
+                        .popover(
+                            isPresented: Binding(
+                                get: { store.isInviteCodePopoverPresented },
+                                set: { newValue in
+                                    if !newValue { store.send(.dismissInviteCodePopover) }
+                                }
+                            ),
+                            arrowEdge: .bottom
+                        ) {
+                            inviteCodeInfoPopoverContent
+                                .presentationCompactAdaptation(.popover)
+                        }
+
+                        Button {
+                            store.send(.copyInviteCode)
+                        } label: {
+                            Label(
+                                store.isCopied ? "복사됨" : "초대 코드 복사",
+                                systemImage: store.isCopied ? "checkmark" : "doc.on.doc"
+                            )
+                            .font(FMTypography.caption1)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(store.isCopied ? FMColors.success : FMColors.actionForeground)
+                            .padding(.horizontal, FMSpacing.sm)
+                            .frame(minHeight: 32)
+                            .background(
+                                (store.isCopied ? FMColors.success : FMColors.primary).opacity(0.1),
+                                in: Capsule()
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("초대 코드를 클립보드에 복사합니다")
+                        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: store.isCopied)
                     }
-                    .buttonStyle(.plain)
                 }
-
-                Spacer()
-
-                Button {
-                    store.send(.inviteCodeInfoTapped)
-                } label: {
-                    Image(systemName: "info.circle")
-                        .font(FMTypography.caption1)
-                        .foregroundStyle(FMColors.secondaryLabel)
-                }
-                .popover(
-                    isPresented: Binding(
-                        get: { store.isInviteCodePopoverPresented },
-                        set: { newValue in
-                            if !newValue { store.send(.dismissInviteCodePopover) }
-                        }
-                    ),
-                    arrowEdge: .bottom
-                ) {
-                    inviteCodeInfoPopoverContent
-                        .presentationCompactAdaptation(.popover)
-                }
-
-                Button {
-                    store.send(.copyInviteCode)
-                } label: {
-                    Label(
-                        store.isCopied ? "복사됨" : "초대 코드 복사",
-                        systemImage: store.isCopied ? "checkmark" : "doc.on.doc"
-                    )
-                    .font(FMTypography.caption1)
-                    .foregroundStyle(store.isCopied ? FMColors.success : FMColors.label)
-                }
-                .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: store.isCopied)
             }
         }
-        .padding(FMSpacing.md)
-        .background(FMColors.secondaryBackground)
-        .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md))
     }
 
     // MARK: - Invite Code Info Popover

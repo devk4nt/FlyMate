@@ -112,8 +112,8 @@ public struct VideoUploadView: View {
                     .font(.system(size: 27, weight: .semibold))
                     .foregroundStyle(.white)
             }
-            .frame(width: 64, height: 64)
-            .shadow(color: FMColors.secondary.opacity(0.25), radius: 12, y: 6)
+            .frame(width: FMSizing.IconContainer.hero, height: FMSizing.IconContainer.hero)
+            .shadow(color: FMShadow.floatingColor, radius: FMShadow.floatingRadius, y: FMShadow.floatingY)
 
             VStack(alignment: .leading, spacing: FMSpacing.xxs) {
                 Text("연습 영상을 공유해요")
@@ -161,7 +161,7 @@ public struct VideoUploadView: View {
 
                                 Image(systemName: "video.badge.plus")
                                     .font(.system(size: 28, weight: .medium))
-                                    .foregroundStyle(FMColors.primary)
+                                    .foregroundStyle(FMColors.iconAccent)
                             }
                             .frame(width: 58, height: 58)
 
@@ -252,7 +252,7 @@ public struct VideoUploadView: View {
             HStack {
                 Label("업로드 중", systemImage: "arrow.up.circle.fill")
                     .font(FMTypography.headline)
-                    .foregroundStyle(FMColors.primary)
+                    .foregroundStyle(FMColors.iconAccent)
 
                 Spacer()
 
@@ -300,7 +300,7 @@ public struct VideoUploadView: View {
                         .font(FMTypography.callout)
                         .foregroundStyle(FMColors.secondaryLabel.opacity(0.65))
                         .padding(.horizontal, FMSpacing.sm)
-                        .padding(.vertical, 14)
+                        .padding(.vertical, FMSpacing.sm)
                         .allowsHitTesting(false)
                 }
 
@@ -319,33 +319,27 @@ public struct VideoUploadView: View {
         step: String,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        VStack(alignment: .leading, spacing: FMSpacing.md) {
-            HStack {
-                Text(title)
-                    .font(FMTypography.headline)
-                    .foregroundStyle(FMColors.label)
+        FMCard {
+            VStack(alignment: .leading, spacing: FMSpacing.md) {
+                HStack {
+                    Text(title)
+                        .font(FMTypography.headline)
+                        .foregroundStyle(FMColors.label)
 
-                Spacer()
+                    Spacer()
 
-                Text(step)
-                    .font(FMTypography.feedMetaEmphasis)
-                    .foregroundStyle(FMColors.primary)
-                    .padding(.horizontal, FMSpacing.xs)
-                    .padding(.vertical, FMSpacing.xxs)
-                    .background(FMColors.primary.opacity(0.1))
-                    .clipShape(Capsule())
+                    Text(step)
+                        .font(FMTypography.feedMetaEmphasis)
+                        .foregroundStyle(FMColors.badgeForeground)
+                        .padding(.horizontal, FMSpacing.xs)
+                        .padding(.vertical, FMSpacing.xxs)
+                        .background(FMColors.badgeForeground.opacity(0.1))
+                        .clipShape(Capsule())
+                }
+
+                content()
             }
-
-            content()
         }
-        .padding(FMSpacing.md)
-        .background(FMColors.elevatedBackground)
-        .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous)
-                .stroke(FMColors.border.opacity(0.2), lineWidth: 0.5)
-        }
-        .shadow(color: FMShadow.cardColor, radius: 10, y: 4)
     }
 
     private func processSelectedVideo(_ item: PhotosPickerItem) {

@@ -108,7 +108,7 @@ public struct StudyListView: View {
     }
 
     private func practiceHero(studies: [Study]?) -> some View {
-        VStack(alignment: .leading, spacing: FMSpacing.lg) {
+        VStack(alignment: .leading, spacing: FMSpacing.sm) {
             VStack(alignment: .leading, spacing: FMSpacing.sm) {
                 Label("TODAY'S PRACTICE", systemImage: "sparkles")
                     .font(FMTypography.badgeStrong)
@@ -121,34 +121,16 @@ public struct StudyListView: View {
             }
 
             if let studies {
-                if dynamicTypeSize.isAccessibilitySize {
-                    VStack(alignment: .leading, spacing: FMSpacing.sm) {
-                        heroMetric(
-                            value: "\(studies.count)",
-                            label: "참여 중인 스터디"
-                        )
-                        heroMetric(
-                            value: "\(studies.reduce(0) { $0 + $1.memberCount })",
-                            label: "함께하는 멤버"
-                        )
-                    }
-                } else {
-                    HStack(spacing: FMSpacing.sm) {
-                        heroMetric(
-                            value: "\(studies.count)",
-                            label: "참여 중인 스터디"
-                        )
-                        heroMetric(
-                            value: "\(studies.reduce(0) { $0 + $1.memberCount })",
-                            label: "함께하는 멤버"
-                        )
-                    }
-                }
+                Text("참여 중인 스터디 \(studies.count)개 · 멤버 \(studies.reduce(0) { $0 + $1.memberCount })명")
+                    .font(FMTypography.caption1)
+                    .monospacedDigit()
+                    .foregroundStyle(FMColors.onBrand)
             }
 
             heroActions
         }
-        .padding(FMSpacing.lg)
+        .padding(.horizontal, FMSpacing.lg)
+        .padding(.vertical, FMSpacing.md)
         .background {
             ZStack(alignment: .topTrailing) {
                 RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.hero, style: .continuous)
@@ -169,22 +151,6 @@ public struct StudyListView: View {
         }
         .shadow(color: FMShadow.heroColor, radius: FMShadow.heroRadius, y: FMShadow.heroY)
         .accessibilityElement(children: .contain)
-    }
-
-    private func heroMetric(value: String, label: String) -> some View {
-        HStack(spacing: FMSpacing.xs) {
-            Text(value)
-                .font(FMTypography.metric)
-                .monospacedDigit()
-
-            Text(label)
-                .font(FMTypography.caption1)
-        }
-        .foregroundStyle(.white)
-        .padding(.horizontal, FMSpacing.sm)
-        .padding(.vertical, FMSpacing.xs)
-        .background(.white.opacity(0.13), in: Capsule())
-        .accessibilityElement(children: .combine)
     }
 
     private var heroActions: some View {
@@ -236,7 +202,7 @@ public struct StudyListView: View {
         Button(action: action) {
             Label(title, systemImage: systemImage)
                 .font(FMTypography.authorName)
-                .foregroundStyle(FMColors.brandInk)
+                .foregroundStyle(FMColors.iconAccent)
                 .frame(maxWidth: .infinity)
                 .frame(minHeight: 48)
                 .contentShape(Rectangle())
@@ -256,7 +222,7 @@ public struct StudyListView: View {
             if let count {
                 Text("\(count)개")
                     .font(FMTypography.authorName)
-                    .foregroundStyle(FMColors.brandInk)
+                    .foregroundStyle(FMColors.badgeForeground)
                     .monospacedDigit()
             }
         }
@@ -294,9 +260,9 @@ private struct StudyRow: View {
 
                     Image(systemName: "arrow.up.right")
                         .font(FMTypography.badgeStrong)
-                        .foregroundStyle(FMColors.brandInk)
+                        .foregroundStyle(FMColors.iconAccent)
                         .frame(width: 30, height: 30)
-                        .background(FMColors.accent.opacity(0.12), in: Circle())
+                        .background(FMColors.iconAccent.opacity(0.12), in: Circle())
                 }
 
                 VStack(alignment: .leading, spacing: FMSpacing.xs) {
@@ -314,7 +280,7 @@ private struct StudyRow: View {
                 if let notice = study.notice, !notice.isEmpty {
                     HStack(spacing: FMSpacing.xs) {
                         Image(systemName: "megaphone.fill")
-                            .foregroundStyle(FMColors.brandInk)
+                            .foregroundStyle(FMColors.iconAccent)
 
                         Text(notice)
                             .lineLimit(1)
@@ -325,7 +291,7 @@ private struct StudyRow: View {
                     .foregroundStyle(FMColors.secondaryLabel)
                     .padding(.horizontal, FMSpacing.sm)
                     .padding(.vertical, FMSpacing.xs)
-                    .background(FMColors.primary.opacity(0.09), in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm, style: .continuous))
+                    .background(FMColors.iconAccent.opacity(0.09), in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm, style: .continuous))
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -352,7 +318,7 @@ private struct StudyRow: View {
             if study.memberCount > 3 {
                 Text("+\(study.memberCount - 3)")
                     .font(FMTypography.eyebrow)
-                    .foregroundStyle(FMColors.brandInk)
+                    .foregroundStyle(FMColors.badgeForeground)
                     .frame(width: 32, height: 32)
                     .background(FMColors.softCanvas, in: Circle())
                     .overlay {

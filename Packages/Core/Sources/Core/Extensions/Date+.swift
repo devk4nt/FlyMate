@@ -18,8 +18,19 @@ extension Date {
             let days = Int(interval / 86400)
             return "\(days)일 전"
         default:
-            return formatted(date: .abbreviated, time: .omitted)
+            return koreanAbbreviated
         }
+    }
+
+    /// 한국어 축약 날짜 문자열 (예: "2026년 8월 12일")
+    public var koreanAbbreviated: String {
+        formatted(
+            Date.FormatStyle(
+                date: .abbreviated,
+                time: .omitted,
+                locale: Locale(identifier: "ko_KR")
+            )
+        )
     }
 
     /// "yyyy.MM.dd" 포맷 문자열

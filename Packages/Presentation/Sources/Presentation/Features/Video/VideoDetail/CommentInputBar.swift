@@ -46,7 +46,7 @@ struct CommentInputBar: View {
                             .font(FMTypography.callout)
                             .foregroundStyle(FMColors.secondaryLabel)
                             .padding(.leading, FMSpacing.sm)
-                            .padding(.top, 13)
+                            .padding(.top, FMSpacing.sm)
                             .allowsHitTesting(false)
                     }
 
@@ -56,12 +56,7 @@ struct CommentInputBar: View {
                     )
                     .frame(height: 44)
                 }
-                .background(FMColors.secondaryBackground)
-                .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
-                        .stroke(FMColors.border.opacity(0.45), lineWidth: 0.5)
-                }
+                .fmComposerSurface(isFocused: store.isFocused)
 
                 Button {
                     store.send(.submitTapped(timestampSeconds: currentTimestamp))

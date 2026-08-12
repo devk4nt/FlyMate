@@ -214,7 +214,7 @@ public struct ProfileEditView: View {
             Image(systemName: icon)
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(FMColors.brandInk)
-                .frame(width: 36, height: 36)
+                .frame(width: FMSizing.IconContainer.sm, height: FMSizing.IconContainer.sm)
                 .background(FMColors.accent.opacity(0.12))
                 .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm, style: .continuous))
 

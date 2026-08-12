@@ -35,10 +35,13 @@ public struct FeedbackManagementView: View {
                     )
                 }
             }
+            .frame(maxWidth: FMSizing.ContentWidth.regular)
+            .frame(maxWidth: .infinity)
             .background(FMColors.softCanvas)
             .navigationTitle("피드백")
             .navigationBarTitleDisplayMode(.inline)
         }
+        .background(FMColors.softCanvas)
     }
 
     private var feedbackHeader: some View {
@@ -95,7 +98,7 @@ public struct FeedbackManagementView: View {
                         if store.selectedSegment == segment {
                             Capsule()
                                 .fill(FMColors.background)
-                                .shadow(color: FMColors.brandInk.opacity(0.1), radius: 8, y: 3)
+                                .shadow(color: FMShadow.floatingColor, radius: FMShadow.floatingRadius, y: FMShadow.floatingY)
                         }
                     }
                     .contentShape(Capsule())
