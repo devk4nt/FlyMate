@@ -1,4 +1,5 @@
 import Foundation
+import Core
 import Domain
 import Supabase
 
@@ -39,15 +40,23 @@ public struct UserRepositoryImpl: UserRepository {
             }
         }
 
-        let dto: UserDTO = try await client.from(SupabaseConfig.Table.users)
-            .update(UpdateUser(name: request.name, profileImageURL: profileImageURL))
-            .eq("id", value: userID)
-            .select()
-            .single()
-            .execute()
-            .value
-
-        return DTOMapper.toDomain(dto)
+        do {
+            let dto: UserDTO = try await client.from(SupabaseConfig.Table.users)
+                .update(UpdateUser(name: request.name, profileImageURL: profileImageURL))
+                .eq("id", value: userID)
+                .select()
+                .single()
+                .execute()
+                .value
+            return DTOMapper.toDomain(dto)
+        } catch {
+            // users_name_lower_key unique index violation → 닉네임 중복
+            let message = error.localizedDescription
+            if message.contains("users_name_lower_key") || message.contains("23505") {
+                throw AppError.business(.nameAlreadyTaken)
+            }
+            throw error
+        }
     }
 
     public func registerDeviceToken(_ token: String) async throws {

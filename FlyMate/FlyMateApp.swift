@@ -116,7 +116,8 @@ struct FlyMateApp: App {
             updateProfile: { try await userRepo.updateProfile($0) },
             registerDeviceToken: { try await userRepo.registerDeviceToken($0) },
             removeDeviceToken: { try await userRepo.removeDeviceToken($0) },
-            updateNotificationSettings: { try await userRepo.updateNotificationSettings(enabled: $0) }
+            updateNotificationSettings: { try await userRepo.updateNotificationSettings(enabled: $0) },
+            fetchMyActivityStats: { try await userRepo.fetchMyActivityStats() }
         )
 
         // Push Notification
@@ -908,7 +909,16 @@ struct FlyMateApp: App {
             updateProfile: { _ in me },
             registerDeviceToken: { _ in },
             removeDeviceToken: { _ in },
-            updateNotificationSettings: { _ in }
+            updateNotificationSettings: { _ in },
+            fetchMyActivityStats: {
+                try await simulateLoading()
+                return MyActivityStats(
+                    studiesCount: 2,
+                    videosUploadedCount: 5,
+                    feedbackReceivedCount: 12,
+                    feedbackGivenCount: 9
+                )
+            }
         )
 
         // Push Notification

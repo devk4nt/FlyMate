@@ -12,6 +12,7 @@ public struct ProfileEditFeature {
         public var selectedImageData: Data?
         public var isSubmitting = false
         public var error: AppError?
+        @Presents public var alert: AlertState<Action.Alert>?
 
         public init(currentUser: User) {
             self.currentUser = currentUser
@@ -34,6 +35,9 @@ public struct ProfileEditFeature {
         case saveResponse(Result<User, AppError>)
         case profileUpdated(User)
         case cancelTapped
+        case alert(PresentationAction<Alert>)
+
+        public enum Alert: Equatable {}
     }
 
     @Dependency(\.userClient) private var userClient
@@ -76,7 +80,19 @@ public struct ProfileEditFeature {
 
             case .saveResponse(.failure(let error)):
                 state.isSubmitting = false
-                state.error = error
+                if error == .business(.nameAlreadyTaken) {
+                    state.alert = AlertState {
+                        TextState("이름 중복")
+                    } actions: {
+                        ButtonState(role: .cancel) {
+                            TextState("확인")
+                        }
+                    } message: {
+                        TextState(BusinessError.nameAlreadyTaken.userMessage)
+                    }
+                } else {
+                    state.error = error
+                }
                 return .none
 
             case .profileUpdated:
@@ -86,7 +102,11 @@ public struct ProfileEditFeature {
             case .cancelTapped:
                 let dismiss = dismiss
                 return .run { _ in await dismiss() }
+
+            case .alert:
+                return .none
             }
         }
+        .ifLet(\.$alert, action: \.alert)
     }
 }

@@ -133,24 +133,37 @@ CREATE INDEX idx_notifications_unread ON notifications(recipient_id) WHERE is_re
 CREATE INDEX idx_device_tokens_user_id ON device_tokens(user_id);
 CREATE INDEX idx_reports_reporter_id ON reports(reporter_id);
 CREATE INDEX idx_reports_target ON reports(target_type, target_id);
+CREATE UNIQUE INDEX users_name_lower_key ON users (lower(name));
 
 -- ============================================================
 -- 3. TRIGGERS - Auto-populate denormalized fields
 -- ============================================================
 
 -- 3-1. Auto-create user profile on Supabase Auth signup
+-- Names are unique (users_name_lower_key), so append 2, 3, ... on collision
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+    base_name TEXT;
+    candidate TEXT;
+    n INT := 1;
 BEGIN
+    base_name := COALESCE(
+        NEW.raw_user_meta_data->>'name',
+        NEW.raw_user_meta_data->>'full_name',
+        'User'
+    );
+    candidate := base_name;
+    WHILE EXISTS (SELECT 1 FROM public.users WHERE lower(name) = lower(candidate)) LOOP
+        n := n + 1;
+        candidate := base_name || n::TEXT;
+    END LOOP;
+
     INSERT INTO public.users (id, email, name, provider)
     VALUES (
         NEW.id,
         COALESCE(NEW.email, ''),
-        COALESCE(
-            NEW.raw_user_meta_data->>'name',
-            NEW.raw_user_meta_data->>'full_name',
-            'User'
-        ),
+        candidate,
         COALESCE(NEW.raw_app_meta_data->>'provider', 'unknown')
     );
     RETURN NEW;

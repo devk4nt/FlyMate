@@ -39,6 +39,7 @@ public struct ProfileEditView: View {
         .safeAreaInset(edge: .bottom) {
             saveArea
         }
+        .alert($store.scope(state: \.alert, action: \.alert))
         .fmSheetStyle()
     }
 

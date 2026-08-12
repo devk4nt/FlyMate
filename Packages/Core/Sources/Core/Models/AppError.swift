@@ -66,6 +66,7 @@ public enum BusinessError: Equatable, Sendable {
     case subscriptionRequired
     case purchaseFailed(String)
     case receiptVerificationFailed
+    case nameAlreadyTaken
 
     public var userMessage: String {
         switch self {
@@ -105,6 +106,8 @@ public enum BusinessError: Equatable, Sendable {
             return "구매에 실패했습니다. \(reason)"
         case .receiptVerificationFailed:
             return "영수증 검증에 실패했습니다. 잠시 후 다시 시도해주세요."
+        case .nameAlreadyTaken:
+            return "이미 사용 중인 이름입니다. 다른 이름을 입력해주세요."
         }
     }
 }
