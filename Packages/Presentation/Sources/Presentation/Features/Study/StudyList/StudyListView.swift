@@ -17,6 +17,8 @@ public struct StudyListView: View {
                 practiceHero(studies: loadedStudies)
                 studyContent
             }
+            .frame(maxWidth: FMSizing.ContentWidth.regular)
+            .frame(maxWidth: .infinity)
             .padding(.horizontal, FMSpacing.md)
             .padding(.top, FMSpacing.xs)
             .padding(.bottom, FMSpacing.xxxl)
@@ -51,6 +53,7 @@ public struct StudyListView: View {
             NavigationStack {
                 JoinStudyView(store: joinStore)
             }
+            .fmSheetStyle()
             .presentationDetents([.medium])
         }
     }
@@ -108,7 +111,7 @@ public struct StudyListView: View {
         VStack(alignment: .leading, spacing: FMSpacing.lg) {
             VStack(alignment: .leading, spacing: FMSpacing.sm) {
                 Label("TODAY'S PRACTICE", systemImage: "sparkles")
-                    .font(.caption.weight(.bold))
+                    .font(FMTypography.badgeStrong)
                     .tracking(0.8)
                     .foregroundStyle(FMColors.onBrand)
 
@@ -148,7 +151,7 @@ public struct StudyListView: View {
         .padding(FMSpacing.lg)
         .background {
             ZStack(alignment: .topTrailing) {
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.hero, style: .continuous)
                     .fill(FMColors.brandGradient)
 
                 Circle()
@@ -162,20 +165,20 @@ public struct StudyListView: View {
                     .frame(width: 90, height: 90)
                     .offset(x: -30, y: 128)
             }
-            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.hero, style: .continuous))
         }
-        .shadow(color: FMColors.brandInk.opacity(0.2), radius: 22, y: 12)
+        .shadow(color: FMShadow.heroColor, radius: FMShadow.heroRadius, y: FMShadow.heroY)
         .accessibilityElement(children: .contain)
     }
 
     private func heroMetric(value: String, label: String) -> some View {
         HStack(spacing: FMSpacing.xs) {
             Text(value)
-                .font(.headline.weight(.bold))
+                .font(FMTypography.metric)
                 .monospacedDigit()
 
             Text(label)
-                .font(.caption)
+                .font(FMTypography.caption1)
         }
         .foregroundStyle(.white)
         .padding(.horizontal, FMSpacing.sm)
@@ -184,23 +187,8 @@ public struct StudyListView: View {
         .accessibilityElement(children: .combine)
     }
 
-    @ViewBuilder
     private var heroActions: some View {
-        if #available(iOS 26.0, macOS 26.0, *) {
-            GlassEffectContainer(spacing: FMSpacing.sm) {
-                if dynamicTypeSize.isAccessibilitySize {
-                    VStack(spacing: FMSpacing.sm) {
-                        primaryHeroAction
-                        secondaryHeroAction
-                    }
-                } else {
-                    HStack(spacing: FMSpacing.sm) {
-                        primaryHeroAction
-                        secondaryHeroAction
-                    }
-                }
-            }
-        } else {
+        FMGlassContainer(spacing: FMSpacing.sm) {
             if dynamicTypeSize.isAccessibilitySize {
                 VStack(spacing: FMSpacing.sm) {
                     primaryHeroAction
@@ -224,7 +212,7 @@ public struct StudyListView: View {
             store.send(.createStudyTapped)
         }
         .background(.white, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md))
-        .modifier(HeroGlassEffectModifier(tint: .white.opacity(0.92)))
+        .fmGlass(tint: .white.opacity(0.92))
     }
 
     private var secondaryHeroAction: some View {
@@ -236,7 +224,7 @@ public struct StudyListView: View {
             store.send(.joinStudyTapped)
         }
         .background(.white.opacity(0.52), in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md))
-        .modifier(HeroGlassEffectModifier(tint: .white.opacity(0.52)))
+        .fmGlass(tint: .white.opacity(0.52))
     }
 
     private func heroActionButton(
@@ -247,7 +235,7 @@ public struct StudyListView: View {
     ) -> some View {
         Button(action: action) {
             Label(title, systemImage: systemImage)
-                .font(.subheadline.weight(.semibold))
+                .font(FMTypography.authorName)
                 .foregroundStyle(FMColors.brandInk)
                 .frame(maxWidth: .infinity)
                 .frame(minHeight: 48)
@@ -267,7 +255,7 @@ public struct StudyListView: View {
 
             if let count {
                 Text("\(count)개")
-                    .font(.subheadline.weight(.semibold))
+                    .font(FMTypography.authorName)
                     .foregroundStyle(FMColors.brandInk)
                     .monospacedDigit()
             }
@@ -276,45 +264,13 @@ public struct StudyListView: View {
     }
 
     private var emptyStudyCard: some View {
-        VStack(spacing: FMSpacing.md) {
-            Image(systemName: "person.3.sequence.fill")
-                .font(.system(size: FMSizing.IconSize.hero, weight: .medium))
-                .foregroundStyle(FMColors.brandInk)
-
-            VStack(spacing: FMSpacing.xs) {
-                Text("함께 연습할 스터디를 찾아보세요")
-                    .font(.headline)
-                    .foregroundStyle(FMColors.label)
-
-                Text("직접 만들거나 초대 코드로 참여할 수 있어요.")
-                    .font(.subheadline)
-                    .foregroundStyle(FMColors.secondaryLabel)
-                    .multilineTextAlignment(.center)
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, FMSpacing.xxl)
-        .padding(.horizontal, FMSpacing.lg)
-        .background(FMColors.background, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
-                .stroke(FMColors.accent.opacity(0.2), lineWidth: 1)
-        }
-    }
-}
-
-private struct HeroGlassEffectModifier: ViewModifier {
-    let tint: Color
-
-    @ViewBuilder
-    func body(content: Content) -> some View {
-        if #available(iOS 26.0, macOS 26.0, *) {
-            content.glassEffect(
-                .regular.tint(tint).interactive(),
-                in: .rect(cornerRadius: FMSpacing.CornerRadius.md)
+        FMCard(style: .feed, padding: 0) {
+            FMEmptyState(
+                systemImage: "person.3.sequence.fill",
+                title: "함께 연습할 스터디를 찾아보세요",
+                description: "직접 만들거나 초대 코드로 참여할 수 있어요.",
+                layout: .compact
             )
-        } else {
-            content
         }
     }
 }
@@ -325,61 +281,55 @@ private struct StudyRow: View {
     let study: Domain.Study
 
     var body: some View {
-        VStack(alignment: .leading, spacing: FMSpacing.md) {
-            HStack(spacing: FMSpacing.sm) {
-                memberStack
+        FMCard(style: .feed) {
+            VStack(alignment: .leading, spacing: FMSpacing.md) {
+                HStack(spacing: FMSpacing.sm) {
+                    memberStack
 
-                Text("멤버 \(study.memberCount)명")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(FMColors.secondaryLabel)
-
-                Spacer(minLength: 0)
-
-                Image(systemName: "arrow.up.right")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(FMColors.brandInk)
-                    .frame(width: 30, height: 30)
-                    .background(FMColors.accent.opacity(0.12), in: Circle())
-            }
-
-            VStack(alignment: .leading, spacing: FMSpacing.xs) {
-                Text(study.name)
-                    .font(.title3.weight(.bold))
-                    .foregroundStyle(FMColors.label)
-
-                Text(study.description)
-                    .font(.subheadline)
-                    .foregroundStyle(FMColors.secondaryLabel)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            if let notice = study.notice, !notice.isEmpty {
-                HStack(spacing: FMSpacing.xs) {
-                    Image(systemName: "megaphone.fill")
-                        .foregroundStyle(FMColors.brandInk)
-
-                    Text(notice)
-                        .lineLimit(1)
+                    Text("멤버 \(study.memberCount)명")
+                        .font(FMTypography.feedMetaEmphasis)
+                        .foregroundStyle(FMColors.secondaryLabel)
 
                     Spacer(minLength: 0)
+
+                    Image(systemName: "arrow.up.right")
+                        .font(FMTypography.badgeStrong)
+                        .foregroundStyle(FMColors.brandInk)
+                        .frame(width: 30, height: 30)
+                        .background(FMColors.accent.opacity(0.12), in: Circle())
                 }
-                .font(.caption)
-                .foregroundStyle(FMColors.secondaryLabel)
-                .padding(.horizontal, FMSpacing.sm)
-                .padding(.vertical, FMSpacing.xs)
-                .background(FMColors.primary.opacity(0.09), in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm, style: .continuous))
+
+                VStack(alignment: .leading, spacing: FMSpacing.xs) {
+                    Text(study.name)
+                        .font(FMTypography.cardTitle)
+                        .foregroundStyle(FMColors.label)
+
+                    Text(study.description)
+                        .font(FMTypography.feedBody)
+                        .foregroundStyle(FMColors.secondaryLabel)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                if let notice = study.notice, !notice.isEmpty {
+                    HStack(spacing: FMSpacing.xs) {
+                        Image(systemName: "megaphone.fill")
+                            .foregroundStyle(FMColors.brandInk)
+
+                        Text(notice)
+                            .lineLimit(1)
+
+                        Spacer(minLength: 0)
+                    }
+                    .font(FMTypography.caption1)
+                    .foregroundStyle(FMColors.secondaryLabel)
+                    .padding(.horizontal, FMSpacing.sm)
+                    .padding(.vertical, FMSpacing.xs)
+                    .background(FMColors.primary.opacity(0.09), in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm, style: .continuous))
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(FMSpacing.lg)
-        .background(FMColors.background)
-        .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous)
-                .stroke(FMColors.accent.opacity(0.2), lineWidth: 1)
-        }
-        .shadow(color: FMColors.brandInk.opacity(0.07), radius: 14, y: 7)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(study.name), 멤버 \(study.memberCount)명, 최대 \(study.maxMembers)명")
         .accessibilityHint("스터디의 영상과 피드백을 보려면 이중 탭하세요")
@@ -401,7 +351,7 @@ private struct StudyRow: View {
 
             if study.memberCount > 3 {
                 Text("+\(study.memberCount - 3)")
-                    .font(.caption2.weight(.bold))
+                    .font(FMTypography.eyebrow)
                     .foregroundStyle(FMColors.brandInk)
                     .frame(width: 32, height: 32)
                     .background(FMColors.softCanvas, in: Circle())
