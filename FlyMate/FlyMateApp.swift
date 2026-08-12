@@ -275,10 +275,8 @@ struct FlyMateApp: App {
         }
         @Sendable func sampleThumbnailURL(_ suffix: Int) -> URL? {
             let assetName = switch suffix {
-            case 100, 104: "cabin-interview-self-intro"
-            case 101, 102, 105, 106: "cabin-announcement-practice"
-            case 103: "cabin-complaint-roleplay"
-            default: "cabin-english-interview"
+            case 100, 102, 104, 106: "flight-attendant-study-cafe"
+            default: "flight-attendant-home-webcam"
             }
             return mockAssetURL(assetName)
         }
@@ -384,7 +382,7 @@ struct FlyMateApp: App {
             Video(
                 id: uuid(100), studyID: studyA.id, uploaderID: meID, uploaderName: "유나",
                 title: "기내 안전 안내 롤플레이",
-                videoURL: mockVideoURL("cabin-interview-self-intro", fallback: bigBuckBunny), thumbnailURL: sampleThumbnailURL(100),
+                videoURL: mockVideoURL("flight-attendant-study-cafe", fallback: bigBuckBunny), thumbnailURL: sampleThumbnailURL(100),
                 durationSeconds: 178, feedbackCount: 3,
                 focusPoints: "발음, 시선 처리",
                 feedbackRequest: "미소가 어색하지 않은지 봐주세요!",
@@ -393,14 +391,14 @@ struct FlyMateApp: App {
             Video(
                 id: uuid(101), studyID: studyA.id, uploaderID: meID, uploaderName: "유나",
                 title: "1분 자기소개 스피치",
-                videoURL: mockVideoURL("cabin-announcement-practice", fallback: sintelTrailer), thumbnailURL: sampleThumbnailURL(101),
+                videoURL: mockVideoURL("flight-attendant-home-webcam", fallback: sintelTrailer), thumbnailURL: sampleThumbnailURL(101),
                 durationSeconds: 52, feedbackCount: 2,
                 createdAt: now.addingTimeInterval(-1 * day)
             ),
             Video(
                 id: uuid(102), studyID: studyA.id, uploaderID: seoyeonID, uploaderName: "박서연",
                 title: "영어 기내방송 연습",
-                videoURL: mockVideoURL("cabin-announcement-practice", fallback: elephantsDream), thumbnailURL: sampleThumbnailURL(102),
+                videoURL: mockVideoURL("flight-attendant-study-cafe", fallback: elephantsDream), thumbnailURL: sampleThumbnailURL(102),
                 durationSeconds: 145, feedbackCount: 2,
                 focusPoints: "영어 발음과 억양",
                 createdAt: now.addingTimeInterval(-2 * day)
@@ -408,14 +406,14 @@ struct FlyMateApp: App {
             Video(
                 id: uuid(103), studyID: studyA.id, uploaderID: minjunID, uploaderName: "이민준",
                 title: "돌발질문 대처 — 컴플레인 응대",
-                videoURL: mockVideoURL("cabin-complaint-roleplay", fallback: bipbopHLS), thumbnailURL: sampleThumbnailURL(103),
+                videoURL: mockVideoURL("flight-attendant-home-webcam", fallback: bipbopHLS), thumbnailURL: sampleThumbnailURL(103),
                 durationSeconds: 170, feedbackCount: 1,
                 createdAt: now.addingTimeInterval(-5 * hour)
             ),
             Video(
                 id: uuid(104), studyID: studyB.id, uploaderID: meID, uploaderName: "유나",
                 title: "영어 자기소개 — Why cabin crew?",
-                videoURL: mockVideoURL("cabin-interview-self-intro", fallback: bigBuckBunny), thumbnailURL: sampleThumbnailURL(104),
+                videoURL: mockVideoURL("flight-attendant-study-cafe", fallback: bigBuckBunny), thumbnailURL: sampleThumbnailURL(104),
                 durationSeconds: 120, feedbackCount: 1,
                 focusPoints: "영어 발음, 지원 동기 전달력",
                 createdAt: now.addingTimeInterval(-4 * day)
@@ -423,7 +421,7 @@ struct FlyMateApp: App {
             Video(
                 id: uuid(105), studyID: studyB.id, uploaderID: haneulID, uploaderName: "김하늘",
                 title: "외항사 면접 — 서비스 경험 답변",
-                videoURL: mockVideoURL("cabin-announcement-practice", fallback: sintelTrailer720), thumbnailURL: sampleThumbnailURL(105),
+                videoURL: mockVideoURL("flight-attendant-home-webcam", fallback: sintelTrailer720), thumbnailURL: sampleThumbnailURL(105),
                 durationSeconds: 52, feedbackCount: 1,
                 createdAt: now.addingTimeInterval(-6 * hour)
             ),
@@ -431,7 +429,7 @@ struct FlyMateApp: App {
             Video(
                 id: uuid(106), studyID: studyA.id, uploaderID: seoyeonID, uploaderName: "박서연",
                 title: "한국어 기내방송 — 이륙 안내",
-                videoURL: mockVideoURL("cabin-announcement-practice", fallback: sintelTrailer), thumbnailURL: sampleThumbnailURL(106),
+                videoURL: mockVideoURL("flight-attendant-study-cafe", fallback: sintelTrailer), thumbnailURL: sampleThumbnailURL(106),
                 durationSeconds: 48,
                 focusPoints: "톤 안정성, 속도",
                 feedbackRequest: "이륙 안내 파트 속도가 적당한지 봐주세요",
@@ -440,7 +438,7 @@ struct FlyMateApp: App {
             Video(
                 id: uuid(107), studyID: studyB.id, uploaderID: jiwooID, uploaderName: "최지우",
                 title: "영어 상황면접 — 지연 승객 안내",
-                videoURL: mockVideoURL("cabin-english-interview", fallback: sintelTrailer720), thumbnailURL: sampleThumbnailURL(107),
+                videoURL: mockVideoURL("flight-attendant-home-webcam", fallback: sintelTrailer720), thumbnailURL: sampleThumbnailURL(107),
                 durationSeconds: 55,
                 createdAt: now.addingTimeInterval(-2 * hour)
             ),
