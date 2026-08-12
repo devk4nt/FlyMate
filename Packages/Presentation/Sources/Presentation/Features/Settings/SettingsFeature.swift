@@ -25,6 +25,7 @@ public struct SettingsFeature {
         case pushStatusResponse(UNAuthorizationStatus)
         case profileEditTapped
         case studyManagementTapped
+        case blockedUsersTapped
         case subscriptionTapped
         case developerContactTapped
         case developerContactOpenResponse(Bool)
@@ -48,6 +49,7 @@ public struct SettingsFeature {
     public enum Destination {
         case profileEdit(ProfileEditFeature)
         case studyManagement(StudyManagementFeature)
+        case blockedUsers(BlockedUsersFeature)
         case subscription(SubscriptionFeature)
     }
 
@@ -85,6 +87,10 @@ public struct SettingsFeature {
 
             case .studyManagementTapped:
                 state.destination = .studyManagement(StudyManagementFeature.State())
+                return .none
+
+            case .blockedUsersTapped:
+                state.destination = .blockedUsers(BlockedUsersFeature.State())
                 return .none
 
             case .subscriptionTapped:
