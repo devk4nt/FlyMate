@@ -97,7 +97,8 @@ public struct VideoPageView: View {
             onCurrentTimeUpdate: { store.send(.currentTimeUpdated($0)) },
             onDurationUpdate: { store.send(.durationUpdated($0)) },
             onPlaybackEnded: { store.send(.playerReachedEnd) },
-            onSeekCompleted: { store.send(.seekCompleted) }
+            onSeekCompleted: { store.send(.seekCompleted) },
+            onPausedByOtherPlayer: { store.send(.pause) }
         )
     }
 

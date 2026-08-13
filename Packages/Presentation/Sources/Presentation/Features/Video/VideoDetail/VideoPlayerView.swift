@@ -12,6 +12,8 @@ struct VideoPlayerView: UIViewRepresentable {
     let onDurationUpdate: (TimeInterval) -> Void
     let onPlaybackEnded: () -> Void
     let onSeekCompleted: () -> Void
+    /// 다른 페이지가 재생을 시작해 이 플레이어가 강제 정지된 경우 — 상태 동기화용
+    let onPausedByOtherPlayer: () -> Void
 
     func makeCoordinator() -> Coordinator {
         Coordinator(parent: self)
@@ -26,10 +28,15 @@ struct VideoPlayerView: UIViewRepresentable {
 
     func updateUIView(_ uiView: PlayerUIView, context: Context) {
         let coordinator = context.coordinator
+        coordinator.parent = self
         guard let player = coordinator.player else { return }
 
         if isPlaying {
             if player.rate == 0 {
+                // 오프스크린 페이지는 SwiftUI 갱신이 보장되지 않아 상태만으로는
+                // pause가 전달되지 않을 수 있다 — 재생 시작 시점에 직접 정지시킨다
+                Coordinator.activePlayer?.pauseByOtherPlayer(except: coordinator)
+                Coordinator.activePlayer = coordinator
                 player.play()
             }
         } else {
@@ -62,6 +69,9 @@ struct VideoPlayerView: UIViewRepresentable {
     // MARK: - Coordinator
 
     final class Coordinator: NSObject, @unchecked Sendable {
+        /// 앱 전역에서 재생 중인 플레이어는 항상 하나 — 마지막으로 play한 Coordinator
+        @MainActor static weak var activePlayer: Coordinator?
+
         var parent: VideoPlayerView
         var player: AVPlayer?
         private var timeObserver: Any?
@@ -70,6 +80,14 @@ struct VideoPlayerView: UIViewRepresentable {
 
         init(parent: VideoPlayerView) {
             self.parent = parent
+        }
+
+        /// 다른 페이지가 재생을 시작할 때 호출 — 플레이어를 정지시키고 상태를 동기화한다
+        @MainActor
+        func pauseByOtherPlayer(except coordinator: Coordinator) {
+            guard self !== coordinator, let player, player.rate != 0 else { return }
+            player.pause()
+            parent.onPausedByOtherPlayer()
         }
 
         @MainActor
