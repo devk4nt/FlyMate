@@ -27,11 +27,11 @@ enum DTOMapper {
 
     // MARK: - BlockedUser
 
-    static func toDomain(_ dto: BlockedUserDTO, user: UserDTO?) -> BlockedUser {
+    static func toDomain(_ dto: BlockedUserDTO) -> BlockedUser {
         BlockedUser(
             id: dto.blockedID,
-            name: user?.name ?? "알 수 없는 사용자",
-            profileImageURL: user?.profileImageURL.flatMap(URL.init(string:)),
+            name: dto.blockedName,
+            profileImageURL: nil,
             blockedAt: parseDate(dto.createdAt)
         )
     }

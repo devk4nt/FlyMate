@@ -416,18 +416,18 @@ struct VideoDetailFeatureTests {
         state.repliesByFeedback = [otherFeedback.id: .loaded([blockedComment, otherComment])]
         state.latestComments = [otherFeedback.id: blockedComment]
 
-        let blockedID = LockIsolated<UUID?>(nil)
+        let blocked = LockIsolated<(UUID, String)?>(nil)
         let store = TestStore(initialState: state) {
             VideoDetailFeature()
         } withDependencies: {
-            $0.blockClient.blockUser = { blockedID.setValue($0) }
+            $0.blockClient.blockUser = { userID, userName in blocked.setValue((userID, userName)) }
         }
 
         await store.send(.blockUserTapped(authorID: blockedAuthorID, authorName: "김테스트")) {
             $0.blockAlert = AlertState {
                 TextState("김테스트님을 차단할까요?")
             } actions: {
-                ButtonState(role: .destructive, action: .confirmBlock(userID: blockedAuthorID)) {
+                ButtonState(role: .destructive, action: .confirmBlock(userID: blockedAuthorID, userName: "김테스트")) {
                     TextState("차단하기")
                 }
                 ButtonState(role: .cancel) {
@@ -438,7 +438,7 @@ struct VideoDetailFeatureTests {
             }
         }
 
-        await store.send(.blockAlert(.presented(.confirmBlock(userID: blockedAuthorID)))) {
+        await store.send(.blockAlert(.presented(.confirmBlock(userID: blockedAuthorID, userName: "김테스트")))) {
             $0.blockAlert = nil
         }
 
@@ -451,7 +451,8 @@ struct VideoDetailFeatureTests {
             $0.toastType = .success
         }
 
-        #expect(blockedID.value == blockedAuthorID)
+        #expect(blocked.value?.0 == blockedAuthorID)
+        #expect(blocked.value?.1 == "김테스트")
     }
 }
 

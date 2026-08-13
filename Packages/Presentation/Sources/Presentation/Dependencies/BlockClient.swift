@@ -3,12 +3,12 @@ import ComposableArchitecture
 import Domain
 
 public struct BlockClient: Sendable {
-    public var blockUser: @Sendable (UUID) async throws -> Void
+    public var blockUser: @Sendable (_ userID: UUID, _ name: String) async throws -> Void
     public var unblockUser: @Sendable (UUID) async throws -> Void
     public var fetchBlockedUsers: @Sendable () async throws -> [BlockedUser]
 
     public init(
-        blockUser: @escaping @Sendable (UUID) async throws -> Void,
+        blockUser: @escaping @Sendable (_ userID: UUID, _ name: String) async throws -> Void,
         unblockUser: @escaping @Sendable (UUID) async throws -> Void,
         fetchBlockedUsers: @escaping @Sendable () async throws -> [BlockedUser]
     ) {

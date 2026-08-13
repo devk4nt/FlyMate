@@ -235,11 +235,11 @@ struct FeedbackListFeatureTests {
         state.feedbacks.items = feedbacks
         state.loadingState = .loaded(feedbacks)
 
-        let blockedID = LockIsolated<UUID?>(nil)
+        let blocked = LockIsolated<(UUID, String)?>(nil)
         let store = TestStore(initialState: state) {
             FeedbackListFeature()
         } withDependencies: {
-            $0.blockClient.blockUser = { blockedID.setValue($0) }
+            $0.blockClient.blockUser = { userID, userName in blocked.setValue((userID, userName)) }
         }
 
         let target = feedbacks[0]
@@ -247,7 +247,7 @@ struct FeedbackListFeatureTests {
             $0.blockAlert = AlertState {
                 TextState("\(target.authorName)님을 차단할까요?")
             } actions: {
-                ButtonState(role: .destructive, action: .confirmBlock(userID: target.authorID)) {
+                ButtonState(role: .destructive, action: .confirmBlock(userID: target.authorID, userName: target.authorName)) {
                     TextState("차단하기")
                 }
                 ButtonState(role: .cancel) {
@@ -258,7 +258,7 @@ struct FeedbackListFeatureTests {
             }
         }
 
-        await store.send(.blockAlert(.presented(.confirmBlock(userID: target.authorID)))) {
+        await store.send(.blockAlert(.presented(.confirmBlock(userID: target.authorID, userName: target.authorName)))) {
             $0.blockAlert = nil
         }
 
@@ -270,7 +270,8 @@ struct FeedbackListFeatureTests {
             $0.showToast = true
         }
 
-        #expect(blockedID.value == target.authorID)
+        #expect(blocked.value?.0 == target.authorID)
+        #expect(blocked.value?.1 == target.authorName)
     }
 
     @Test
@@ -282,7 +283,7 @@ struct FeedbackListFeatureTests {
         state.blockAlert = AlertState {
             TextState("\(feedbacks[0].authorName)님을 차단할까요?")
         } actions: {
-            ButtonState(role: .destructive, action: .confirmBlock(userID: feedbacks[0].authorID)) {
+            ButtonState(role: .destructive, action: .confirmBlock(userID: feedbacks[0].authorID, userName: feedbacks[0].authorName)) {
                 TextState("차단하기")
             }
             ButtonState(role: .cancel) {
@@ -293,12 +294,12 @@ struct FeedbackListFeatureTests {
         let store = TestStore(initialState: state) {
             FeedbackListFeature()
         } withDependencies: {
-            $0.blockClient.blockUser = { _ in
+            $0.blockClient.blockUser = { _, _ in
                 throw AppError.network(.noConnection)
             }
         }
 
-        await store.send(.blockAlert(.presented(.confirmBlock(userID: feedbacks[0].authorID)))) {
+        await store.send(.blockAlert(.presented(.confirmBlock(userID: feedbacks[0].authorID, userName: feedbacks[0].authorName)))) {
             $0.blockAlert = nil
         }
 

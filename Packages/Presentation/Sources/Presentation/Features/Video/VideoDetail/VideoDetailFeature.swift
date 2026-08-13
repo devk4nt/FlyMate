@@ -91,7 +91,7 @@ public struct VideoDetailFeature {
         case blockResponse(Result<UUID, AppError>)
 
         public enum BlockAlert: Equatable {
-            case confirmBlock(userID: UUID)
+            case confirmBlock(userID: UUID, userName: String)
         }
     }
 
@@ -484,7 +484,7 @@ public struct VideoDetailFeature {
                 state.blockAlert = AlertState {
                     TextState("\(authorName)님을 차단할까요?")
                 } actions: {
-                    ButtonState(role: .destructive, action: .confirmBlock(userID: authorID)) {
+                    ButtonState(role: .destructive, action: .confirmBlock(userID: authorID, userName: authorName)) {
                         TextState("차단하기")
                     }
                     ButtonState(role: .cancel) {
@@ -495,11 +495,11 @@ public struct VideoDetailFeature {
                 }
                 return .none
 
-            case .blockAlert(.presented(.confirmBlock(let userID))):
+            case .blockAlert(.presented(.confirmBlock(let userID, let userName))):
                 let client = blockClient
                 return .run { send in
                     do {
-                        try await client.blockUser(userID)
+                        try await client.blockUser(userID, userName)
                         await send(.blockResponse(.success(userID)))
                     } catch {
                         let appError = error as? AppError ?? .unexpected(error.localizedDescription)

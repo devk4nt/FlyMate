@@ -198,7 +198,7 @@ struct FlyMateApp: App {
         // Block
         let blockRepo = BlockRepositoryImpl(client: supabaseClient)
         dependencies.blockClient = BlockClient(
-            blockUser: { try await blockRepo.blockUser($0) },
+            blockUser: { try await blockRepo.blockUser($0, name: $1) },
             unblockUser: { try await blockRepo.unblockUser($0) },
             fetchBlockedUsers: { try await blockRepo.fetchBlockedUsers() }
         )
@@ -1015,19 +1015,15 @@ struct FlyMateApp: App {
         )
 
         // Block (인메모리 목)
-        let memberNames: [UUID: String] = Dictionary(
-            (studyA.members + studyB.members).map { ($0.userID, $0.userName) },
-            uniquingKeysWith: { first, _ in first }
-        )
         let blockedUserStore = LockIsolated<[BlockedUser]>([])
         dependencies.blockClient = BlockClient(
-            blockUser: { userID in
+            blockUser: { userID, userName in
                 blockedUserStore.withValue { blocked in
                     guard !blocked.contains(where: { $0.id == userID }) else { return }
                     blocked.insert(
                         BlockedUser(
                             id: userID,
-                            name: memberNames[userID] ?? "알 수 없는 사용자",
+                            name: userName,
                             profileImageURL: nil,
                             blockedAt: Date()
                         ),
