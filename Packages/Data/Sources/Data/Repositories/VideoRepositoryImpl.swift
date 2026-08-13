@@ -193,9 +193,9 @@ public struct VideoRepositoryImpl: VideoRepository {
         guard !dtos.isEmpty else { return [] }
         let paths = dtos.map { StorageService.videoPath(studyID: $0.studyID, videoID: $0.id) }
         let urls = try await storageService.signedVideoURLs(paths: paths)
-        guard urls.count == dtos.count else {
-            throw AppError.unexpected("영상 서명 URL 발급에 실패했습니다.")
+        // 서명 URL 발급에 실패한 영상만 제외하고 나머지는 그대로 노출한다
+        return zip(dtos, paths).compactMap { dto, path in
+            urls[path].map { DTOMapper.toDomain(dto, videoURL: $0) }
         }
-        return zip(dtos, urls).map { DTOMapper.toDomain($0, videoURL: $1) }
     }
 }

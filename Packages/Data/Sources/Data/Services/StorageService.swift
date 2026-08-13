@@ -28,10 +28,21 @@ public struct StorageService: Sendable {
     }
 
     /// 영상 경로들의 서명 URL을 일괄 발급한다 (스터디 멤버만 허용 — Storage RLS).
-    func signedVideoURLs(paths: [String]) async throws -> [URL] {
-        guard !paths.isEmpty else { return [] }
-        return try await client.storage.from(SupabaseConfig.Bucket.videos)
+    /// 발급에 실패한 경로는 결과에서 제외되므로, 호출부는 경로로 조회해 실패 항목을 건너뛴다.
+    func signedVideoURLs(paths: [String]) async throws -> [String: URL] {
+        guard !paths.isEmpty else { return [:] }
+        let results: [SignedURLResult] = try await client.storage.from(SupabaseConfig.Bucket.videos)
             .createSignedURLs(paths: paths, expiresIn: AppConstants.signedVideoURLExpirySeconds)
+        var urls: [String: URL] = [:]
+        for result in results {
+            switch result {
+            case .success(let path, let signedURL):
+                urls[path] = signedURL
+            case .failure(let path, let error):
+                FMLogger.error("영상 서명 URL 발급 실패 — path: \(path), error: \(error)", category: .video)
+            }
+        }
+        return urls
     }
 
     /// 썸네일 이미지를 업로드하고 공개 URL을 반환한다.
