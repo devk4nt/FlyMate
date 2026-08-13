@@ -100,6 +100,20 @@ let project = Project(
                 "FlyMate/GoogleService-Info.plist",
             ],
             entitlements: "FlyMate/FlyMate.entitlements",
+            scripts: [
+                // Crashlytics dSYM 업로드 — 디버그(dwarf)는 dSYM이 없어 스크립트가 바로 종료됨
+                .post(
+                    script: #""${SRCROOT}/Tuist/.build/checkouts/firebase-ios-sdk/Crashlytics/run""#,
+                    name: "Upload dSYMs to Crashlytics",
+                    inputPaths: [
+                        "${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${TARGET_NAME}",
+                        "${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Info.plist",
+                        "${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleService-Info.plist",
+                        "${TARGET_BUILD_DIR}/${EXECUTABLE_PATH}",
+                    ],
+                    basedOnDependencyAnalysis: false
+                ),
+            ],
             dependencies: [
                 .target(name: "Core"),
                 .target(name: "Domain"),
@@ -107,6 +121,7 @@ let project = Project(
                 .target(name: "Presentation"),
                 .external(name: "FirebaseCore"),
                 .external(name: "FirebaseMessaging"),
+                .external(name: "FirebaseCrashlytics"),
             ],
             settings: .settings(
                 base: baseSettings.merging([
@@ -115,8 +130,11 @@ let project = Project(
                     "SWIFT_EMIT_LOC_STRINGS": true,
                     "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
                     "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor",
-                    "ENABLE_USER_SCRIPT_SANDBOXING": true,
+                    // Crashlytics dSYM 업로드 스크립트가 네트워크/캐시 접근을 필요로 함
+                    "ENABLE_USER_SCRIPT_SANDBOXING": false,
                     "OTHER_LDFLAGS": ["$(inherited)", "-ObjC"],
+                    // 디버그 빌드도 dSYM 생성 — Crashlytics 테스트 크래시 심볼리케이션용
+                    "DEBUG_INFORMATION_FORMAT": "dwarf-with-dsym",
                 ]) { _, new in new },
                 configurations: [
                     .debug(name: .debug, xcconfig: "Secrets.xcconfig"),
