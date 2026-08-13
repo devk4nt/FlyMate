@@ -22,6 +22,7 @@ public struct VideoDetailFeature {
         public var toastType: FMToast.ToastType = .success
         public var showFeedbackSheet = false
         @Presents public var feedbackCommentList: FeedbackCommentListFeature.State?
+        @Presents public var edit: FeedbackEditFeature.State?
         @Presents public var report: ReportFeature.State?
         @Presents public var blockAlert: AlertState<Action.BlockAlert>?
 
@@ -72,6 +73,8 @@ public struct VideoDetailFeature {
         case feedbackSheetDismissed
         // Feedback actions
         case feedbackTapped(Feedback)
+        case editFeedbackTapped(Feedback)
+        case edit(PresentationAction<FeedbackEditFeature.Action>)
         // Comment input
         case commentInput(CommentInputFeature.Action)
         case replyTapped(Feedback)
@@ -285,6 +288,25 @@ public struct VideoDetailFeature {
 
             case .feedbackTapped(let feedback):
                 return .send(.seek(to: feedback.timestampSeconds))
+
+            case .editFeedbackTapped(let feedback):
+                state.edit = FeedbackEditFeature.State(feedback: feedback)
+                return .none
+
+            case .edit(.presented(.delegate(.feedbackUpdated(let updated)))):
+                state.edit = nil
+                if case .loaded(var feedbacks) = state.feedbacks,
+                   let index = feedbacks.firstIndex(where: { $0.id == updated.id }) {
+                    feedbacks[index] = updated
+                    state.feedbacks = .loaded(feedbacks)
+                }
+                state.showToast = true
+                state.toastMessage = "댓글이 수정되었습니다"
+                state.toastType = .success
+                return .none
+
+            case .edit:
+                return .none
 
             // MARK: - Comment Input Delegate
 
@@ -537,6 +559,9 @@ public struct VideoDetailFeature {
         }
         .ifLet(\.$feedbackCommentList, action: \.feedbackCommentList) {
             FeedbackCommentListFeature()
+        }
+        .ifLet(\.$edit, action: \.edit) {
+            FeedbackEditFeature()
         }
         .ifLet(\.$report, action: \.report) {
             ReportFeature()

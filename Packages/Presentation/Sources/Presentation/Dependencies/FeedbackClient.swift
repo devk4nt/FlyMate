@@ -8,6 +8,7 @@ public struct FeedbackClient: Sendable {
     public var fetchReceived: @Sendable (UUID, Date?) async throws -> [Feedback]
     public var fetchGiven: @Sendable (UUID, Date?) async throws -> [Feedback]
     public var observeFeedbacks: @Sendable (UUID) -> AsyncStream<[Feedback]>
+    public var updateFeedback: @Sendable (UUID, String) async throws -> Feedback
     public var deleteFeedback: @Sendable (UUID) async throws -> Void
 
     public init(
@@ -16,6 +17,7 @@ public struct FeedbackClient: Sendable {
         fetchReceived: @escaping @Sendable (UUID, Date?) async throws -> [Feedback],
         fetchGiven: @escaping @Sendable (UUID, Date?) async throws -> [Feedback],
         observeFeedbacks: @escaping @Sendable (UUID) -> AsyncStream<[Feedback]>,
+        updateFeedback: @escaping @Sendable (UUID, String) async throws -> Feedback,
         deleteFeedback: @escaping @Sendable (UUID) async throws -> Void
     ) {
         self.fetchFeedbacks = fetchFeedbacks
@@ -23,6 +25,7 @@ public struct FeedbackClient: Sendable {
         self.fetchReceived = fetchReceived
         self.fetchGiven = fetchGiven
         self.observeFeedbacks = observeFeedbacks
+        self.updateFeedback = updateFeedback
         self.deleteFeedback = deleteFeedback
     }
 }
@@ -34,6 +37,7 @@ extension FeedbackClient: TestDependencyKey {
         fetchReceived: unimplemented("\(Self.self).fetchReceived"),
         fetchGiven: unimplemented("\(Self.self).fetchGiven"),
         observeFeedbacks: unimplemented("\(Self.self).observeFeedbacks", placeholder: .finished),
+        updateFeedback: unimplemented("\(Self.self).updateFeedback"),
         deleteFeedback: unimplemented("\(Self.self).deleteFeedback")
     )
 }

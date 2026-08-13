@@ -12,6 +12,7 @@ public struct FeedbackListFeature {
         public var feedbacks = PaginatedState<Feedback>()
         public var loadingState: LoadingState<[Feedback]> = .idle
         @Presents public var report: ReportFeature.State?
+        @Presents public var edit: FeedbackEditFeature.State?
         @Presents public var blockAlert: AlertState<Action.BlockAlert>?
         public var showToast = false
         public var toastMessage = ""
@@ -37,6 +38,8 @@ public struct FeedbackListFeature {
         case reportFeedbackTapped(Feedback)
         case reportUserTapped(Feedback)
         case report(PresentationAction<ReportFeature.Action>)
+        case editFeedbackTapped(Feedback)
+        case edit(PresentationAction<FeedbackEditFeature.Action>)
         case blockUserTapped(Feedback)
         case blockAlert(PresentationAction<BlockAlert>)
         case blockResponse(Result<UUID, AppError>)
@@ -143,6 +146,23 @@ public struct FeedbackListFeature {
             case .report:
                 return .none
 
+            case .editFeedbackTapped(let feedback):
+                state.edit = FeedbackEditFeature.State(feedback: feedback)
+                return .none
+
+            case .edit(.presented(.delegate(.feedbackUpdated(let feedback)))):
+                state.edit = nil
+                if let index = state.feedbacks.items.firstIndex(where: { $0.id == feedback.id }) {
+                    state.feedbacks.items[index] = feedback
+                }
+                state.loadingState = .loaded(state.feedbacks.items)
+                state.toastMessage = "피드백을 수정했습니다"
+                state.showToast = true
+                return .none
+
+            case .edit:
+                return .none
+
             case .blockUserTapped(let feedback):
                 state.blockAlert = AlertState {
                     TextState("\(feedback.authorName)님을 차단할까요?")
@@ -193,6 +213,9 @@ public struct FeedbackListFeature {
         }
         .ifLet(\.$report, action: \.report) {
             ReportFeature()
+        }
+        .ifLet(\.$edit, action: \.edit) {
+            FeedbackEditFeature()
         }
         .ifLet(\.$blockAlert, action: \.blockAlert)
     }

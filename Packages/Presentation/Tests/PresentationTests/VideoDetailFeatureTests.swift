@@ -454,6 +454,53 @@ struct VideoDetailFeatureTests {
         #expect(blocked.value?.0 == blockedAuthorID)
         #expect(blocked.value?.1 == "김테스트")
     }
+
+    // MARK: - 피드백 수정
+
+    @Test
+    func 수정_탭시_수정_시트_표시() async {
+        let feedback = Feedback.videoDetailMock()
+        var state = VideoDetailFeature.State(video: .videoDetailMock)
+        state.feedbacks = .loaded([feedback])
+
+        let store = TestStore(initialState: state) {
+            VideoDetailFeature()
+        }
+
+        await store.send(.editFeedbackTapped(feedback)) {
+            $0.edit = FeedbackEditFeature.State(feedback: feedback)
+        }
+    }
+
+    @Test
+    func 수정_완료시_피드백_목록_갱신_및_토스트() async {
+        let feedback = Feedback.videoDetailMock()
+        let updated = Feedback(
+            id: feedback.id,
+            videoID: feedback.videoID,
+            studyID: feedback.studyID,
+            authorID: feedback.authorID,
+            authorName: feedback.authorName,
+            content: "수정된 내용",
+            timestampSeconds: feedback.timestampSeconds,
+            createdAt: feedback.createdAt
+        )
+        var state = VideoDetailFeature.State(video: .videoDetailMock)
+        state.feedbacks = .loaded([feedback])
+        state.edit = FeedbackEditFeature.State(feedback: feedback)
+
+        let store = TestStore(initialState: state) {
+            VideoDetailFeature()
+        }
+
+        await store.send(.edit(.presented(.delegate(.feedbackUpdated(updated))))) {
+            $0.edit = nil
+            $0.feedbacks = .loaded([updated])
+            $0.showToast = true
+            $0.toastMessage = "댓글이 수정되었습니다"
+            $0.toastType = .success
+        }
+    }
 }
 
 // MARK: - Mock Data

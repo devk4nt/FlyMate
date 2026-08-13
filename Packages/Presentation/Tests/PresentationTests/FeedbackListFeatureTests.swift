@@ -226,6 +226,55 @@ struct FeedbackListFeatureTests {
         await store.send(.feedbackTapped(Feedback.mock(index: 1)))
     }
 
+    // MARK: - 피드백 수정
+
+    @Test
+    func 수정_탭시_수정_시트_표시() async {
+        let feedback = Feedback.mock(index: 1)
+        var state = FeedbackListFeature.State(userID: userID, listType: .given)
+        state.feedbacks.items = [feedback]
+        state.loadingState = .loaded([feedback])
+
+        let store = TestStore(initialState: state) {
+            FeedbackListFeature()
+        }
+
+        await store.send(.editFeedbackTapped(feedback)) {
+            $0.edit = FeedbackEditFeature.State(feedback: feedback)
+        }
+    }
+
+    @Test
+    func 수정_완료시_목록_갱신_및_토스트() async {
+        let feedback = Feedback.mock(index: 1)
+        let updated = Feedback(
+            id: feedback.id,
+            videoID: feedback.videoID,
+            studyID: feedback.studyID,
+            authorID: feedback.authorID,
+            authorName: feedback.authorName,
+            content: "수정된 내용",
+            timestampSeconds: feedback.timestampSeconds,
+            createdAt: feedback.createdAt
+        )
+        var state = FeedbackListFeature.State(userID: userID, listType: .given)
+        state.feedbacks.items = [feedback]
+        state.loadingState = .loaded([feedback])
+        state.edit = FeedbackEditFeature.State(feedback: feedback)
+
+        let store = TestStore(initialState: state) {
+            FeedbackListFeature()
+        }
+
+        await store.send(.edit(.presented(.delegate(.feedbackUpdated(updated))))) {
+            $0.edit = nil
+            $0.feedbacks.items = [updated]
+            $0.loadingState = .loaded([updated])
+            $0.toastMessage = "피드백을 수정했습니다"
+            $0.showToast = true
+        }
+    }
+
     // MARK: - 사용자 차단
 
     @Test

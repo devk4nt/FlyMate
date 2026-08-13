@@ -106,6 +106,17 @@ public struct FeedbackRepositoryImpl: FeedbackRepository {
         realtimeService.observeFeedbacks(videoID: videoID)
     }
 
+    public func updateFeedback(id: UUID, content: String) async throws -> Feedback {
+        let dto: FeedbackDTO = try await client.from(SupabaseConfig.Table.feedbacks)
+            .update(["content": content])
+            .eq("id", value: id)
+            .select()
+            .single()
+            .execute()
+            .value
+        return DTOMapper.toDomain(dto)
+    }
+
     public func deleteFeedback(id: UUID) async throws {
         try await client.from(SupabaseConfig.Table.feedbacks)
             .delete()

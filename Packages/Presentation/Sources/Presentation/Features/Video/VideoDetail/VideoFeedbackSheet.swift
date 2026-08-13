@@ -52,6 +52,11 @@ public struct VideoFeedbackSheet: View {
         .sheet(item: $store.scope(state: \.report, action: \.report)) { reportStore in
             ReportView(store: reportStore)
         }
+        .sheet(item: $store.scope(state: \.edit, action: \.edit)) { editStore in
+            NavigationStack {
+                FeedbackEditView(store: editStore)
+            }
+        }
         .alert($store.scope(state: \.blockAlert, action: \.blockAlert))
         .background(FMColors.background.ignoresSafeArea())
         .tint(FMColors.actionForeground)
@@ -163,6 +168,9 @@ public struct VideoFeedbackSheet: View {
                             onDeleteReply: { comment in
                                 store.send(.deleteReplyTapped(comment))
                             },
+                            onEdit: feedback.authorID == store.currentUserID ? {
+                                store.send(.editFeedbackTapped(feedback))
+                            } : nil,
                             onReportUser: feedback.authorID == store.currentUserID ? nil : {
                                 store.send(.reportUserTapped(authorID: feedback.authorID))
                             },
@@ -241,6 +249,7 @@ private struct FeedbackRow: View {
     var onReplyTapped: (() -> Void)?
     var onToggleReplies: (() -> Void)?
     var onDeleteReply: ((FeedbackComment) -> Void)?
+    var onEdit: (() -> Void)?
     var onReportUser: (() -> Void)?
     var onBlockUser: (() -> Void)?
 
@@ -274,8 +283,15 @@ private struct FeedbackRow: View {
 
                 Spacer(minLength: 0)
 
-                if onReportUser != nil || onBlockUser != nil {
+                if onEdit != nil || onReportUser != nil || onBlockUser != nil {
                     Menu {
+                        if let onEdit {
+                            Button {
+                                onEdit()
+                            } label: {
+                                Label("수정하기", systemImage: "pencil")
+                            }
+                        }
                         if let onReportUser {
                             Button(role: .destructive) {
                                 onReportUser()
@@ -297,7 +313,7 @@ private struct FeedbackRow: View {
                             .frame(width: 24, height: 24)
                             .contentShape(Rectangle())
                     }
-                    .accessibilityLabel("신고 및 차단 메뉴")
+                    .accessibilityLabel(onEdit != nil ? "더보기 메뉴" : "신고 및 차단 메뉴")
                 }
             }
             .padding(FMSpacing.sm)

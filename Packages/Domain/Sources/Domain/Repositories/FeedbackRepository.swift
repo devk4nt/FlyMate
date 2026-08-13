@@ -16,6 +16,9 @@ public protocol FeedbackRepository: Sendable {
     /// 영상의 피드백을 실시간 구독한다.
     func observeFeedbacks(videoID: UUID) -> AsyncStream<[Feedback]>
 
+    /// 피드백 내용을 수정한다 (작성자 본인만 가능).
+    func updateFeedback(id: UUID, content: String) async throws -> Feedback
+
     /// 피드백을 삭제한다.
     func deleteFeedback(id: UUID) async throws
 }

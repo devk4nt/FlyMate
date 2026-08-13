@@ -46,12 +46,15 @@ public struct FeedbackListView: View {
                             ForEach(feedbacks) { feedback in
                                 FeedbackManagementRow(
                                     feedback: feedback,
-                                    onReportFeedback: {
+                                    onEdit: store.listType == .given ? {
+                                        store.send(.editFeedbackTapped(feedback))
+                                    } : nil,
+                                    onReportFeedback: store.listType == .received ? {
                                         store.send(.reportFeedbackTapped(feedback))
-                                    },
-                                    onReportUser: {
+                                    } : nil,
+                                    onReportUser: store.listType == .received ? {
                                         store.send(.reportUserTapped(feedback))
-                                    },
+                                    } : nil,
                                     onBlockUser: store.listType == .received ? {
                                         store.send(.blockUserTapped(feedback))
                                     } : nil
@@ -92,6 +95,11 @@ public struct FeedbackListView: View {
         .sheet(item: $store.scope(state: \.report, action: \.report)) { reportStore in
             ReportView(store: reportStore)
         }
+        .sheet(item: $store.scope(state: \.edit, action: \.edit)) { editStore in
+            NavigationStack {
+                FeedbackEditView(store: editStore)
+            }
+        }
         .alert($store.scope(state: \.blockAlert, action: \.blockAlert))
         .fmToast(
             isPresented: Binding(
@@ -109,6 +117,7 @@ public struct FeedbackListView: View {
 
 struct FeedbackManagementRow: View {
     let feedback: Domain.Feedback
+    var onEdit: (() -> Void)?
     var onReportFeedback: (() -> Void)?
     var onReportUser: (() -> Void)?
     var onBlockUser: (() -> Void)?
@@ -168,8 +177,15 @@ struct FeedbackManagementRow: View {
 
                 Spacer(minLength: 0)
 
-                if onReportFeedback != nil || onReportUser != nil || onBlockUser != nil {
+                if onEdit != nil || onReportFeedback != nil || onReportUser != nil || onBlockUser != nil {
                     Menu {
+                        if let onEdit {
+                            Button {
+                                onEdit()
+                            } label: {
+                                Label("수정하기", systemImage: "pencil")
+                            }
+                        }
                         if let onReportFeedback {
                             Button(role: .destructive) {
                                 onReportFeedback()
@@ -199,7 +215,7 @@ struct FeedbackManagementRow: View {
                             .background(FMColors.softCanvas, in: Circle())
                             .contentShape(Circle())
                     }
-                    .accessibilityLabel("신고 메뉴")
+                    .accessibilityLabel(onEdit != nil ? "더보기 메뉴" : "신고 메뉴")
                 }
             }
 

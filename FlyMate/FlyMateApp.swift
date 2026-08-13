@@ -98,6 +98,7 @@ struct FlyMateApp: App {
             fetchReceived: { try await feedbackRepo.fetchReceivedFeedbacks(userID: $0, cursor: $1) },
             fetchGiven: { try await feedbackRepo.fetchGivenFeedbacks(userID: $0, cursor: $1) },
             observeFeedbacks: { feedbackRepo.observeFeedbacks(videoID: $0) },
+            updateFeedback: { try await feedbackRepo.updateFeedback(id: $0, content: $1) },
             deleteFeedback: { try await feedbackRepo.deleteFeedback(id: $0) }
         )
 
@@ -915,6 +916,12 @@ struct FlyMateApp: App {
             observeFeedbacks: { videoID in
                 feedbackStore.observe(videoID: videoID)
             },
+            updateFeedback: { id, content in
+                guard let updated = feedbackStore.update(id: id, content: content) else {
+                    throw AppError.unexpected("피드백을 찾을 수 없습니다")
+                }
+                return updated
+            },
             deleteFeedback: { id in
                 feedbackStore.delete(id: id)
             }
@@ -1275,6 +1282,28 @@ struct FlyMateApp: App {
             let videoFeedbacks = self.feedbacks(for: feedback.videoID)
             lock.withLock {
                 continuations[feedback.videoID]?.yield(videoFeedbacks)
+            }
+        }
+
+        func update(id: UUID, content: String) -> Feedback? {
+            lock.withLock {
+                guard let index = feedbacks.firstIndex(where: { $0.id == id }) else { return nil }
+                let old = feedbacks[index]
+                let updated = Feedback(
+                    id: old.id,
+                    videoID: old.videoID,
+                    studyID: old.studyID,
+                    authorID: old.authorID,
+                    authorName: old.authorName,
+                    authorProfileURL: old.authorProfileURL,
+                    content: content,
+                    timestampSeconds: old.timestampSeconds,
+                    createdAt: old.createdAt,
+                    mentionedUserIDs: old.mentionedUserIDs,
+                    commentCount: old.commentCount
+                )
+                feedbacks[index] = updated
+                return updated
             }
         }
 
