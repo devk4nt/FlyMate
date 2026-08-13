@@ -87,30 +87,18 @@ public struct VideoPageView: View {
         }
     }
 
-    @ViewBuilder
     private var mediaContent: some View {
-        if isStaticMockVideo, let thumbnailURL = store.video.thumbnailURL {
-            KFImage(thumbnailURL)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else {
-            VideoPlayerView(
-                url: store.video.videoURL,
-                isPlaying: store.player.isPlaying,
-                seekTime: store.player.currentTime,
-                isSeeking: store.player.isSeeking,
-                isMuted: store.player.isMuted,
-                onCurrentTimeUpdate: { store.send(.currentTimeUpdated($0)) },
-                onDurationUpdate: { store.send(.durationUpdated($0)) },
-                onPlaybackEnded: { store.send(.playerReachedEnd) },
-                onSeekCompleted: { store.send(.seekCompleted) }
-            )
-        }
-    }
-
-    private var isStaticMockVideo: Bool {
-        ["jpg", "jpeg", "png"].contains(store.video.videoURL.pathExtension.lowercased())
+        VideoPlayerView(
+            url: store.video.videoURL,
+            isPlaying: store.player.isPlaying,
+            seekTime: store.player.currentTime,
+            isSeeking: store.player.isSeeking,
+            isMuted: store.player.isMuted,
+            onCurrentTimeUpdate: { store.send(.currentTimeUpdated($0)) },
+            onDurationUpdate: { store.send(.durationUpdated($0)) },
+            onPlaybackEnded: { store.send(.playerReachedEnd) },
+            onSeekCompleted: { store.send(.seekCompleted) }
+        )
     }
 
     // MARK: - Overlay

@@ -281,8 +281,9 @@ struct FlyMateApp: App {
             }
             return mockAssetURL(assetName)
         }
+        // 항상 실제 재생 가능한 샘플 영상 사용 — 정지 이미지 목 영상은 심사에서 미완성으로 보일 수 있음
         @Sendable func mockVideoURL(_ assetName: String, fallback: String) -> URL {
-            mockAssetURL(assetName) ?? sampleVideoURL(fallback)
+            sampleVideoURL(fallback)
         }
         // ~10분짜리 장편 샘플 — 3분 내 타임스탬프 이동 모두 커버
         let bigBuckBunny = "https://archive.org/download/BigBuckBunny_124/Content/big_buck_bunny_720p_surround.mp4"
