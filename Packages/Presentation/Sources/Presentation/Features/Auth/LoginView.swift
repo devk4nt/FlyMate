@@ -2,7 +2,7 @@ import SwiftUI
 import ComposableArchitecture
 
 public struct LoginView: View {
-    let store: StoreOf<LoginFeature>
+    @Bindable var store: StoreOf<LoginFeature>
 
     public init(store: StoreOf<LoginFeature>) {
         self.store = store
@@ -40,6 +40,7 @@ public struct LoginView: View {
                     }
                     .frame(width: 92, height: 92)
                     .shadow(color: FMColors.primary.opacity(0.3), radius: 22, y: 12)
+                    .onTapGesture { store.send(.logoTapped) }
 
                     VStack(spacing: FMSpacing.xs) {
                         Text("FlyMate")
@@ -90,6 +91,14 @@ public struct LoginView: View {
                 .padding(.bottom, FMSpacing.xl)
             }
         }
+        .sheet(
+            isPresented: .init(
+                get: { store.showsEmailLogin },
+                set: { if !$0 { store.send(.emailLoginDismissed) } }
+            )
+        ) {
+            emailLoginSheet
+        }
         .alert(
             "로그인 실패",
             isPresented: .init(
@@ -103,5 +112,52 @@ public struct LoginView: View {
                 Text(error.errorDescription ?? "알 수 없는 오류가 발생했습니다.")
             }
         }
+    }
+
+    // MARK: - Email Login (App Store 심사용 히든 로그인)
+
+    private var emailLoginSheet: some View {
+        VStack(spacing: FMSpacing.md) {
+            Text("이메일 로그인")
+                .font(FMTypography.headline)
+                .foregroundStyle(FMColors.label)
+                .padding(.top, FMSpacing.xl)
+
+            FMTextField(
+                title: "이메일",
+                placeholder: "이메일을 입력하세요",
+                text: $store.email.sending(\.emailChanged)
+            )
+            .textInputAutocapitalization(.never)
+            .keyboardType(.emailAddress)
+            .autocorrectionDisabled()
+
+            VStack(alignment: .leading, spacing: FMSpacing.xxs) {
+                Text("비밀번호")
+                    .font(FMTypography.caption1)
+                    .foregroundStyle(FMColors.secondaryLabel)
+
+                SecureField("비밀번호를 입력하세요", text: $store.password.sending(\.passwordChanged))
+                    .font(FMTypography.body)
+                    .frame(minHeight: 48)
+                    .padding(.horizontal, FMSpacing.sm)
+                    .background(FMColors.secondaryBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous))
+                    .accessibilityLabel("비밀번호")
+            }
+
+            FMButton(
+                title: "로그인",
+                style: .primary,
+                isLoading: store.isLoading
+            ) {
+                store.send(.emailLoginTapped)
+            }
+
+            Spacer()
+        }
+        .padding(.horizontal, FMSpacing.lg)
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
     }
 }

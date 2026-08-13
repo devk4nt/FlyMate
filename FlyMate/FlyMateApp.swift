@@ -53,6 +53,7 @@ struct FlyMateApp: App {
             currentUser: { try await authRepo.currentUser() },
             signInWithApple: { try await authRepo.signInWithApple(idToken: $0, nonce: $1) },
             signInWithKakao: { try await authRepo.signInWithKakao(accessToken: $0) },
+            signInWithEmail: { try await authRepo.signInWithEmail(email: $0, password: $1) },
             signOut: { try await authRepo.signOut() },
             deleteAccount: { try await authRepo.deleteAccount(appleAuthorizationCode: $0) },
             observeAuthState: { authRepo.observeAuthState() }
@@ -635,6 +636,10 @@ struct FlyMateApp: App {
                 return me
             },
             signInWithKakao: { _ in
+                authObserver.value?.yield(me)
+                return me
+            },
+            signInWithEmail: { _, _ in
                 authObserver.value?.yield(me)
                 return me
             },

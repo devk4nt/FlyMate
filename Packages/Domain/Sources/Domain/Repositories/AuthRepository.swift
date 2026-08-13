@@ -10,6 +10,9 @@ public protocol AuthRepository: Sendable {
     /// 카카오 로그인을 수행한다.
     func signInWithKakao(accessToken: String) async throws -> User
 
+    /// 이메일 로그인을 수행한다. App Store 심사용 데모 계정 전용 (일반 UI에는 노출되지 않음).
+    func signInWithEmail(email: String, password: String) async throws -> User
+
     /// 로그아웃을 수행한다.
     func signOut() async throws
 

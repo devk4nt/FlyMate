@@ -36,6 +36,17 @@ public struct AuthRepositoryImpl: AuthRepository {
         return DTOMapper.toDomain(dto)
     }
 
+    public func signInWithEmail(email: String, password: String) async throws -> Domain.User {
+        let session = try await client.auth.signIn(email: email, password: password)
+        let dto: UserDTO = try await client.from(SupabaseConfig.Table.users)
+            .select()
+            .eq("id", value: session.user.id)
+            .single()
+            .execute()
+            .value
+        return DTOMapper.toDomain(dto)
+    }
+
     public func signInWithKakao(accessToken: String) async throws -> Domain.User {
         // 카카오는 Supabase 기본 OIDC에 없으므로 Edge Function으로 토큰 교환
         struct KakaoSignInRequest: Encodable {

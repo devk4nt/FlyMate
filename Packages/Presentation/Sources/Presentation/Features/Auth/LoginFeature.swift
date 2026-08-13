@@ -5,10 +5,17 @@ import Domain
 
 @Reducer
 public struct LoginFeature {
+    /// 이메일 로그인 시트를 여는 히든 제스처의 로고 탭 횟수 (App Store 심사용)
+    public static let hiddenLoginTapThreshold = 5
+
     @ObservableState
     public struct State: Equatable {
         public var isLoading = false
         public var error: AppError?
+        public var logoTapCount = 0
+        public var showsEmailLogin = false
+        public var email = ""
+        public var password = ""
 
         public init() {}
     }
@@ -18,6 +25,11 @@ public struct LoginFeature {
         case appleSignInResult(Result<AppleSignInResult, AppleSignInError>)
         case kakaoLoginTapped
         case kakaoSignInResult(Result<String, KakaoSignInError>)
+        case logoTapped
+        case emailChanged(String)
+        case passwordChanged(String)
+        case emailLoginTapped
+        case emailLoginDismissed
         case loginResponse(Result<User, AppError>)
         case errorDismissed
     }
@@ -97,8 +109,50 @@ public struct LoginFeature {
                 state.error = .unexpected(error.localizedDescription ?? "카카오 로그인에 실패했습니다.")
                 return .none
 
+            case .logoTapped:
+                state.logoTapCount += 1
+                guard state.logoTapCount >= Self.hiddenLoginTapThreshold else { return .none }
+                state.logoTapCount = 0
+                state.showsEmailLogin = true
+                return .none
+
+            case .emailChanged(let email):
+                state.email = email
+                return .none
+
+            case .passwordChanged(let password):
+                state.password = password
+                return .none
+
+            case .emailLoginTapped:
+                // QuickType 공백/붙여넣기 개행이 딸려 와 인증 실패하는 것을 방지
+                let email = state.email.trimmingCharacters(in: .whitespacesAndNewlines)
+                let password = state.password.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !email.isEmpty, !password.isEmpty else { return .none }
+                state.isLoading = true
+                state.error = nil
+                let client = authClient
+                return .run { send in
+                    do {
+                        let user = try await client.signInWithEmail(email, password)
+                        await send(.loginResponse(.success(user)))
+                    } catch {
+                        let appError = error as? AppError ?? .unexpected(error.localizedDescription)
+                        await send(.loginResponse(.failure(appError)))
+                    }
+                }
+
+            case .emailLoginDismissed:
+                state.showsEmailLogin = false
+                state.email = ""
+                state.password = ""
+                return .none
+
             case .loginResponse(.success):
                 state.isLoading = false
+                state.showsEmailLogin = false
+                state.email = ""
+                state.password = ""
                 return .none
 
             case .loginResponse(.failure(let error)):
