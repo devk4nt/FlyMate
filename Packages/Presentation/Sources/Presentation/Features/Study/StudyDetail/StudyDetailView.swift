@@ -397,21 +397,22 @@ public struct StudyDetailView: View {
 
                 Divider()
 
-                HStack(spacing: FMSpacing.sm) {
-                    HStack(spacing: FMSpacing.sm) {
+                HStack(spacing: FMSpacing.xs) {
+                    HStack(spacing: FMSpacing.xs) {
                         Button {
                             store.send(.memberManagementTapped)
                         } label: {
                             HStack(spacing: FMSpacing.xxs) {
-                                Label("스터디원 \(store.study.memberCount)명", systemImage: "person.2.fill")
+                                Image(systemName: "person.2.fill")
 
-                                Image(systemName: "chevron.right")
-                                    .font(FMTypography.caption2)
+                                Text("스터디원 \(store.study.memberCount)명")
+                                    .lineLimit(1)
                             }
+                            .fixedSize(horizontal: true, vertical: false)
                             .font(FMTypography.caption1)
                             .fontWeight(.semibold)
                             .foregroundStyle(FMColors.actionForeground)
-                            .padding(.horizontal, FMSpacing.sm)
+                            .padding(.horizontal, FMSpacing.xs)
                             .frame(minHeight: FMSizing.IconContainer.sm)
                             .background(FMColors.primary.opacity(0.1), in: Capsule())
                         }
@@ -423,14 +424,23 @@ public struct StudyDetailView: View {
                                 store.send(.joinRequestManagementTapped)
                             } label: {
                                 HStack(spacing: FMSpacing.xxs) {
-                                    Label("대기", systemImage: "person.badge.clock")
-                                        .font(FMTypography.caption1)
-                                        .foregroundStyle(FMColors.primary)
+                                    Image(systemName: "person.badge.clock")
 
-                                    FMBadge(count: store.pendingRequestCount)
+                                    Text("대기 \(store.pendingRequestCount)명")
+                                        .lineLimit(1)
                                 }
+                                .fixedSize(horizontal: true, vertical: false)
+                                .font(FMTypography.caption1)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(FMColors.attentionFill)
+                                .padding(.horizontal, FMSpacing.xs)
+                                .frame(minHeight: FMSizing.IconContainer.sm)
+                                .background(FMColors.attentionFill.opacity(0.1), in: Capsule())
+                                .contentShape(Capsule())
                             }
                             .buttonStyle(.plain)
+                            .accessibilityLabel("가입 대기 \(store.pendingRequestCount)명")
+                            .accessibilityHint("가입 요청 관리 화면을 엽니다")
                         }
                     }
 
@@ -439,14 +449,18 @@ public struct StudyDetailView: View {
                     Button {
                         store.send(.copyInviteCode)
                     } label: {
-                        Label(
-                            store.isCopied ? "복사됨" : "초대 코드 복사",
-                            systemImage: store.isCopied ? "checkmark" : "doc.on.doc"
-                        )
+                        ZStack {
+                            Label("초대 코드 복사", systemImage: "doc.on.doc")
+                                .opacity(store.isCopied ? 0 : 1)
+
+                            Label("복사됨", systemImage: "checkmark")
+                                .opacity(store.isCopied ? 1 : 0)
+                        }
+                        .fixedSize(horizontal: true, vertical: false)
                         .font(FMTypography.caption1)
                         .fontWeight(.semibold)
                         .foregroundStyle(store.isCopied ? FMColors.success : FMColors.actionForeground)
-                        .padding(.horizontal, FMSpacing.sm)
+                        .padding(.horizontal, FMSpacing.xs)
                         .frame(minHeight: FMSizing.IconContainer.sm)
                         .background(
                             (store.isCopied ? FMColors.success : FMColors.primary).opacity(0.1),
@@ -454,6 +468,7 @@ public struct StudyDetailView: View {
                         )
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(store.isCopied ? "복사됨" : "초대 코드 복사")
                     .accessibilityHint("초대 코드를 클립보드에 복사합니다")
                     .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: store.isCopied)
                 }
