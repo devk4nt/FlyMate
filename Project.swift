@@ -4,7 +4,7 @@ import ProjectDescription
 // MARK: - Shared
 
 let deploymentTargets: DeploymentTargets = .iOS("17.0")
-let destinations: Destinations = [.iPhone, .iPad]
+let destinations: Destinations = [.iPhone]
 
 let baseSettings: SettingsDictionary = [
     "SWIFT_VERSION": "6.0",
