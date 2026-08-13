@@ -210,12 +210,13 @@ public struct VideoFeedView: View {
         GeometryReader { proxy in
             ScrollView(.vertical) {
                 LazyVStack(spacing: 0) {
-                    ForEach(store.scope(state: \.pages, action: \.pages)) { pageStore in
+                    // Store의 Identifiable 기본 id는 ObjectIdentifier — ForEach 식별자를
+                    // video UUID로 지정해야 lazy 미생성 페이지도 scrollPosition이 찾을 수 있다
+                    // (뷰에 .id()만 붙이면 이미 생성된 페이지에만 적용되어 초기 진입 스크롤이 실패)
+                    ForEach(store.scope(state: \.pages, action: \.pages), id: \.state.id) { pageStore in
                         VideoPageView(store: pageStore)
                             .safeAreaPadding(proxy.safeAreaInsets)
                             .containerRelativeFrame([.horizontal, .vertical])
-                            // scrollPosition이 정착 지점의 페이지를 UUID로 식별할 수 있도록 명시
-                            .id(pageStore.video.id)
                     }
                 }
                 .scrollTargetLayout()
