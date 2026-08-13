@@ -138,6 +138,17 @@ let project = Project(
             ]
         ),
         .target(
+            name: "FlyMateUITests",
+            destinations: destinations,
+            product: .uiTests,
+            bundleId: "com.flymate.uitests",
+            deploymentTargets: deploymentTargets,
+            sources: ["FlyMateUITests/**"],
+            dependencies: [
+                .target(name: "FlyMate"),
+            ]
+        ),
+        .target(
             name: "PresentationTests",
             destinations: destinations,
             product: .unitTests,
@@ -158,7 +169,7 @@ let project = Project(
             shared: true,
             buildAction: .buildAction(targets: ["FlyMate"]),
             testAction: .targets(
-                ["FlyMateTests", "PresentationTests"],
+                ["FlyMateTests", "PresentationTests", "FlyMateUITests"],
                 configuration: .debug
             ),
             runAction: .runAction(configuration: .debug, executable: "FlyMate"),

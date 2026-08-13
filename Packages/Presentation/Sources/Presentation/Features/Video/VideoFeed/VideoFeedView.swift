@@ -214,17 +214,16 @@ public struct VideoFeedView: View {
                         VideoPageView(store: pageStore)
                             .safeAreaPadding(proxy.safeAreaInsets)
                             .containerRelativeFrame([.horizontal, .vertical])
+                            // scrollPosition이 정착 지점의 페이지를 UUID로 식별할 수 있도록 명시
+                            .id(pageStore.video.id)
                     }
                 }
                 .scrollTargetLayout()
             }
             .scrollTargetBehavior(.viewAligned(limitBehavior: .always))
-            .scrollPosition(
-                id: Binding(
-                    get: { store.currentVideoID },
-                    set: { store.send(.currentVideoChanged($0)) }
-                )
-            )
+            // 수동 Binding(get:set:)은 observation에 참여하지 않아 스크롤 정착 시
+            // set이 호출되지 않을 수 있다 — 관찰 가능한 바인딩으로 페이지 전환을 전달한다
+            .scrollPosition(id: $store.currentVideoID.sending(\.currentVideoChanged))
             .scrollIndicators(.hidden)
             .refreshable {
                 await store.send(.retryTapped).finish()
