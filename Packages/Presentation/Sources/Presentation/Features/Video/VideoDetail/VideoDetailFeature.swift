@@ -376,8 +376,8 @@ public struct VideoDetailFeature {
                     state.expandedFeedbackIDs.remove(feedbackID)
                 } else {
                     state.expandedFeedbackIDs.insert(feedbackID)
-                    // 미로딩 시 fetch
-                    if state.repliesByFeedback[feedbackID] == nil {
+                    // 로드 완료 상태가 아니면 fetch — 실패했거나 요청이 중단된 채 남은 상태도 재시도한다
+                    if case .loaded = state.repliesByFeedback[feedbackID] {} else {
                         state.repliesByFeedback[feedbackID] = .loading
                         let client = feedbackCommentClient
                         return .run { send in

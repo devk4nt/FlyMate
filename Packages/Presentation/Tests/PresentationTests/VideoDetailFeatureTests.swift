@@ -286,6 +286,30 @@ struct VideoDetailFeatureTests {
         }
     }
 
+    @Test
+    func 답글_로드_실패_후_다시_펼치면_재시도한다() async {
+        let feedback = Feedback.videoDetailMock()
+        let comment = FeedbackComment.videoDetailMock
+
+        var state = VideoDetailFeature.State(video: .videoDetailMock)
+        state.repliesByFeedback = [feedback.id: .failed(.network(.noConnection))]
+
+        let store = TestStore(initialState: state) {
+            VideoDetailFeature()
+        } withDependencies: {
+            $0.feedbackCommentClient.fetchComments = { _ in [comment] }
+        }
+
+        await store.send(.toggleRepliesTapped(feedback)) {
+            $0.expandedFeedbackIDs = [feedback.id]
+            $0.repliesByFeedback = [feedback.id: .loading]
+        }
+
+        await store.receive(\.repliesResponse) {
+            $0.repliesByFeedback = [feedback.id: .loaded([comment])]
+        }
+    }
+
     // MARK: - 답글 삭제
 
     @Test
