@@ -86,6 +86,56 @@ struct VideoFeedFeatureTests {
     }
 
     @Test
+    func 플레이어_닫힘시_열린_피드백_시트를_같은_트랜잭션에서_닫음() async {
+        let videos = [Video.feedMock(1)]
+        var state = VideoFeedFeature.State(scope: .pendingFeedback)
+        state.loadingState = .loaded(videos)
+        var pageState = VideoDetailFeature.State(video: videos[0])
+        pageState.showFeedbackSheet = true
+        state.pages = [pageState]
+        state.currentVideoID = videos[0].id
+        state.presentedVideoID = videos[0].id
+
+        let store = TestStore(initialState: state) {
+            VideoFeedFeature()
+        }
+        store.exhaustivity = .off
+
+        // 시트는 onDisappear effect(다음 틱)가 아니라 playerDismissed에서 동기적으로 닫혀야
+        // pop 애니메이션과 함께 사라진다
+        await store.send(.playerDismissed) {
+            $0.presentedVideoID = nil
+            $0.pages[id: videos[0].id]?.showFeedbackSheet = false
+        }
+    }
+
+    @Test
+    func 스터디_피드에서_뒤로가기시_시트를_먼저_닫고_pop함() async {
+        let videos = [Video.feedMock(1)]
+        var state = VideoFeedFeature.State(scope: .study(videos[0].studyID))
+        state.loadingState = .loaded(videos)
+        var pageState = VideoDetailFeature.State(video: videos[0])
+        pageState.showFeedbackSheet = true
+        state.pages = [pageState]
+        state.currentVideoID = videos[0].id
+
+        let dismissed = LockIsolated(false)
+        let store = TestStore(initialState: state) {
+            VideoFeedFeature()
+        } withDependencies: {
+            $0.continuousClock = ImmediateClock()
+            $0.dismiss = DismissEffect { dismissed.setValue(true) }
+        }
+
+        // 시트 닫힘(동기 상태 변경)이 pop(dismiss effect)보다 먼저다
+        await store.send(.backTapped) {
+            $0.pages[id: videos[0].id]?.showFeedbackSheet = false
+        }
+        await store.finish()
+        #expect(dismissed.value)
+    }
+
+    @Test
     func 스터디_스코프_진입시_선택한_영상부터_시작() async {
         let videos = [Video.feedMock(1), Video.feedMock(2), Video.feedMock(3)]
         let studyID = Video.feedMock(1).studyID
@@ -221,6 +271,34 @@ struct VideoFeedFeatureTests {
         }
     }
 
+    // MARK: - 할 일 큐 갱신
+
+    @Test
+    func 피드백_작성시_할일_큐에서_제거되지만_페이지는_유지() async {
+        let videos = [Video.feedMock(1), Video.feedMock(2)]
+        var state = VideoFeedFeature.State(scope: .pendingFeedback)
+        state.loadingState = .loaded(videos)
+        state.pages = IdentifiedArray(
+            uniqueElements: videos.map { VideoDetailFeature.State(video: $0) }
+        )
+
+        let store = TestStore(initialState: state) {
+            VideoFeedFeature()
+        }
+        store.exhaustivity = .off
+
+        let feedback = Feedback.feedQueueMock(videoID: videos[0].id)
+        await store.send(.pages(.element(
+            id: videos[0].id,
+            action: .commentInput(.delegate(.feedbackCreated(feedback)))
+        ))) {
+            $0.loadingState = .loaded([videos[1]])
+        }
+
+        // 페이저 점프 방지 — 페이지는 세션 동안 유지
+        #expect(store.state.pages[id: videos[0].id] != nil)
+    }
+
     @Test
     func 중복_영상은_페이지에_추가하지_않음() async {
         let videos = [Video.feedMock(1), Video.feedMock(2)]
@@ -265,6 +343,22 @@ private extension Video {
             videoURL: URL(string: "https://example.com/video\(suffix).mp4")!,
             durationSeconds: 120,
             createdAt: Date(timeIntervalSince1970: 1_700_000_000 - TimeInterval(suffix) * 3_600)
+        )
+    }
+}
+
+private extension Feedback {
+    static func feedQueueMock(videoID: UUID) -> Feedback {
+        Feedback(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000300")!,
+            videoID: videoID,
+            studyID: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!,
+            authorID: UUID(uuidString: "00000000-0000-0000-0000-000000000010")!,
+            authorName: "김테스트",
+            content: "시선 처리가 좋았습니다",
+            timestampSeconds: 30.0,
+            createdAt: Date(timeIntervalSince1970: 1_700_000_000),
+            commentCount: 0
         )
     }
 }

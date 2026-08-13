@@ -272,6 +272,9 @@ public struct VideoDetailFeature {
 
             case .feedbackSheetTapped:
                 state.showFeedbackSheet = true
+                // 시트를 연 순간의 초수에서 정지 — currentTime이 고정되어
+                // 피드백이 해당 시점에 달린다
+                state.player.isPlaying = false
                 return .none
 
             case .feedbackSheetDismissed:

@@ -16,11 +16,32 @@ public struct VideoFeedView: View {
             case .pendingFeedback:
                 queueNavigation
             case .study:
+                // 시트가 열린 채 시스템 back으로 pop되면 스택 요소 제거 후 캐시된 상태로
+                // 시트가 뒤늦게 사라진다 — 시트가 열린 동안만 back을 가로채
+                // "시트 닫기 → pop" 순서를 보장한다 (닫혀 있을 땐 시스템 back/스와이프 유지)
                 immersiveFeed
+                    .navigationBarBackButtonHidden(isFeedbackSheetOpen)
+                    .toolbar {
+                        if isFeedbackSheetOpen {
+                            ToolbarItem(placement: .topBarLeading) {
+                                Button {
+                                    store.send(.backTapped)
+                                } label: {
+                                    Image(systemName: "chevron.backward")
+                                }
+                                .accessibilityLabel("뒤로 가기")
+                            }
+                        }
+                    }
             }
         }
         .onAppear { store.send(.onAppear) }
         .onDisappear { store.send(.viewDisappeared) }
+    }
+
+    private var isFeedbackSheetOpen: Bool {
+        guard let currentID = store.currentVideoID else { return false }
+        return store.pages[id: currentID]?.showFeedbackSheet == true
     }
 
     // MARK: - Feedback Queue

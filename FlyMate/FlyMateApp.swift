@@ -245,7 +245,8 @@ struct FlyMateApp: App {
     // 시나리오: 승무원 지원자 "유나"는 국내·외항사 면접 스터디에서 영상을 주고받는다.
     // - 스터디 A: 멤버 4명, 영상 4개(내 영상 2 + 팀원 영상 2), 가입 대기 요청 1건
     // - 스터디 B: 멤버 3명, 영상 2개(내 영상 1 + 방장 영상 1)
-    // - 피드백 10개(다양한 타임스탬프/멘션), 댓글 4개, 알림 4종
+    // - 피드백 14개(요청 응답·칭찬·지적·질문·멘션 등 상황별), 댓글 5개, 알림 4종
+    // - 모든 영상에 촬영 포인트/피드백 요청 포함 — 시트 상단에 업로더 요구사항 노출
     // 생성/삭제는 LockIsolated 스토어에 반영되어 세션 내에서 지속된다.
     private static func registerMockDependencies(_ dependencies: inout DependencyValues) {
         let now = Date()
@@ -383,7 +384,7 @@ struct FlyMateApp: App {
                 id: uuid(100), studyID: studyA.id, uploaderID: meID, uploaderName: "유나",
                 title: "기내 안전 안내 롤플레이",
                 videoURL: mockVideoURL("flight-attendant-study-cafe", fallback: bigBuckBunny), thumbnailURL: sampleThumbnailURL(100),
-                durationSeconds: 178, feedbackCount: 3,
+                durationSeconds: 178, feedbackCount: 4,
                 focusPoints: "발음, 시선 처리",
                 feedbackRequest: "미소가 어색하지 않은지 봐주세요!",
                 createdAt: now.addingTimeInterval(-3 * day)
@@ -392,7 +393,9 @@ struct FlyMateApp: App {
                 id: uuid(101), studyID: studyA.id, uploaderID: meID, uploaderName: "유나",
                 title: "1분 자기소개 스피치",
                 videoURL: mockVideoURL("flight-attendant-home-webcam", fallback: sintelTrailer), thumbnailURL: sampleThumbnailURL(101),
-                durationSeconds: 52, feedbackCount: 2,
+                durationSeconds: 52, feedbackCount: 3,
+                focusPoints: "목소리 톤, 말 속도",
+                feedbackRequest: "1분 안에 핵심이 다 전달되는지 봐주세요",
                 createdAt: now.addingTimeInterval(-1 * day)
             ),
             Video(
@@ -401,6 +404,7 @@ struct FlyMateApp: App {
                 videoURL: mockVideoURL("flight-attendant-study-cafe", fallback: elephantsDream), thumbnailURL: sampleThumbnailURL(102),
                 durationSeconds: 145, feedbackCount: 2,
                 focusPoints: "영어 발음과 억양",
+                feedbackRequest: "R/L 발음이 명확하게 구분되는지 들어봐 주세요",
                 createdAt: now.addingTimeInterval(-2 * day)
             ),
             Video(
@@ -408,6 +412,8 @@ struct FlyMateApp: App {
                 title: "돌발질문 대처 — 컴플레인 응대",
                 videoURL: mockVideoURL("flight-attendant-home-webcam", fallback: bipbopHLS), thumbnailURL: sampleThumbnailURL(103),
                 durationSeconds: 170, feedbackCount: 1,
+                focusPoints: "돌발 상황 대처, 침착함",
+                feedbackRequest: "화난 승객 응대할 때 목소리 톤이 방어적으로 들리는지 봐주세요",
                 createdAt: now.addingTimeInterval(-5 * hour)
             ),
             Video(
@@ -416,6 +422,7 @@ struct FlyMateApp: App {
                 videoURL: mockVideoURL("flight-attendant-study-cafe", fallback: bigBuckBunny), thumbnailURL: sampleThumbnailURL(104),
                 durationSeconds: 120, feedbackCount: 1,
                 focusPoints: "영어 발음, 지원 동기 전달력",
+                feedbackRequest: "지원 동기가 진부하게 들리지 않는지 솔직하게 말해주세요",
                 createdAt: now.addingTimeInterval(-4 * day)
             ),
             Video(
@@ -423,6 +430,8 @@ struct FlyMateApp: App {
                 title: "외항사 면접 — 서비스 경험 답변",
                 videoURL: mockVideoURL("flight-attendant-home-webcam", fallback: sintelTrailer720), thumbnailURL: sampleThumbnailURL(105),
                 durationSeconds: 52, feedbackCount: 1,
+                focusPoints: "STAR 답변 구조",
+                feedbackRequest: "결과(R) 파트가 약한 것 같은데 어떻게 보강하면 좋을까요?",
                 createdAt: now.addingTimeInterval(-6 * hour)
             ),
             // 유나(나)가 아직 피드백하지 않은 영상 — 피드백 대기 큐 시나리오용
@@ -430,7 +439,7 @@ struct FlyMateApp: App {
                 id: uuid(106), studyID: studyA.id, uploaderID: seoyeonID, uploaderName: "박서연",
                 title: "한국어 기내방송 — 이륙 안내",
                 videoURL: mockVideoURL("flight-attendant-study-cafe", fallback: sintelTrailer), thumbnailURL: sampleThumbnailURL(106),
-                durationSeconds: 48,
+                durationSeconds: 48, feedbackCount: 1,
                 focusPoints: "톤 안정성, 속도",
                 feedbackRequest: "이륙 안내 파트 속도가 적당한지 봐주세요",
                 createdAt: now.addingTimeInterval(-8 * hour)
@@ -439,7 +448,9 @@ struct FlyMateApp: App {
                 id: uuid(107), studyID: studyB.id, uploaderID: jiwooID, uploaderName: "최지우",
                 title: "영어 상황면접 — 지연 승객 안내",
                 videoURL: mockVideoURL("flight-attendant-home-webcam", fallback: sintelTrailer720), thumbnailURL: sampleThumbnailURL(107),
-                durationSeconds: 55,
+                durationSeconds: 55, feedbackCount: 1,
+                focusPoints: "영어 표현, 상황 대처",
+                feedbackRequest: "지연 안내 표현이 자연스러운지 봐주세요",
                 createdAt: now.addingTimeInterval(-2 * hour)
             ),
         ]
@@ -447,28 +458,39 @@ struct FlyMateApp: App {
         let myVideoIDs = Set(videos.filter { $0.uploaderID == meID }.map(\.id))
 
         // MARK: Feedbacks
+        // 상황별 다양화: 업로더 요청에 직접 응답 / 칭찬 / 개선 지적 / 질문·제안 / 멘션
         let feedbackStore = MockFeedbackStore(initialFeedbacks: [
-            // 영상 100 — 기내 안전 안내 (내 영상)
+            // 영상 100 — 기내 안전 안내 (내 영상, 요청: 미소가 어색하지 않은지)
             Feedback(
                 id: uuid(200), videoID: uuid(100), studyID: studyA.id, authorID: haneulID, authorName: "김하늘",
-                content: "도입부 미소가 정말 자연스러워요. 인사 각도도 좋습니다!",
+                content: "요청하신 미소 위주로 봤어요 — 도입부 인사는 정말 자연스러워요. 긴장한 티가 하나도 안 나요 😊",
                 timestampSeconds: 12, createdAt: now.addingTimeInterval(-2 * day), commentCount: 2
             ),
             Feedback(
+                id: uuid(210), videoID: uuid(100), studyID: studyA.id, authorID: haneulID, authorName: "김하늘",
+                content: "안전벨트 시연 파트는 손동작을 좀 더 크게 하는 건 어떨까요? 카메라에 잘 안 잡혀요.",
+                timestampSeconds: 55, createdAt: now.addingTimeInterval(-2 * day + 3 * hour)
+            ),
+            Feedback(
                 id: uuid(201), videoID: uuid(100), studyID: studyA.id, authorID: seoyeonID, authorName: "박서연",
-                content: "산소마스크 안내 파트에서 말이 조금 빨라져요. 한 박자 쉬어가면 더 안정적일 것 같아요.",
+                content: "산소마스크 안내에서 말이 빨라지면서 미소도 같이 사라져요. 한 박자 쉬면 표정도 돌아올 거예요.",
                 timestampSeconds: 95, createdAt: now.addingTimeInterval(-1 * day),
                 mentionedUserIDs: [meID], commentCount: 1
             ),
             Feedback(
                 id: uuid(202), videoID: uuid(100), studyID: studyA.id, authorID: minjunID, authorName: "이민준",
-                content: "마무리 인사에서 시선이 카메라 아래로 떨어지네요. 끝까지 렌즈를 봐주세요.",
+                content: "마무리 인사에서 시선이 카메라 아래로 떨어지네요. 끝까지 렌즈 보면서 미소 유지해 주세요!",
                 timestampSeconds: 168, createdAt: now.addingTimeInterval(-20 * hour)
             ),
-            // 영상 101 — 1분 자기소개 (내 영상)
+            // 영상 101 — 1분 자기소개 (내 영상, 요청: 1분 안에 핵심 전달되는지)
+            Feedback(
+                id: uuid(211), videoID: uuid(101), studyID: studyA.id, authorID: minjunID, authorName: "이민준",
+                content: "첫인사 목소리 톤이 밝아서 바로 집중돼요. 도입부는 이대로 가시죠!",
+                timestampSeconds: 5, createdAt: now.addingTimeInterval(-19 * hour)
+            ),
             Feedback(
                 id: uuid(203), videoID: uuid(101), studyID: studyA.id, authorID: haneulID, authorName: "김하늘",
-                content: "지원 동기가 구체적이라 설득력 있어요. 목소리 톤도 밝고 좋습니다.",
+                content: "요청하신 전달력 기준으로는, 지원 동기까지 완벽하게 들어와요. 다만 강점 소개가 30초를 넘겨서 뒤가 급해져요.",
                 timestampSeconds: 18, createdAt: now.addingTimeInterval(-18 * hour)
             ),
             Feedback(
@@ -476,34 +498,46 @@ struct FlyMateApp: App {
                 content: "끝맺음이 살짝 급하게 끝나는 느낌이에요. \"감사합니다\" 앞에서 호흡 한 번!",
                 timestampSeconds: 45, createdAt: now.addingTimeInterval(-10 * hour)
             ),
-            // 영상 102 — 영어 기내방송 (박서연 영상, 내가 남긴 피드백 포함)
+            // 영상 102 — 영어 기내방송 (박서연 영상, 요청: R/L 발음 구분, 내가 남긴 피드백 포함)
             Feedback(
                 id: uuid(205), videoID: uuid(102), studyID: studyA.id, authorID: meID, authorName: "유나",
-                content: "Ladies and gentlemen 발음이 훨씬 부드러워졌어요! 억양 연습 효과가 보입니다.",
+                content: "요청하신 R/L 체크했어요 — Ladies and gentlemen에서 이제 확실히 구분돼요! 쉐도잉 효과 보이네요.",
                 timestampSeconds: 30, createdAt: now.addingTimeInterval(-1 * day), commentCount: 1
             ),
             Feedback(
                 id: uuid(206), videoID: uuid(102), studyID: studyA.id, authorID: minjunID, authorName: "이민준",
-                content: "중반부 착륙 안내에서 문장 사이 간격이 일정해서 듣기 편했어요.",
+                content: "착륙 안내 문장 간격이 일정해서 듣기 편했어요. 다만 landing이 '랜딩'처럼 들리는 순간이 한 번 있어요.",
                 timestampSeconds: 110, createdAt: now.addingTimeInterval(-15 * hour)
             ),
-            // 영상 103 — 돌발질문 대처 (이민준 영상)
+            // 영상 103 — 돌발질문 대처 (이민준 영상, 요청: 톤이 방어적으로 들리는지)
             Feedback(
                 id: uuid(207), videoID: uuid(103), studyID: studyA.id, authorID: meID, authorName: "유나",
-                content: "컴플레인 상황에서 공감 표현을 먼저 한 게 좋았어요. 해결책 제시 순서도 깔끔!",
+                content: "걱정하신 방어적인 톤은 전혀 아니에요! 공감 표현을 먼저 한 게 좋았고, 해결책 제시 순서도 깔끔해요.",
                 timestampSeconds: 45, createdAt: now.addingTimeInterval(-3 * hour)
             ),
-            // 영상 104 — 영어 자기소개 (내 영상, 스터디 B)
+            // 영상 104 — 영어 자기소개 (내 영상, 스터디 B, 요청: 지원 동기가 진부하지 않은지)
             Feedback(
                 id: uuid(208), videoID: uuid(104), studyID: studyB.id, authorID: haneulID, authorName: "김하늘",
-                content: "지원 동기가 구체적이라 좋아요. 마지막 문장만 조금 더 자신 있게 마무리해보세요.",
-                timestampSeconds: 60, createdAt: now.addingTimeInterval(-3 * day)
+                content: "솔직 피드백 원하셨죠 — since I was young 도입은 조금 흔해요. 승무원 서비스를 직접 경험한 비행 이야기로 시작하면 훨씬 강렬할 것 같아요.",
+                timestampSeconds: 60, createdAt: now.addingTimeInterval(-3 * day), commentCount: 1
             ),
-            // 영상 105 — 서비스 경험 답변 (김하늘 영상, 스터디 B)
+            // 영상 105 — 서비스 경험 답변 (김하늘 영상, 스터디 B, 요청: 결과 파트 보강법)
             Feedback(
                 id: uuid(209), videoID: uuid(105), studyID: studyB.id, authorID: meID, authorName: "유나",
-                content: "상황과 행동이 명확해서 이해하기 쉬워요. 결과를 한 문장 더 강조하면 완벽할 것 같아요.",
+                content: "상황·행동은 명확해요! 고민하신 결과 파트는 \"내리시면서 감사 인사를 하셨다\" 같은 구체적인 장면 하나만 붙이면 살 것 같아요.",
                 timestampSeconds: 20, createdAt: now.addingTimeInterval(-2 * hour)
+            ),
+            // 영상 106 — 이륙 안내 (박서연 영상, 요청: 속도가 적당한지 — 내 피드백 없음, 대기 큐 유지)
+            Feedback(
+                id: uuid(212), videoID: uuid(106), studyID: studyA.id, authorID: minjunID, authorName: "이민준",
+                content: "물어보신 속도는 딱 좋아요. 오히려 후반부가 살짝 느려지는데, 처음 페이스를 끝까지 유지하면 완벽!",
+                timestampSeconds: 15, createdAt: now.addingTimeInterval(-6 * hour)
+            ),
+            // 영상 107 — 지연 승객 안내 (최지우 영상, 요청: 지연 안내 표현 — 내 피드백 없음, 대기 큐 유지)
+            Feedback(
+                id: uuid(213), videoID: uuid(107), studyID: studyB.id, authorID: haneulID, authorName: "김하늘",
+                content: "We apologize for the inconvenience 억양이 자연스러워요. 다만 지연 사유 설명이 길어서 핵심만 남겨도 될 것 같아요.",
+                timestampSeconds: 25, createdAt: now.addingTimeInterval(-1 * hour)
             ),
         ])
 
@@ -511,7 +545,7 @@ struct FlyMateApp: App {
         let commentStore = LockIsolated<[FeedbackComment]>([
             FeedbackComment(
                 id: uuid(400), feedbackID: uuid(200), studyID: studyA.id, authorID: meID, authorName: "유나",
-                content: "감사합니다! 인사 각도는 거울 보면서 연습한 보람이 있네요 😊",
+                content: "감사합니다! 미소는 거울 보면서 연습한 보람이 있네요 😊",
                 createdAt: now.addingTimeInterval(-2 * day + hour)
             ),
             FeedbackComment(
@@ -530,6 +564,11 @@ struct FlyMateApp: App {
                 content: "@유나 님이 알려주신 쉐도잉 방법 덕분이에요. 감사합니다!",
                 mentionedUserIDs: [meID],
                 createdAt: now.addingTimeInterval(-12 * hour)
+            ),
+            FeedbackComment(
+                id: uuid(404), feedbackID: uuid(208), studyID: studyB.id, authorID: meID, authorName: "유나",
+                content: "역시 뻔했군요 😅 비행 경험 이야기로 다시 써볼게요. 솔직한 피드백 감사해요!",
+                createdAt: now.addingTimeInterval(-3 * day + 2 * hour)
             ),
         ])
 
@@ -575,11 +614,11 @@ struct FlyMateApp: App {
         ])
 
         let memberStats: [UUID: (given: Int, received: Int, videos: Int)] = [
-            meID: (given: 3, received: 6, videos: 3),
-            haneulID: (given: 3, received: 1, videos: 1),
-            seoyeonID: (given: 2, received: 2, videos: 2),
-            minjunID: (given: 2, received: 1, videos: 1),
-            jiwooID: (given: 0, received: 0, videos: 1),
+            meID: (given: 3, received: 8, videos: 3),
+            haneulID: (given: 5, received: 1, videos: 1),
+            seoyeonID: (given: 2, received: 3, videos: 2),
+            minjunID: (given: 4, received: 1, videos: 1),
+            jiwooID: (given: 0, received: 1, videos: 1),
         ]
 
         // MARK: Client 등록

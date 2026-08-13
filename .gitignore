@@ -65,3 +65,7 @@ mise.local.toml
 build/
 fastlane/report.xml
 fastlane/README.md
+
+# App Store 스크린샷 아티팩트
+AppStoreReviewScreenshots-*/
+FlyMate-AppStore-*.zip

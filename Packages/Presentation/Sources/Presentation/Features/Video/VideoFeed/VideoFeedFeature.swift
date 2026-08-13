@@ -45,6 +45,7 @@ public struct VideoFeedFeature {
     public enum Action {
         case onAppear
         case viewDisappeared
+        case backTapped
         case retryTapped
         case videosResponse(Result<[Video], AppError>)
         case videoTapped(UUID)
@@ -58,8 +59,13 @@ public struct VideoFeedFeature {
     /// 끝에서 N번째 페이지 진입 시 다음 페이지를 미리 로드
     private static let loadMoreThreshold = 3
 
+    /// 시트 닫힘이 pop 이전에 한 프레임 렌더되도록 확보하는 지연
+    private static let sheetCloseRenderDelay: Duration = .milliseconds(100)
+
     @Dependency(\.videoClient) private var videoClient
     @Dependency(\.studyClient) private var studyClient
+    @Dependency(\.continuousClock) private var clock
+    @Dependency(\.dismiss) private var dismiss
 
     public init() {}
 
@@ -88,6 +94,19 @@ public struct VideoFeedFeature {
             case .viewDisappeared:
                 guard let currentID = state.currentVideoID else { return .none }
                 return .send(.pages(.element(id: currentID, action: .onDisappear)))
+
+            case .backTapped:
+                // 시트가 열린 채 pop되면 스택 요소가 제거된 뒤 뷰가 캐시된 상태(시트 열림)를
+                // 읽어 시트가 뒤늦게 사라진다 — 시트를 먼저 닫아 한 프레임 렌더한 뒤 pop한다
+                if let currentID = state.currentVideoID {
+                    state.pages[id: currentID]?.showFeedbackSheet = false
+                }
+                let clock = clock
+                let dismiss = dismiss
+                return .run { _ in
+                    try? await clock.sleep(for: Self.sheetCloseRenderDelay)
+                    await dismiss()
+                }
 
             case .retryTapped:
                 state.loadingState = .loading
@@ -145,6 +164,9 @@ public struct VideoFeedFeature {
             case .playerDismissed:
                 state.presentedVideoID = nil
                 guard let currentID = state.currentVideoID else { return .none }
+                // 시트는 pop과 같은 트랜잭션에서 동기적으로 닫는다 — onDisappear effect에
+                // 맡기면 다음 틱에 처리되어 시트가 pop 애니메이션 뒤에 늦게 사라진다
+                state.pages[id: currentID]?.showFeedbackSheet = false
                 return .send(.pages(.element(id: currentID, action: .onDisappear)))
 
             case .currentVideoChanged(let newID):
@@ -182,6 +204,14 @@ public struct VideoFeedFeature {
 
             case .loadMoreResponse(.failure):
                 state.isLoadingMore = false
+                return .none
+
+            case .pages(.element(id: let videoID, action: .commentInput(.delegate(.feedbackCreated)))):
+                // 할 일 큐에서 완료 영상 제거 — pages는 세션 동안 유지해 페이저 점프 방지
+                guard case .pendingFeedback = state.feedScope,
+                      case .loaded(var videos) = state.loadingState else { return .none }
+                videos.removeAll { $0.id == videoID }
+                state.loadingState = .loaded(videos)
                 return .none
 
             case .pages:

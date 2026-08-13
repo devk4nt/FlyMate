@@ -154,6 +154,26 @@ struct VideoDetailFeatureTests {
         await store.finish(timeout: .seconds(1))
     }
 
+    // MARK: - 피드백 시트
+
+    @Test
+    func 재생중_피드백_시트_열면_해당_초수에서_정지() async {
+        var initialState = VideoDetailFeature.State(video: .videoDetailMock)
+        initialState.player.isPlaying = true
+        initialState.player.currentTime = 42
+
+        let store = TestStore(initialState: initialState) {
+            VideoDetailFeature()
+        }
+
+        await store.send(.feedbackSheetTapped) {
+            $0.showFeedbackSheet = true
+            $0.player.isPlaying = false
+            // currentTime은 그대로 유지 — 피드백이 이 초수에 달린다
+            $0.player.currentTime = 42
+        }
+    }
+
     // MARK: - 피드백 탭 → seek
 
     @Test
