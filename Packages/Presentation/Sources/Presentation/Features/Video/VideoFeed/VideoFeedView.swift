@@ -226,6 +226,9 @@ public struct VideoFeedView: View {
             // set이 호출되지 않을 수 있다 — 관찰 가능한 바인딩으로 페이지 전환을 전달한다
             .scrollPosition(id: $store.currentVideoID.sending(\.currentVideoChanged))
             .scrollIndicators(.hidden)
+            // 시트가 medium detent일 때 배경 인터랙션이 살아 있어 스와이프가 페이지를 넘긴다
+            // — 시트가 열린 동안은 페이징을 막는다 (배경 탭으로 시트 닫기는 유지)
+            .scrollDisabled(isFeedbackSheetOpen)
             .refreshable {
                 await store.send(.retryTapped).finish()
             }
