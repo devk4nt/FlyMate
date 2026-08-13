@@ -166,7 +166,7 @@ public struct TabFeature {
                 return .run { send in
                     let study = try await studyClient.fetchStudy(feedback.studyID)
                     let video = try await videoClient.fetchVideo(feedback.videoID)
-                    await send(.navigateToVideo(study, video))
+                    await send(.navigateToVideo(study, video, feedbackID: feedback.id))
                 } catch: { _, send in
                     await send(.navigationFailed)
                 }

@@ -515,7 +515,7 @@ struct FlyMateApp: App {
             Feedback(
                 id: uuid(207), videoID: uuid(103), studyID: studyA.id, authorID: meID, authorName: "유나",
                 content: "걱정하신 방어적인 톤은 전혀 아니에요! 공감 표현을 먼저 한 게 좋았고, 해결책 제시 순서도 깔끔해요.",
-                timestampSeconds: 45, createdAt: now.addingTimeInterval(-3 * hour)
+                timestampSeconds: 45, createdAt: now.addingTimeInterval(-3 * hour), commentCount: 2
             ),
             // 영상 104 — 영어 자기소개 (내 영상, 스터디 B, 요청: 지원 동기가 진부하지 않은지)
             Feedback(
@@ -571,6 +571,18 @@ struct FlyMateApp: App {
                 id: uuid(404), feedbackID: uuid(208), studyID: studyB.id, authorID: meID, authorName: "유나",
                 content: "역시 뻔했군요 😅 비행 경험 이야기로 다시 써볼게요. 솔직한 피드백 감사해요!",
                 createdAt: now.addingTimeInterval(-3 * day + 2 * hour)
+            ),
+            // 작성한 피드백(207) 밑의 답글 스레드 — 작성한 피드백 → 영상 이동 → 내 댓글 확인 시나리오용
+            FeedbackComment(
+                id: uuid(405), feedbackID: uuid(207), studyID: studyA.id, authorID: minjunID, authorName: "이민준",
+                content: "다행이네요 😂 톤이 방어적으로 들릴까 봐 제일 걱정했거든요. 봐주셔서 감사해요!",
+                createdAt: now.addingTimeInterval(-2 * hour)
+            ),
+            FeedbackComment(
+                id: uuid(406), feedbackID: uuid(207), studyID: studyA.id, authorID: meID, authorName: "유나",
+                content: "@이민준 해결책 말하기 전에 공감 문장 하나만 더 넣으면 완벽할 것 같아요!",
+                mentionedUserIDs: [minjunID],
+                createdAt: now.addingTimeInterval(-90 * 60)
             ),
         ])
 
