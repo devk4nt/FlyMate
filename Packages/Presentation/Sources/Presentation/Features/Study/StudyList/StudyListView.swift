@@ -228,7 +228,7 @@ public struct StudyListView: View {
         Button(action: action) {
             Label(title, systemImage: systemImage)
                 .font(FMTypography.authorName)
-                .foregroundStyle(FMColors.iconAccent)
+                .foregroundStyle(FMColors.onLightSurface)
                 .frame(maxWidth: .infinity)
                 .frame(minHeight: 48)
                 .contentShape(Rectangle())

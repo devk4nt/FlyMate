@@ -136,7 +136,7 @@ public struct RecruitListView: View {
             } label: {
                 Label("모집 글 작성", systemImage: "square.and.pencil")
                     .font(FMTypography.authorName)
-                    .foregroundStyle(FMColors.iconAccent)
+                    .foregroundStyle(FMColors.onLightSurface)
                     .frame(maxWidth: .infinity)
                     .frame(minHeight: 48)
                     .contentShape(Rectangle())

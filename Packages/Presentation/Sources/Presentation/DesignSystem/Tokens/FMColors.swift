@@ -110,6 +110,10 @@ public enum FMColors {
     /// Foreground token for content placed on `brandGradient`.
     public static let onBrand = Color.white
 
+    /// Foreground token for controls whose surface stays light in every appearance.
+    /// Unlike `actionForeground`, this must not become lighter in dark mode.
+    public static let onLightSurface = deepIndigo
+
     public static let featureGradient = LinearGradient(
         colors: [
             Color(red: 0.188235, green: 0.427451, blue: 0.650980),
