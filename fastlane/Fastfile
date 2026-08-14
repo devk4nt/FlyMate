@@ -40,7 +40,8 @@ platform :ios do
       scheme: "FlyMate",
       output_directory: "build",
       xcargs: "CURRENT_PROJECT_VERSION=#{build_number} -allowProvisioningUpdates #{auth_args}",
-      export_xcargs: "-allowProvisioningUpdates #{auth_args}"
+      # export 단계는 fastlane이 api_key로 인증 플래그를 자동 주입하므로 중복 지정 금지
+      export_xcargs: "-allowProvisioningUpdates"
     )
     upload_to_testflight(api_key: api_key, skip_waiting_for_build_processing: true)
   end
