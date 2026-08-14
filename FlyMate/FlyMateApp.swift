@@ -24,7 +24,7 @@ struct FlyMateApp: App {
                 // 테스트 계정 스킴(FlyMate-Owner/Member/Applicant)은 실제 Supabase 세션으로 진입
                 if let testEmail = ProcessInfo.processInfo.environment["TEST_EMAIL"],
                    let testPassword = ProcessInfo.processInfo.environment["TEST_PASSWORD"],
-                   !testPassword.isEmpty {
+                   !testEmail.isEmpty, !testPassword.isEmpty {
                     Self.registerLiveDependencies(&$0)
                     let supabaseClient = SupabaseClientProvider.shared.client
                     $0.authClient.debugSignIn = {

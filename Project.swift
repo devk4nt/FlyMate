@@ -33,8 +33,8 @@ func module(
 }
 
 /// 실제 Supabase 테스트 계정으로 로그인하는 디버그 스킴.
-/// 비밀번호는 커밋되지 않도록 tuist generate 시점의 환경변수에서 읽는다:
-/// `TUIST_TEST_PASSWORD=<pw> tuist generate`
+/// 계정 정보(이메일·비밀번호)는 커밋되지 않도록 tuist generate 시점의 환경변수에서 읽는다:
+/// `TUIST_TEST_EMAIL_OWNER=<email> TUIST_TEST_PASSWORD=<pw> tuist generate` (mise.local.toml 참고)
 func testAccountScheme(_ role: String, email: String) -> Scheme {
     let testPassword = Environment.testPassword.getString(default: "")
     return .scheme(
@@ -197,11 +197,11 @@ let project = Project(
         ),
         // 다중 계정 시나리오용 실계정 스킴 — 시뮬레이터/기기 2대에 각각 띄워 크로스 계정 확인
         // Owner: 방장 계정 (스터디 생성·가입 승인·FCM 푸시 수신)
-        testAccountScheme("Owner", email: "test@flymate.app"),
+        testAccountScheme("Owner", email: Environment.testEmailOwner.getString(default: "")),
         // Member: 멤버 계정 (@멘션 알림 수신 확인용으로 추가)
-        testAccountScheme("Member", email: "test2@flymate.app"),
+        testAccountScheme("Member", email: Environment.testEmailMember.getString(default: "")),
         // Applicant: 가입 신청자 계정 (가입 승인 플로우 확인용으로 추가)
-        testAccountScheme("Applicant", email: "test3@flymate.app"),
+        testAccountScheme("Applicant", email: Environment.testEmailApplicant.getString(default: "")),
         // 방장 회원 탈퇴 시나리오 목 스킴 — 탈퇴 시 방장 승계(스터디 A→김하늘),
         // 혼자 방장인 스터디 삭제를 확인. 탈퇴 후 재로그인하면 결과 조회 가능
         .scheme(
