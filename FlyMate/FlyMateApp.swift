@@ -22,10 +22,11 @@ struct FlyMateApp: App {
             #if DEBUG
             if AppFeature.skipAuth {
                 // 테스트 계정 스킴(FlyMate-Owner/Member/Applicant)은 실제 Supabase 세션으로 진입
-                if let testEmail = ProcessInfo.processInfo.environment["TEST_EMAIL"] {
+                if let testEmail = ProcessInfo.processInfo.environment["TEST_EMAIL"],
+                   let testPassword = ProcessInfo.processInfo.environment["TEST_PASSWORD"],
+                   !testPassword.isEmpty {
                     Self.registerLiveDependencies(&$0)
                     let supabaseClient = SupabaseClientProvider.shared.client
-                    let testPassword = ProcessInfo.processInfo.environment["TEST_PASSWORD"] ?? "testpassword123"
                     $0.authClient.debugSignIn = {
                         try? await supabaseClient.auth.signOut()
                         _ = try await supabaseClient.auth.signIn(
