@@ -23,6 +23,7 @@ platform :ios do
 
   desc "TestFlight 업로드 (빌드 번호 자동 증가)"
   lane :beta do
+    setup_ci if ENV["CI"]
     api_key = app_store_connect_api_key(
       key_id: ENV.fetch("ASC_KEY_ID"),
       issuer_id: ENV.fetch("ASC_ISSUER_ID"),
@@ -30,11 +31,16 @@ platform :ios do
     )
     generate
     build_number = latest_testflight_build_number(api_key: api_key, initial_build_number: 0) + 1
+    # CI에는 로컬 인증서가 없으므로 xcodebuild 클라우드 서명(API 키 인증) 사용
+    auth_args = "-authenticationKeyPath #{File.expand_path(ENV.fetch('ASC_KEY_PATH'))} " \
+                "-authenticationKeyID #{ENV.fetch('ASC_KEY_ID')} " \
+                "-authenticationKeyIssuerID #{ENV.fetch('ASC_ISSUER_ID')}"
     build_app(
       workspace: "FlyMate.xcworkspace",
       scheme: "FlyMate",
       output_directory: "build",
-      xcargs: "CURRENT_PROJECT_VERSION=#{build_number} -allowProvisioningUpdates"
+      xcargs: "CURRENT_PROJECT_VERSION=#{build_number} -allowProvisioningUpdates #{auth_args}",
+      export_xcargs: "-allowProvisioningUpdates #{auth_args}"
     )
     upload_to_testflight(api_key: api_key, skip_waiting_for_build_processing: true)
   end

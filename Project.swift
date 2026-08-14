@@ -125,7 +125,7 @@ let project = Project(
             ],
             settings: .settings(
                 base: baseSettings.merging([
-                    "MARKETING_VERSION": "1.0.0",
+                    "MARKETING_VERSION": "1.0",
                     "CURRENT_PROJECT_VERSION": "1",
                     "SWIFT_EMIT_LOC_STRINGS": true,
                     "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",

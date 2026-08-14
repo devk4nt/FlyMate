@@ -1,0 +1,41 @@
+name: Release Upload
+
+# App Store 제출용 빌드는 정식 macOS에서 아카이브해야 함
+# (베타 macOS에서 빌드 시 BuildMachineOSBuild 때문에 Invalid Binary)
+on: workflow_dispatch
+
+jobs:
+  upload:
+    runs-on: macos-26
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: jdx/mise-action@v2 # mise.toml 기준으로 tuist 설치
+
+      - name: Create Secrets.xcconfig
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          KAKAO_APP_KEY: ${{ secrets.KAKAO_APP_KEY }}
+        run: |
+          printf 'SUPABASE_URL = %s\nSUPABASE_ANON_KEY = %s\nKAKAO_APP_KEY = %s\n' \
+            "$SUPABASE_URL" "$SUPABASE_ANON_KEY" "$KAKAO_APP_KEY" > Secrets.xcconfig
+
+      - name: Create GoogleService-Info.plist
+        env:
+          GOOGLE_SERVICE_INFO_PLIST: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}
+        run: echo "$GOOGLE_SERVICE_INFO_PLIST" | base64 -d > FlyMate/GoogleService-Info.plist
+
+      - name: Write ASC API key
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: echo "$ASC_KEY_P8" | base64 -d > "$RUNNER_TEMP/AuthKey.p8"
+
+      - name: Build & upload to TestFlight
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          export ASC_KEY_PATH="$RUNNER_TEMP/AuthKey.p8"
+          fastlane beta
