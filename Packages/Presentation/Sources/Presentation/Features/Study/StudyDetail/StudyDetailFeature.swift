@@ -93,7 +93,8 @@ public struct StudyDetailFeature {
                 }
 
             case .refresh:
-                state.videos = .loading
+                // 로드된 콘텐츠는 유지 — pull-to-refresh 시 스켈레톤 대신 .refreshable 스피너가 로딩 표시
+                if state.videos.value == nil { state.videos = .loading }
                 state.inviteCodeInfo = .idle
                 let studyID = state.study.id
                 let isOwner = state.isOwner

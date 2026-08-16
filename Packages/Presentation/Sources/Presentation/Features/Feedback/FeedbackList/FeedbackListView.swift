@@ -79,7 +79,7 @@ public struct FeedbackListView: View {
                         .padding(.bottom, FMSpacing.xxl)
                     }
                     .refreshable {
-                        store.send(.refresh)
+                        await store.send(.refresh).finish()
                     }
                 }
 

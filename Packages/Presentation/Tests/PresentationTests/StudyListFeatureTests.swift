@@ -101,12 +101,9 @@ struct StudyListFeatureTests {
             $0.studyClient.fetchMyStudies = { [Study.mock] }
         }
 
-        await store.send(.refresh) {
-            $0.studies = .loading
-        }
-        await store.receive(\.studiesResponse.success) {
-            $0.studies = .loaded([Study.mock])
-        }
+        // 로드된 콘텐츠는 유지 — 스켈레톤으로 돌아가지 않는다
+        await store.send(.refresh)
+        await store.receive(\.studiesResponse.success)
     }
 }
 

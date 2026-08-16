@@ -109,7 +109,9 @@ public struct VideoFeedFeature {
                 }
 
             case .retryTapped:
-                state.loadingState = .loading
+                // 로드된 콘텐츠는 유지 — pull-to-refresh 시 스켈레톤 대신 .refreshable 스피너가 로딩 표시
+                // (에러 후 재시도는 .failed → .loading으로 스켈레톤 유지)
+                if state.loadingState.value == nil { state.loadingState = .loading }
                 return fetchVideos(scope: state.feedScope, userID: state.currentUserID, cursor: nil) {
                     .videosResponse($0)
                 }

@@ -52,8 +52,8 @@ public struct NotificationListFeature {
                 return fetchNotifications(client: client, userID: state.userID, cursor: nil)
 
             case .refresh:
-                state.loadingState = .loading
-                state.notifications = PaginatedState<AppNotification>()
+                // 로드된 콘텐츠는 유지 — pull-to-refresh 시 스켈레톤 대신 .refreshable 스피너가 로딩 표시
+                if state.loadingState.value == nil { state.loadingState = .loading }
                 let client = notificationClient
                 return fetchNotifications(client: client, userID: state.userID, cursor: nil)
 

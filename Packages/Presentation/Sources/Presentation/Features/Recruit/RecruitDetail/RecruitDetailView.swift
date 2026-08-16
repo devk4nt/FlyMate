@@ -60,7 +60,7 @@ public struct RecruitDetailView: View {
         .toolbar { toolbarMenu }
         .safeAreaInset(edge: .bottom) { commentInputBar }
         .onAppear { store.send(.onAppear) }
-        .refreshable { store.send(.refresh) }
+        .refreshable { await store.send(.refresh).finish() }
         .sheet(item: $store.scope(state: \.report, action: \.report)) { reportStore in
             ReportView(store: reportStore)
         }

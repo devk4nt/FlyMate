@@ -74,7 +74,7 @@ struct NotificationListFeatureTests {
     }
 
     @Test
-    func refresh시_상태_초기화_후_재조회() async {
+    func refresh시_콘텐츠_유지하며_재조회() async {
         let refreshed: [AppNotification] = [.notificationMock(id: .notificationID1)]
 
         var state = NotificationListFeature.State(userID: .userMock)
@@ -88,10 +88,8 @@ struct NotificationListFeatureTests {
             $0.notificationClient.fetchNotifications = { _, _ in refreshed }
         }
 
-        await store.send(.refresh) {
-            $0.loadingState = .loading
-            $0.notifications = PaginatedState<AppNotification>()
-        }
+        // 로드된 콘텐츠는 유지 — 스켈레톤으로 돌아가지 않는다
+        await store.send(.refresh)
 
         await store.receive(\.notificationsResponse.success) {
             $0.notifications.items = refreshed

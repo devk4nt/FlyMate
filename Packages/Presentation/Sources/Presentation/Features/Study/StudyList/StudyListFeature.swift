@@ -50,7 +50,8 @@ public struct StudyListFeature {
                 }
 
             case .refresh:
-                state.studies = .loading
+                // 로드된 콘텐츠는 유지 — pull-to-refresh 시 스켈레톤 대신 .refreshable 스피너가 로딩 표시
+                if state.studies.value == nil { state.studies = .loading }
                 let client = studyClient
                 return .run { send in
                     do {

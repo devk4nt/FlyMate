@@ -113,8 +113,8 @@ struct StudyDetailFeatureTests {
             $0.videoClient.fetchVideos = { _, _ in videos }
         }
 
+        // 로드된 영상 목록은 유지 — 스켈레톤으로 돌아가지 않는다
         await store.send(.refresh) {
-            $0.videos = .loading
             $0.inviteCodeInfo = .idle
         }
 

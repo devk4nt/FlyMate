@@ -96,7 +96,7 @@ struct FeedbackListFeatureTests {
     // MARK: - 재시도 (refresh)
 
     @Test
-    func 실패_후_새로고침시_페이지네이션_초기화_후_재로딩() async {
+    func 실패_후_새로고침시_재로딩() async {
         var state = FeedbackListFeature.State(userID: userID, listType: .received)
         state.loadingState = .failed(.network(.timeout))
         state.feedbacks.items = [Feedback.mock(index: 1)]
@@ -111,9 +111,9 @@ struct FeedbackListFeatureTests {
             $0.feedbackClient.fetchReceived = { _, _ in feedbacks }
         }
 
+        // 콘텐츠가 없는 실패 상태이므로 스켈레톤(.loading)으로 전환, 페이지네이션은 응답 시 갱신
         await store.send(.refresh) {
             $0.loadingState = .loading
-            $0.feedbacks = PaginatedState<Feedback>()
         }
 
         await store.receive(\.feedbacksResponse.success) {

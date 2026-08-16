@@ -62,7 +62,6 @@ struct RecruitListFeatureTests {
         }
         await store.receive(\.refresh) {
             $0.loadingState = .loading
-            $0.posts = PaginatedState<RecruitPost>()
         }
         await store.receive(\.postsResponse.success) {
             $0.posts.items = []

@@ -49,7 +49,7 @@ public struct StudyListView: View {
         }
         .background(FMColors.softCanvas)
         .refreshable {
-            store.send(.refresh)
+            await store.send(.refresh).finish()
         }
         .navigationTitle("FlyMate")
         .navigationBarTitleDisplayMode(.inline)

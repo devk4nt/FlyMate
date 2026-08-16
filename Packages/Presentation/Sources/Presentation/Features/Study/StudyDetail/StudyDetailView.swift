@@ -113,7 +113,7 @@ public struct StudyDetailView: View {
         }
         .background(FMColors.canvas)
         .refreshable {
-            store.send(.refresh)
+            await store.send(.refresh).finish()
         }
     }
 

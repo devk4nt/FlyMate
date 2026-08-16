@@ -50,8 +50,8 @@ public struct RecruitListFeature {
                 return fetchPosts(filter: state.filter, cursor: nil)
 
             case .refresh:
-                state.loadingState = .loading
-                state.posts = PaginatedState<RecruitPost>()
+                // 로드된 콘텐츠는 유지 — pull-to-refresh 시 스켈레톤 대신 .refreshable 스피너가 로딩 표시
+                if state.loadingState.value == nil { state.loadingState = .loading }
                 return fetchPosts(filter: state.filter, cursor: nil)
 
             case .postsResponse(.success(let posts)):

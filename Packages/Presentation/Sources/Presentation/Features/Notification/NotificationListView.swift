@@ -59,7 +59,7 @@ public struct NotificationListView: View {
                         }
                     }
                     .refreshable {
-                        store.send(.refresh)
+                        await store.send(.refresh).finish()
                     }
                 }
 

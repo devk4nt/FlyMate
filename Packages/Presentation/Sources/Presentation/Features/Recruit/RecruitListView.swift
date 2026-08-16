@@ -106,7 +106,7 @@ public struct RecruitListView: View {
                 .padding(.bottom, FMSpacing.xxxl)
             }
             .refreshable {
-                store.send(.refresh)
+                await store.send(.refresh).finish()
             }
 
         case .failed(let error):
