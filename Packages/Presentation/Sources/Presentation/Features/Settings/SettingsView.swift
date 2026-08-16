@@ -136,6 +136,17 @@ public struct SettingsView: View {
                     }
                 }
                 .settingsSectionStyle()
+
+                #if DEBUG
+                // Crashlytics 동작 검증용 임시 섹션 — 검증 후 삭제
+                Section("개발자") {
+                    Button("테스트 크래시 발생") {
+                        fatalError("Crashlytics test crash")
+                    }
+                    .foregroundStyle(FMColors.destructive)
+                }
+                .settingsSectionStyle()
+                #endif
             }
             .frame(maxWidth: FMSizing.ContentWidth.regular)
             .frame(maxWidth: .infinity)
