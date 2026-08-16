@@ -2,30 +2,41 @@
 
 ## 프로젝트 개요
 
-- **앱**: 승무원, 아나운서 등 영상면접 준비자를 위한 스터디 피드백 iOS 앱
-- **스택**: Swift 6, SwiftUI, TCA 1.x, Supabase
+- **앱**: 승무원, 아나운서 등 영상면접 준비자를 위한 스터디 피드백 iOS 앱 (v1.0 App Store 심사 제출 완료)
+- **스택**: Swift 6, SwiftUI, TCA 1.x, Supabase, Firebase(Analytics/Messaging/Crashlytics), Kakao Login, StoreKit 2
 - **타겟**: iOS 17+
-- **모듈**: Tuist 타겟 4개 (Core, Domain, Data, Presentation) — `Project.swift`에서 정의, 소스는 `Packages/{모듈}/Sources/{모듈}/`
-- **핵심 정책**: 피드백 요청 영상은 최대 3분(180초)
+- **모듈**: Tuist 프레임워크 타겟 4개 (Core, Domain, Data, Presentation) — `Project.swift`에서 정의, 소스는 `Packages/{모듈}/Sources/{모듈}/`
+- **핵심 정책**: 피드백 요청 영상은 최대 3분(180초, 무료 플랜은 60초)
+- **수익 모델**: 프리미엄 구독 (월간/연간, StoreKit 2) — 무료 플랜은 스터디 개설 1개/가입 1개/멤버 3명 제한
 
 ---
 
 ## 1. 패키지 구조 및 의존성
 
 ```
-App → Presentation, Data, Domain, Core
-Presentation → Domain, Core, TCA, Kingfisher
+App → Presentation, Data, Domain, Core, Firebase(Core/Messaging/Crashlytics)
+Presentation → Domain, Core, TCA, Kingfisher, KakaoSDK(Common/Auth/User)
 Data → Domain, Supabase SDK
 Domain → Core
 Core → (없음)
 ```
 
+외부 의존성은 `Tuist/Package.swift`에서 관리: TCA 1.17+, Kingfisher 8+, kakao-ios-sdk 2.23+, supabase-swift 2+, firebase-ios-sdk 11+
+
 | 패키지 | 역할 | 주요 내용 |
 |--------|------|----------|
-| **Core** | 공통 유틸리티 | Extensions, AppConstants, Logger, Debouncer, RetryHelper, Protocols, Models (LoadingState, PaginatedState, AppError) |
+| **Core** | 공통 유틸리티 | Extensions, AppConstants, Logger, Debouncer, RetryHelper, Protocols (Analytics/CrashReport 포함), Models (LoadingState, PaginatedState, AppError) |
 | **Domain** | 비즈니스 모델 | Entities, Repository 프로토콜 |
-| **Data** | 데이터 소스 | DTOs, Mappers, Repository 구현체, Supabase Services |
+| **Data** | 데이터 소스 | DTOs, Mappers, Repository 구현체, Services (RealtimeService, StorageService, StoreKitService) |
 | **Presentation** | UI 레이어 | TCA Features, DesignSystem, Dependencies (TCA Client) |
+
+### Feature 목록 (13개)
+
+`Packages/Presentation/Sources/Presentation/Features/`:
+Auth, BugReport, Feedback, Notification, Onboarding, Recruit, Report, Settings, Study, Subscription, Tab, TermsConsent, Video
+
+- 차단(Block)은 Settings 하위 `Settings/BlockedUsers/`
+- Analytics/Crashlytics는 Core의 `AnalyticsProtocol`/`CrashReportProtocol` 추상화 + Firebase 구현, Presentation의 Dependencies에서 TCA Client로 주입
 
 ---
 
@@ -428,7 +439,7 @@ AppError
 
 ### 컴포넌트 규칙
 
-- `FM` 접두사 사용 (FMButton, FMCard, FMTextField, FMEmptyState, FMErrorView, FMSkeletonView, FMToast, FMBadge)
+- `FM` 접두사 사용 (FMButton, FMCard, FMTextField, FMMentionTextEditor, FMEmptyState, FMErrorView, FMSkeletonView, FMToast, FMBadge, FMNotificationBell, FMProfileImage, FMFeedCell / Modifier: FMGlass)
 - private 프로퍼티 + public init 패턴
 - 모든 인터랙티브 요소에 `accessibilityLabel` / `accessibilityHint` 필수
 - 로딩/비활성 상태 지원
@@ -546,17 +557,33 @@ struct {FeatureName}FeatureTests {
 
 ## 14. 상수 관리
 
+전체 상수는 `Packages/Core/Sources/Core/Constants/AppConstants.swift` 참조. 대표 예:
+
 ```swift
 public enum AppConstants {
     public static let maxVideoDurationSeconds: TimeInterval = 180
     public static let maxVideoFileSizeBytes = 50 * 1_024 * 1_024
     public static let maxStudyMembers = 8
+    public static let maxOwnedStudies = 3
+    public static let maxJoinedStudies = 5
     public static let defaultPageSize = 20
     public static let maxFeedbackLength = 500
+
+    // 중첩 enum으로 도메인별 그룹화
+    public enum SubscriptionProductID {
+        public static let premiumMonthly = "com.flymate.premium.monthly"
+        public static let premiumYearly = "com.flymate.premium.yearly"
+    }
+    public enum FreePlanDefaults {   // 무료 플랜 제한
+        public static let maxOwnedStudies = 1
+        public static let maxJoinedStudies = 1
+        public static let maxVideoDurationSeconds = 60
+        public static let maxStudyMembers = 3
+    }
 }
 ```
 
-- `enum` 사용 (인스턴스화 방지)
+- `enum` 사용 (인스턴스화 방지), 도메인별 상수는 중첩 enum으로 그룹화
 - Doc comment로 각 상수 설명
 - 바이트 크기는 `* 1_024` 형태로 가독성 확보
 
@@ -576,3 +603,11 @@ tuist generate        # 워크스페이스 생성 + Xcode 열기
 
 - 이후 Xcode에서 `FlyMate.xcworkspace`의 FlyMate 스킴으로 iOS 시뮬레이터 빌드
 - 테스트: FlyMate 스킴에 FlyMateTests + PresentationTests 포함 (`tuist test` 또는 Cmd+U)
+
+## CI/CD (.github/workflows/)
+
+| 워크플로 | 역할 |
+|----------|------|
+| `ci.yml` | PR/푸시 시 빌드 & 테스트 |
+| `release-upload.yml` | App Store 심사 빌드 & 업로드 — **심사 빌드는 반드시 이 워크플로 사용** (베타 macOS 로컬 빌드는 Invalid Binary 발생) |
+| `appstore-reviews.yml` | App Store 리뷰 수집 (`scripts/sync-appstore-reviews.mjs`) |
