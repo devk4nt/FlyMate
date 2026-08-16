@@ -3,11 +3,17 @@ import ComposableArchitecture
 import Core
 import Domain
 
-public struct VideoFeedView: View {
+public struct VideoFeedView<Header: View>: View {
     @Bindable var store: StoreOf<VideoFeedFeature>
+    private let header: Header
 
-    public init(store: StoreOf<VideoFeedFeature>) {
+    /// header는 피드백 대기열(.pendingFeedback) 목록 상단에 스크롤 콘텐츠로 렌더링된다
+    public init(
+        store: StoreOf<VideoFeedFeature>,
+        @ViewBuilder header: () -> Header
+    ) {
         self.store = store
+        self.header = header()
     }
 
     public var body: some View {
@@ -90,6 +96,7 @@ public struct VideoFeedView: View {
 
     private var loadingQueue: some View {
         ScrollView {
+            header
             LazyVStack(spacing: FMSpacing.md) {
                 ForEach(0..<3, id: \.self) { _ in
                     FMSkeletonView.card
@@ -103,6 +110,7 @@ public struct VideoFeedView: View {
 
     private func loadedQueue(_ videos: [Video]) -> some View {
         ScrollView {
+            header
             LazyVStack(spacing: 0) {
                 ForEach(videos) { video in
                     Button {
@@ -131,6 +139,7 @@ public struct VideoFeedView: View {
 
     private var emptyQueue: some View {
         ScrollView {
+            header
             FMEmptyState(
                 systemImage: "checkmark.circle.fill",
                 title: "모든 피드백을 완료했어요",
@@ -149,6 +158,7 @@ public struct VideoFeedView: View {
 
     private func failedQueue(_ error: AppError) -> some View {
         ScrollView {
+            header
             VStack(spacing: FMSpacing.md) {
                 FMErrorView(error: error) {
                     store.send(.retryTapped)
@@ -263,5 +273,12 @@ public struct VideoFeedView: View {
         .refreshable {
             await store.send(.retryTapped).finish()
         }
+    }
+}
+
+extension VideoFeedView where Header == EmptyView {
+    /// 헤더 없이 사용하는 경우 (스터디 몰입형 피드 등)
+    public init(store: StoreOf<VideoFeedFeature>) {
+        self.init(store: store) { EmptyView() }
     }
 }

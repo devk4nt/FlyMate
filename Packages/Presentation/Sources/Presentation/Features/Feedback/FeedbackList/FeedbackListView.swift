@@ -3,11 +3,16 @@ import ComposableArchitecture
 import Core
 import Domain
 
-public struct FeedbackListView: View {
+public struct FeedbackListView<Header: View>: View {
     @Bindable var store: StoreOf<FeedbackListFeature>
+    private let header: Header
 
-    public init(store: StoreOf<FeedbackListFeature>) {
+    public init(
+        store: StoreOf<FeedbackListFeature>,
+        @ViewBuilder header: () -> Header
+    ) {
         self.store = store
+        self.header = header()
     }
 
     public var body: some View {
@@ -15,6 +20,7 @@ public struct FeedbackListView: View {
             switch store.loadingState {
             case .idle, .loading:
                 ScrollView {
+                    header
                     LazyVStack(spacing: FMSpacing.md) {
                         ForEach(0..<3, id: \.self) { _ in
                             FMSkeletonView(height: 164)
@@ -26,22 +32,29 @@ public struct FeedbackListView: View {
 
             case .loaded(let feedbacks):
                 if feedbacks.isEmpty {
-                    FMEmptyState(
-                        systemImage: store.listType == .received
-                            ? "bubble.left.and.bubble.right.fill"
-                            : "paperplane.fill",
-                        title: store.listType == .received
-                            ? "아직 받은 피드백이 없어요"
-                            : "아직 작성한 피드백이 없어요",
-                        description: store.listType == .received
-                            ? "영상을 올리면 멤버들의 응원과 조언을 받을 수 있어요."
-                            : "다른 멤버의 영상에서 따뜻한 첫 피드백을 남겨보세요.",
-                        layout: .card
-                    )
-                    .padding(.horizontal, FMSpacing.md)
+                    ScrollView {
+                        header
+                        FMEmptyState(
+                            systemImage: store.listType == .received
+                                ? "bubble.left.and.bubble.right.fill"
+                                : "paperplane.fill",
+                            title: store.listType == .received
+                                ? "아직 받은 피드백이 없어요"
+                                : "아직 작성한 피드백이 없어요",
+                            description: store.listType == .received
+                                ? "영상을 올리면 멤버들의 응원과 조언을 받을 수 있어요."
+                                : "다른 멤버의 영상에서 따뜻한 첫 피드백을 남겨보세요.",
+                            layout: .card
+                        )
+                        .padding(.horizontal, FMSpacing.md)
+                    }
+                    .refreshable {
+                        await store.send(.refresh).finish()
+                    }
 
                 } else {
                     ScrollView {
+                        header
                         LazyVStack(spacing: FMSpacing.md) {
                             ForEach(feedbacks) { feedback in
                                 FeedbackManagementRow(
@@ -84,8 +97,12 @@ public struct FeedbackListView: View {
                 }
 
             case .failed(let error):
-                FMErrorView(error: error) {
-                    store.send(.refresh)
+                ScrollView {
+                    header
+                    FMErrorView(error: error) {
+                        store.send(.refresh)
+                    }
+                    .frame(minHeight: 320)
                 }
             }
         }

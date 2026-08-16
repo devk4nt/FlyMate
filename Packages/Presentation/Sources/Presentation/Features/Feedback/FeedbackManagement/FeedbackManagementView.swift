@@ -11,28 +11,28 @@ public struct FeedbackManagementView: View {
 
     public var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                feedbackHeader
-                    .padding(.horizontal, FMSpacing.md)
-                    .padding(.top, FMSpacing.xxs)
-
-                segmentControl
-                    .padding(.horizontal, FMSpacing.md)
-                    .padding(.vertical, FMSpacing.sm)
-
+            Group {
+                // 헤더+세그먼트를 각 자식의 ScrollView 콘텐츠로 주입 —
+                // pull-to-refresh가 탭 최상단에서 동작 (스터디/모집 탭과 일관성)
                 switch store.selectedSegment {
                 case .pending:
                     VideoFeedView(
                         store: store.scope(state: \.pending, action: \.pending)
-                    )
+                    ) {
+                        tabHeader
+                    }
                 case .received:
                     FeedbackListView(
                         store: store.scope(state: \.received, action: \.received)
-                    )
+                    ) {
+                        tabHeader
+                    }
                 case .given:
                     FeedbackListView(
                         store: store.scope(state: \.given, action: \.given)
-                    )
+                    ) {
+                        tabHeader
+                    }
                 }
             }
             .frame(maxWidth: FMSizing.ContentWidth.regular)
@@ -42,6 +42,18 @@ public struct FeedbackManagementView: View {
             .navigationBarTitleDisplayMode(.inline)
         }
         .background(FMColors.softCanvas)
+    }
+
+    private var tabHeader: some View {
+        VStack(spacing: 0) {
+            feedbackHeader
+                .padding(.horizontal, FMSpacing.md)
+                .padding(.top, FMSpacing.xxs)
+
+            segmentControl
+                .padding(.horizontal, FMSpacing.md)
+                .padding(.vertical, FMSpacing.sm)
+        }
     }
 
     private var feedbackHeader: some View {
