@@ -2,10 +2,12 @@
 import PackageDescription
 
 #if TUIST
-import struct ProjectDescription.PackageSettings
+import ProjectDescription
 
 let packageSettings = PackageSettings(
-    productTypes: [:]
+    productTypes: [:],
+    // Xcode 27 beta는 macOS 11 배포 타겟 미지원 — 매크로(SwiftSyntax 등) 타겟이 Mac에서 빌드되므로 상향
+    baseSettings: .settings(base: ["MACOSX_DEPLOYMENT_TARGET": "13.0"])
 )
 #endif
 
