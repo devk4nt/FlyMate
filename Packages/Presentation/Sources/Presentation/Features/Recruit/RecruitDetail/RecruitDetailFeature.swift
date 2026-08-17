@@ -23,6 +23,7 @@ public struct RecruitDetailFeature {
         public var reopenDeadline = Date(timeIntervalSince1970: 0)
         @Presents public var report: ReportFeature.State?
         @Presents public var edit: RecruitCreateFeature.State?
+        @Presents public var blockAlert: AlertState<Action.BlockAlert>?
         public var showToast = false
         public var toastMessage = ""
 
@@ -65,22 +66,31 @@ public struct RecruitDetailFeature {
         case deleteConfirmed
         case deleteCancelled
         case deleteResponse(Result<UUID, AppError>)
-        // 신고
+        // 신고 / 차단
         case reportPostTapped
         case reportCommentTapped(RecruitComment)
         case report(PresentationAction<ReportFeature.Action>)
+        case blockUserTapped(authorID: UUID, authorName: String)
+        case blockAlert(PresentationAction<BlockAlert>)
+        case blockResponse(Result<UUID, AppError>)
         case edit(PresentationAction<RecruitCreateFeature.Action>)
         case toastDismissed
         case delegate(Delegate)
+
+        public enum BlockAlert: Equatable {
+            case confirmBlock(userID: UUID, userName: String)
+        }
 
         @CasePathable
         public enum Delegate: Equatable {
             case postUpdated(RecruitPost)
             case postDeleted(UUID)
+            case userBlocked(UUID)
         }
     }
 
     @Dependency(\.recruitClient) private var recruitClient
+    @Dependency(\.blockClient) private var blockClient
     @Dependency(\.date.now) private var now
 
     public init() {}
@@ -293,6 +303,49 @@ public struct RecruitDetailFeature {
                 state.report = ReportFeature.State(targetType: .recruitComment, targetID: comment.id)
                 return .none
 
+            case .blockUserTapped(let authorID, let authorName):
+                state.blockAlert = AlertState {
+                    TextState("\(authorName)님을 차단할까요?")
+                } actions: {
+                    ButtonState(role: .destructive, action: .confirmBlock(userID: authorID, userName: authorName)) {
+                        TextState("차단하기")
+                    }
+                    ButtonState(role: .cancel) {
+                        TextState("취소")
+                    }
+                } message: {
+                    TextState("차단한 사용자의 모집 글과 댓글이 더 이상 보이지 않아요. 설정 > 차단한 사용자에서 해제할 수 있어요.")
+                }
+                return .none
+
+            case .blockAlert(.presented(.confirmBlock(let userID, let userName))):
+                let client = blockClient
+                return .run { send in
+                    do {
+                        try await client.blockUser(userID, userName)
+                        await send(.blockResponse(.success(userID)))
+                    } catch {
+                        let appError = error as? AppError ?? .unexpected(error.localizedDescription)
+                        await send(.blockResponse(.failure(appError)))
+                    }
+                }
+
+            case .blockAlert:
+                return .none
+
+            case .blockResponse(.success(let userID)):
+                // 차단한 사용자의 댓글을 화면에서 즉시 제거 (이후 조회는 서버 RLS가 필터)
+                if case .loaded(var comments) = state.comments {
+                    comments.removeAll { $0.authorID == userID }
+                    state.comments = .loaded(comments)
+                }
+                return .send(.delegate(.userBlocked(userID)))
+
+            case .blockResponse(.failure(let error)):
+                state.toastMessage = error.localizedDescription
+                state.showToast = true
+                return .none
+
             case .report(.presented(.delegate(.reportSubmitted))):
                 state.report = nil
                 state.toastMessage = "신고가 접수되었습니다"
@@ -319,6 +372,7 @@ public struct RecruitDetailFeature {
         .ifLet(\.$edit, action: \.edit) {
             RecruitCreateFeature()
         }
+        .ifLet(\.$blockAlert, action: \.blockAlert)
     }
 
     private func fetchComments(postID: UUID) -> Effect<Action> {

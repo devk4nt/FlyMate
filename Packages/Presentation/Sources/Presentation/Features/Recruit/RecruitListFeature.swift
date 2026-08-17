@@ -119,6 +119,17 @@ public struct RecruitListFeature {
                 }
                 return .none
 
+            case .detail(.presented(.delegate(.userBlocked(let userID)))):
+                // 차단한 사용자의 모집 글을 목록에서 즉시 제거하고, 그 사용자의 글이면 상세를 닫는다
+                if state.detail?.post.authorID == userID {
+                    state.detail = nil
+                }
+                state.posts.items.removeAll { $0.authorID == userID }
+                state.loadingState = .loaded(state.posts.items)
+                state.toastMessage = "사용자를 차단했습니다"
+                state.showToast = true
+                return .none
+
             case .detail(.presented(.delegate(.postDeleted(let postID)))):
                 state.posts.items.removeAll { $0.id == postID }
                 state.loadingState = .loaded(state.posts.items)

@@ -1,5 +1,6 @@
 import SwiftUI
 import ComposableArchitecture
+import Core
 
 public struct LoginView: View {
     @Bindable var store: StoreOf<LoginFeature>
@@ -78,6 +79,16 @@ public struct LoginView: View {
                     ) {
                         store.send(.kakaoLoginTapped)
                     }
+
+                    // 가입/로그인 전 EULA 동의 고지 (App Store Guideline 1.2)
+                    Text(.init(
+                        "계속하면 FlyMate [이용약관](\(AppConstants.ServiceURL.termsOfService)) 및 [개인정보처리방침](\(AppConstants.ServiceURL.privacyPolicy))에 동의하는 것으로 간주됩니다. 부적절한 콘텐츠와 악성 사용자에게는 무관용 원칙이 적용됩니다."
+                    ))
+                    .font(FMTypography.caption2)
+                    .foregroundStyle(FMColors.secondaryLabel)
+                    .tint(FMColors.primary)
+                    .multilineTextAlignment(.center)
+                    .accessibilityLabel("이용약관 및 개인정보처리방침 동의 안내")
                 }
                 .padding(FMSpacing.lg)
                 .background(.ultraThinMaterial)

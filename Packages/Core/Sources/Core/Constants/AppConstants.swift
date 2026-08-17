@@ -89,4 +89,12 @@ public enum AppConstants {
         public static let maxVideoDurationSeconds = 60
         public static let maxStudyMembers = 3
     }
+
+    // MARK: - Service URLs
+
+    public enum ServiceURL {
+        /// 이용약관 (EULA) — 부적절 콘텐츠 무관용 조항 포함 (App Store Guideline 1.2)
+        public static let termsOfService = "https://devk4nt.github.io/flymate-site/terms.html"
+        public static let privacyPolicy = "https://devk4nt.github.io/flymate-site/privacy.html"
+    }
 }

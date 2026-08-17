@@ -64,6 +64,7 @@ public struct RecruitDetailView: View {
         .sheet(item: $store.scope(state: \.report, action: \.report)) { reportStore in
             ReportView(store: reportStore)
         }
+        .alert($store.scope(state: \.blockAlert, action: \.blockAlert))
         .sheet(item: $store.scope(state: \.edit, action: \.edit)) { editStore in
             NavigationStack {
                 RecruitCreateView(store: editStore)
@@ -337,6 +338,11 @@ public struct RecruitDetailView: View {
                         } label: {
                             Label("신고", systemImage: "exclamationmark.bubble")
                         }
+                        Button(role: .destructive) {
+                            store.send(.blockUserTapped(authorID: comment.authorID, authorName: comment.authorName))
+                        } label: {
+                            Label("사용자 차단", systemImage: "person.slash")
+                        }
                     }
                 } label: {
                     Image(systemName: "ellipsis")
@@ -472,6 +478,11 @@ public struct RecruitDetailView: View {
                         store.send(.reportPostTapped)
                     } label: {
                         Label("신고", systemImage: "exclamationmark.bubble")
+                    }
+                    Button(role: .destructive) {
+                        store.send(.blockUserTapped(authorID: store.post.authorID, authorName: store.post.authorName))
+                    } label: {
+                        Label("작성자 차단", systemImage: "person.slash")
                     }
                 }
             } label: {

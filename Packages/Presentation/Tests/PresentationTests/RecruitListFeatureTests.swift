@@ -82,6 +82,93 @@ struct RecruitListFeatureTests {
             $0.detail = RecruitDetailFeature.State(post: post, currentUserID: Self.userID)
         }
     }
+
+    // MARK: - 사용자 차단 (Guideline 1.2)
+
+    @Test
+    func 모집글_작성자_차단시_댓글_즉시_제거_및_delegate_전달() async {
+        let blockedAuthorID = RecruitPost.mock.authorID
+        let otherAuthorID = UUID(uuidString: "00000000-0000-0000-0000-000000000012")!
+        let blockedComment = RecruitComment(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000701")!,
+            postID: RecruitPost.mock.id,
+            parentID: nil,
+            authorID: blockedAuthorID,
+            authorName: "김하늘",
+            authorProfileURL: nil,
+            content: "참여하고 싶어요",
+            createdAt: Date(timeIntervalSince1970: 1_800_000_100)
+        )
+        let otherComment = RecruitComment(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000702")!,
+            postID: RecruitPost.mock.id,
+            parentID: nil,
+            authorID: otherAuthorID,
+            authorName: "박구름",
+            authorProfileURL: nil,
+            content: "저도 문의드려요",
+            createdAt: Date(timeIntervalSince1970: 1_800_000_200)
+        )
+
+        var state = RecruitDetailFeature.State(post: .mock, currentUserID: Self.userID)
+        state.comments = .loaded([blockedComment, otherComment])
+
+        let blocked = LockIsolated<(UUID, String)?>(nil)
+        let store = TestStore(initialState: state) {
+            RecruitDetailFeature()
+        } withDependencies: {
+            $0.blockClient.blockUser = { userID, userName in blocked.setValue((userID, userName)) }
+        }
+
+        await store.send(.blockUserTapped(authorID: blockedAuthorID, authorName: "김하늘")) {
+            $0.blockAlert = AlertState {
+                TextState("김하늘님을 차단할까요?")
+            } actions: {
+                ButtonState(role: .destructive, action: .confirmBlock(userID: blockedAuthorID, userName: "김하늘")) {
+                    TextState("차단하기")
+                }
+                ButtonState(role: .cancel) {
+                    TextState("취소")
+                }
+            } message: {
+                TextState("차단한 사용자의 모집 글과 댓글이 더 이상 보이지 않아요. 설정 > 차단한 사용자에서 해제할 수 있어요.")
+            }
+        }
+
+        await store.send(.blockAlert(.presented(.confirmBlock(userID: blockedAuthorID, userName: "김하늘")))) {
+            $0.blockAlert = nil
+        }
+
+        await store.receive(\.blockResponse.success) {
+            $0.comments = .loaded([otherComment])
+        }
+
+        await store.receive(\.delegate.userBlocked)
+
+        #expect(blocked.value?.0 == blockedAuthorID)
+        #expect(blocked.value?.1 == "김하늘")
+    }
+
+    @Test
+    func 차단_delegate_수신시_목록에서_해당_작성자_글_제거_및_상세_닫힘() async {
+        let blockedAuthorID = RecruitPost.mock.authorID
+        var state = RecruitListFeature.State(currentUserID: Self.userID)
+        state.posts.items = [RecruitPost.mock]
+        state.loadingState = .loaded([RecruitPost.mock])
+        state.detail = RecruitDetailFeature.State(post: .mock, currentUserID: Self.userID)
+
+        let store = TestStore(initialState: state) {
+            RecruitListFeature()
+        }
+
+        await store.send(.detail(.presented(.delegate(.userBlocked(blockedAuthorID))))) {
+            $0.detail = nil
+            $0.posts.items = []
+            $0.loadingState = .loaded([])
+            $0.toastMessage = "사용자를 차단했습니다"
+            $0.showToast = true
+        }
+    }
 }
 
 // MARK: - Mock
