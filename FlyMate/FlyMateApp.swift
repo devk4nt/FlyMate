@@ -92,11 +92,12 @@ struct FlyMateApp: App {
         )
 
         // Quick Feedback
-        let quickFeedbackRepo = QuickFeedbackRepositoryImpl(client: supabaseClient)
+        let quickFeedbackRepo = AppReviewQuickFeedbackRepository(client: supabaseClient)
         dependencies.quickFeedbackClient = QuickFeedbackClient(
             fetchDashboard: { try await quickFeedbackRepo.fetchDashboard() },
             upload: { try await quickFeedbackRepo.upload($0, progress: $1) },
             claim: { try await quickFeedbackRepo.claim(requestID: $0) },
+            cancelAssignment: { try await quickFeedbackRepo.cancelAssignment(id: $0) },
             submitReview: { try await quickFeedbackRepo.submitReview($0) },
             closeRequest: { try await quickFeedbackRepo.closeRequest(id: $0) }
         )
@@ -1024,6 +1025,9 @@ struct FlyMateApp: App {
                 let assignmentID = UUID()
                 quickFeedbackAssignmentStore.withValue { $0[assignmentID] = request }
                 return ClaimedQuickFeedback(assignmentID: assignmentID, request: request)
+            },
+            cancelAssignment: { assignmentID in
+                quickFeedbackAssignmentStore.withValue { $0[assignmentID] = nil }
             },
             submitReview: { request in
                 guard let target = quickFeedbackAssignmentStore.value[request.assignmentID] else {

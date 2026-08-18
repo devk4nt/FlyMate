@@ -107,6 +107,8 @@ public struct ReportView: View {
         case .user: return "사용자 신고"
         case .recruitPost: return "모집 글 신고"
         case .recruitComment: return "댓글 신고"
+        case .quickFeedbackRequest: return "빠른 피드백 영상 신고"
+        case .quickFeedbackReview: return "빠른 피드백 신고"
         }
     }
 }

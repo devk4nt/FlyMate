@@ -58,6 +58,7 @@ public protocol QuickFeedbackRepository: Sendable {
         progress: @Sendable (Double) -> Void
     ) async throws -> QuickFeedbackRequest
     func claim(requestID: UUID) async throws -> ClaimedQuickFeedback
+    func cancelAssignment(id: UUID) async throws
     func submitReview(_ request: CreateQuickFeedbackReviewRequest) async throws -> QuickFeedbackReview
     func closeRequest(id: UUID) async throws
 }

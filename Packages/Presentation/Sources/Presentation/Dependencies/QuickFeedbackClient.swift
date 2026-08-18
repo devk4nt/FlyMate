@@ -9,6 +9,7 @@ public struct QuickFeedbackClient: Sendable {
         @Sendable (Double) -> Void
     ) async throws -> QuickFeedbackRequest
     public var claim: @Sendable (UUID) async throws -> ClaimedQuickFeedback
+    public var cancelAssignment: @Sendable (UUID) async throws -> Void
     public var submitReview: @Sendable (CreateQuickFeedbackReviewRequest) async throws -> QuickFeedbackReview
     public var closeRequest: @Sendable (UUID) async throws -> Void
 
@@ -19,12 +20,14 @@ public struct QuickFeedbackClient: Sendable {
             @Sendable (Double) -> Void
         ) async throws -> QuickFeedbackRequest,
         claim: @escaping @Sendable (UUID) async throws -> ClaimedQuickFeedback,
+        cancelAssignment: @escaping @Sendable (UUID) async throws -> Void,
         submitReview: @escaping @Sendable (CreateQuickFeedbackReviewRequest) async throws -> QuickFeedbackReview,
         closeRequest: @escaping @Sendable (UUID) async throws -> Void
     ) {
         self.fetchDashboard = fetchDashboard
         self.upload = upload
         self.claim = claim
+        self.cancelAssignment = cancelAssignment
         self.submitReview = submitReview
         self.closeRequest = closeRequest
     }
@@ -35,6 +38,7 @@ extension QuickFeedbackClient: TestDependencyKey {
         fetchDashboard: unimplemented("\(Self.self).fetchDashboard"),
         upload: { _, _ in throw QuickFeedbackUnimplementedError() },
         claim: unimplemented("\(Self.self).claim"),
+        cancelAssignment: unimplemented("\(Self.self).cancelAssignment"),
         submitReview: unimplemented("\(Self.self).submitReview"),
         closeRequest: unimplemented("\(Self.self).closeRequest")
     )

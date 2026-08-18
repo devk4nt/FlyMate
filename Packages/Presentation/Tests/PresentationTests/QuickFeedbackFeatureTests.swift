@@ -128,6 +128,149 @@ struct QuickFeedbackFeatureTests {
     }
 
     @Test
+    func 받은_빠른피드백을_신고하면_해당_콘텐츠를_즉시_숨긴다() async {
+        let review = QuickFeedbackReview.mock
+        let store = TestStore(
+            initialState: QuickFeedbackRequestDetailFeature.State(
+                request: .mock,
+                reviews: [review]
+            )
+        ) {
+            QuickFeedbackRequestDetailFeature()
+        }
+
+        await store.send(.reportReviewTapped(review)) {
+            $0.report = ReportFeature.State(
+                targetType: .quickFeedbackReview,
+                targetID: review.id
+            )
+        }
+        await store.send(.report(.presented(.delegate(.reportSubmitted)))) {
+            $0.report = nil
+            $0.reviews = []
+            $0.toastMessage = "신고가 접수되었습니다"
+            $0.showToast = true
+        }
+    }
+
+    @Test
+    func 받은_빠른피드백의_리뷰어를_차단하면_리뷰를_즉시_숨긴다() async {
+        let review = QuickFeedbackReview.mock
+        let store = TestStore(
+            initialState: QuickFeedbackRequestDetailFeature.State(
+                request: .mock,
+                reviews: [review]
+            )
+        ) {
+            QuickFeedbackRequestDetailFeature()
+        } withDependencies: {
+            $0.blockClient.blockUser = { _, _ in }
+        }
+
+        await store.send(.blockUserTapped(review)) {
+            $0.blockAlert = AlertState {
+                TextState("\(review.reviewerName)님을 차단할까요?")
+            } actions: {
+                ButtonState(
+                    role: .destructive,
+                    action: .confirmBlock(userID: review.reviewerID, userName: review.reviewerName)
+                ) {
+                    TextState("차단하기")
+                }
+                ButtonState(role: .cancel) {
+                    TextState("취소")
+                }
+            } message: {
+                TextState("차단한 사용자의 영상과 피드백이 더 이상 보이지 않아요. 설정 > 차단한 사용자에서 해제할 수 있어요.")
+            }
+        }
+        await store.send(.blockAlert(.presented(.confirmBlock(
+            userID: review.reviewerID,
+            userName: review.reviewerName
+        )))) {
+            $0.blockAlert = nil
+        }
+        await store.receive(\.blockResponse.success) {
+            $0.reviews = []
+            $0.toastMessage = "사용자를 차단했습니다"
+            $0.showToast = true
+        }
+    }
+
+    @Test
+    func 배정된_영상을_신고하면_배정을_취소하고_화면을_닫는다() async {
+        let claimed = ClaimedQuickFeedback(assignmentID: UUID(915), request: .mock)
+        let cancelledAssignmentID = LockIsolated<UUID?>(nil)
+        let store = TestStore(initialState: QuickFeedbackReviewFeature.State(claimed: claimed)) {
+            QuickFeedbackReviewFeature()
+        } withDependencies: {
+            $0.quickFeedbackClient.cancelAssignment = { assignmentID in
+                cancelledAssignmentID.setValue(assignmentID)
+            }
+        }
+
+        await store.send(.reportRequestTapped) {
+            $0.report = ReportFeature.State(
+                targetType: .quickFeedbackRequest,
+                targetID: claimed.request.id
+            )
+        }
+        await store.send(.report(.presented(.delegate(.reportSubmitted)))) {
+            $0.report = nil
+        }
+        await store.receive(\.delegate.moderationCompleted)
+
+        #expect(cancelledAssignmentID.value == claimed.assignmentID)
+    }
+
+    @Test
+    func 배정된_영상의_업로더를_차단하면_배정도_취소한다() async {
+        let claimed = ClaimedQuickFeedback(assignmentID: UUID(916), request: .mock)
+        let blockedUserID = LockIsolated<UUID?>(nil)
+        let cancelledAssignmentID = LockIsolated<UUID?>(nil)
+        let store = TestStore(initialState: QuickFeedbackReviewFeature.State(claimed: claimed)) {
+            QuickFeedbackReviewFeature()
+        } withDependencies: {
+            $0.blockClient.blockUser = { userID, _ in blockedUserID.setValue(userID) }
+            $0.quickFeedbackClient.cancelAssignment = { assignmentID in
+                cancelledAssignmentID.setValue(assignmentID)
+            }
+        }
+
+        await store.send(.blockUploaderTapped) {
+            $0.blockAlert = AlertState {
+                TextState("\(claimed.request.uploaderName)님을 차단할까요?")
+            } actions: {
+                ButtonState(
+                    role: .destructive,
+                    action: .confirmBlock(
+                        userID: claimed.request.uploaderID,
+                        userName: claimed.request.uploaderName
+                    )
+                ) {
+                    TextState("차단하기")
+                }
+                ButtonState(role: .cancel) {
+                    TextState("취소")
+                }
+            } message: {
+                TextState("차단하면 이 영상 배정이 취소되고, 앞으로 서로의 빠른 피드백 콘텐츠가 표시되지 않아요.")
+            }
+        }
+        await store.send(.blockAlert(.presented(.confirmBlock(
+            userID: claimed.request.uploaderID,
+            userName: claimed.request.uploaderName
+        )))) {
+            $0.blockAlert = nil
+        }
+        await store.receive(\.blockResponse.success)
+        await store.receive(\.delegate.moderationCompleted)
+
+        #expect(blockedUserID.value == claimed.request.uploaderID)
+        #expect(cancelledAssignmentID.value == claimed.assignmentID)
+    }
+
+    @Test
     func 구조화된_피드백_제출시_완료를_전달한다() async {
         let claimed = ClaimedQuickFeedback(assignmentID: UUID(901), request: .mock)
         let positive = "첫 문장부터 표정과 목소리가 밝아서 답변에 자연스럽게 집중할 수 있었어요."
@@ -186,6 +329,19 @@ private extension QuickFeedbackRequest {
         targetFeedbackCount: 2,
         expiresAt: Date().addingTimeInterval(3_600),
         createdAt: Date()
+    )
+}
+
+private extension QuickFeedbackReview {
+    static let mock = QuickFeedbackReview(
+        id: UUID(920),
+        requestID: QuickFeedbackRequest.mock.id,
+        reviewerID: UUID(921),
+        reviewerName: "리뷰어",
+        positiveText: "표정이 자연스럽고 답변의 시작이 명확해서 집중하기 좋았어요.",
+        improvementText: "마지막 문장의 속도를 조금 늦추면 핵심이 더 잘 전달될 것 같아요.",
+        focusArea: .overall,
+        createdAt: Date(timeIntervalSince1970: 1_700_000_000)
     )
 }
 

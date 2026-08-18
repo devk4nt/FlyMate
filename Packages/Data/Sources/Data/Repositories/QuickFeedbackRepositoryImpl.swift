@@ -151,6 +151,18 @@ public struct QuickFeedbackRepositoryImpl: QuickFeedbackRepository {
         }
     }
 
+    public func cancelAssignment(id: UUID) async throws {
+        do {
+            try await client.rpc(
+                SupabaseConfig.RPC.cancelQuickFeedbackAssignment,
+                params: ["p_assignment_id": id.uuidString]
+            )
+            .execute()
+        } catch {
+            throw mapError(error)
+        }
+    }
+
     public func submitReview(_ request: CreateQuickFeedbackReviewRequest) async throws -> QuickFeedbackReview {
         struct Params: Encodable {
             let p_assignment_id: UUID

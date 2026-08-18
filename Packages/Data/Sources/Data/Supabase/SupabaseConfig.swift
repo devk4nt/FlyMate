@@ -58,6 +58,7 @@ public enum SupabaseConfig {
         public static let reconcileQuickFeedbackRequests = "reconcile_quick_feedback_requests"
         public static let createQuickFeedbackRequest = "create_quick_feedback_request"
         public static let claimQuickFeedbackRequest = "claim_quick_feedback_request"
+        public static let cancelQuickFeedbackAssignment = "cancel_quick_feedback_assignment"
         public static let submitQuickFeedbackReview = "submit_quick_feedback_review"
         public static let closeQuickFeedbackRequest = "close_quick_feedback_request"
     }

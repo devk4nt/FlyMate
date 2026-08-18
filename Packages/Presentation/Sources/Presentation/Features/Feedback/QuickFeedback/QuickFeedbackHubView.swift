@@ -60,6 +60,14 @@ public struct QuickFeedbackHubView: View {
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md))
             }
         }
+        .fmToast(
+            isPresented: Binding(
+                get: { store.showToast },
+                set: { _ in store.send(.dismissToast) }
+            ),
+            message: store.toastMessage,
+            type: .info
+        )
     }
 
     private func pointCard(_ dashboard: QuickFeedbackDashboard) -> some View {
@@ -339,6 +347,18 @@ public struct QuickFeedbackRequestDetailView: View {
         .sheet(item: $store.scope(state: \.userActivity, action: \.userActivity)) { activityStore in
             MyActivitySheet(store: activityStore)
         }
+        .sheet(item: $store.scope(state: \.report, action: \.report)) { reportStore in
+            ReportView(store: reportStore)
+        }
+        .alert($store.scope(state: \.blockAlert, action: \.blockAlert))
+        .fmToast(
+            isPresented: Binding(
+                get: { store.showToast },
+                set: { _ in store.send(.dismissToast) }
+            ),
+            message: store.toastMessage,
+            type: .info
+        )
     }
 
     private func reviewCard(_ review: QuickFeedbackReview) -> some View {
@@ -353,9 +373,35 @@ public struct QuickFeedbackRequestDetailView: View {
                         store.send(.reviewerProfileTapped(review))
                     }
                     Spacer()
-                    Text(review.createdAt.relativeString)
-                        .font(FMTypography.caption1)
-                        .foregroundStyle(FMColors.secondaryLabel)
+                    HStack(spacing: FMSpacing.xxs) {
+                        Text(review.createdAt.relativeString)
+                            .font(FMTypography.caption1)
+                            .foregroundStyle(FMColors.secondaryLabel)
+
+                        Menu {
+                            Button(role: .destructive) {
+                                store.send(.reportReviewTapped(review))
+                            } label: {
+                                Label("피드백 신고", systemImage: "exclamationmark.bubble")
+                            }
+                            Button(role: .destructive) {
+                                store.send(.reportUserTapped(review))
+                            } label: {
+                                Label("사용자 신고", systemImage: "person.crop.circle.badge.exclamationmark")
+                            }
+                            Button(role: .destructive) {
+                                store.send(.blockUserTapped(review))
+                            } label: {
+                                Label("사용자 차단", systemImage: "person.crop.circle.badge.xmark")
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis")
+                                .foregroundStyle(FMColors.secondaryLabel)
+                                .frame(width: 36, height: 36)
+                                .contentShape(Circle())
+                        }
+                        .accessibilityLabel("빠른 피드백 신고 및 차단 메뉴")
+                    }
                 }
                 Label(review.focusArea.title, systemImage: "bubble.left.fill")
                     .font(FMTypography.callout)
@@ -415,9 +461,37 @@ public struct QuickFeedbackReviewView: View {
         }
         .navigationTitle("피드백 작성")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button(role: .destructive) {
+                        store.send(.reportRequestTapped)
+                    } label: {
+                        Label("영상 신고", systemImage: "exclamationmark.bubble")
+                    }
+                    Button(role: .destructive) {
+                        store.send(.reportUploaderTapped)
+                    } label: {
+                        Label("사용자 신고", systemImage: "person.crop.circle.badge.exclamationmark")
+                    }
+                    Button(role: .destructive) {
+                        store.send(.blockUploaderTapped)
+                    } label: {
+                        Label("사용자 차단", systemImage: "person.crop.circle.badge.xmark")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+                .accessibilityLabel("영상 신고 및 사용자 차단 메뉴")
+            }
+        }
         .sheet(item: $store.scope(state: \.userActivity, action: \.userActivity)) { activityStore in
             MyActivitySheet(store: activityStore)
         }
+        .sheet(item: $store.scope(state: \.report, action: \.report)) { reportStore in
+            ReportView(store: reportStore)
+        }
+        .alert($store.scope(state: \.blockAlert, action: \.blockAlert))
         .safeAreaInset(edge: .bottom) {
             FMButton(title: "피드백 제출", isLoading: store.isSubmitting, isEnabled: store.isValid) {
                 store.send(.submitTapped)
@@ -433,6 +507,14 @@ public struct QuickFeedbackReviewView: View {
         } message: {
             Text(store.error?.errorDescription ?? "오류가 발생했습니다.")
         }
+        .fmToast(
+            isPresented: Binding(
+                get: { store.showToast },
+                set: { _ in store.send(.dismissToast) }
+            ),
+            message: store.toastMessage,
+            type: .info
+        )
     }
 
     private var focusPicker: some View {

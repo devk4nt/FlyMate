@@ -33,6 +33,8 @@ public enum ReportTargetType: String, Equatable, Sendable, CaseIterable {
     case user
     case recruitPost = "recruit_post"
     case recruitComment = "recruit_comment"
+    case quickFeedbackRequest = "quick_feedback_request"
+    case quickFeedbackReview = "quick_feedback_review"
 }
 
 public enum ReportReason: String, Equatable, Sendable, CaseIterable {
