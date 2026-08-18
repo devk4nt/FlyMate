@@ -23,6 +23,8 @@ public struct RecruitDetailFeature {
         public var reopenDeadline = Date(timeIntervalSince1970: 0)
         @Presents public var report: ReportFeature.State?
         @Presents public var edit: RecruitCreateFeature.State?
+        @Presents public var createStudy: StudyCreateFeature.State?
+        @Presents public var userActivity: MyActivityFeature.State?
         @Presents public var blockAlert: AlertState<Action.BlockAlert>?
         public var showToast = false
         public var toastMessage = ""
@@ -36,6 +38,11 @@ public struct RecruitDetailFeature {
 
         public var isCommentValid: Bool {
             !commentText.isBlank && commentText.count <= AppConstants.maxRecruitCommentLength
+        }
+
+        public var interestedUserCount: Int {
+            guard case .loaded(let comments) = comments else { return post.commentCount }
+            return Set(comments.lazy.filter { $0.authorID != currentUserID }.map(\.authorID)).count
         }
     }
 
@@ -54,6 +61,9 @@ public struct RecruitDetailFeature {
         case deleteCommentResponse(Result<UUID, AppError>)
         // 작성자 액션
         case editTapped
+        case createStudyTapped
+        case createStudy(PresentationAction<StudyCreateFeature.Action>)
+        case linkStudyResponse(Result<RecruitPost, AppError>)
         case closeTapped
         case closeConfirmed
         case closeCancelled
@@ -68,8 +78,10 @@ public struct RecruitDetailFeature {
         case deleteResponse(Result<UUID, AppError>)
         // 신고 / 차단
         case reportPostTapped
+        case authorProfileTapped
         case reportCommentTapped(RecruitComment)
         case report(PresentationAction<ReportFeature.Action>)
+        case userActivity(PresentationAction<MyActivityFeature.Action>)
         case blockUserTapped(authorID: UUID, authorName: String)
         case blockAlert(PresentationAction<BlockAlert>)
         case blockResponse(Result<UUID, AppError>)
@@ -205,6 +217,35 @@ public struct RecruitDetailFeature {
                 state.edit = RecruitCreateFeature.State(mode: .edit(state.post))
                 return .none
 
+            case .createStudyTapped:
+                guard state.isAuthor, state.post.studyID == nil else { return .none }
+                state.createStudy = StudyCreateFeature.State(recruitPost: state.post)
+                return .none
+
+            case .createStudy(.presented(.studyCreated(let study))):
+                let client = recruitClient
+                let postID = state.post.id
+                return .run { send in
+                    do {
+                        let post = try await client.linkStudy(postID, study.id)
+                        await send(.linkStudyResponse(.success(post)))
+                    } catch {
+                        let appError = error as? AppError ?? .unexpected(error.localizedDescription)
+                        await send(.linkStudyResponse(.failure(appError)))
+                    }
+                }
+
+            case .linkStudyResponse(.success(let post)):
+                state.post = post
+                state.toastMessage = "모집 글과 스터디방이 연결되었습니다"
+                state.showToast = true
+                return .send(.delegate(.postUpdated(post)))
+
+            case .linkStudyResponse(.failure):
+                state.toastMessage = "스터디방은 만들어졌지만 모집 글 연결에 실패했습니다"
+                state.showToast = true
+                return .none
+
             case .edit(.presented(.delegate(.saved(let post)))):
                 state.post = post
                 return .send(.delegate(.postUpdated(post)))
@@ -299,6 +340,14 @@ public struct RecruitDetailFeature {
                 state.report = ReportFeature.State(targetType: .recruitPost, targetID: state.post.id)
                 return .none
 
+            case .authorProfileTapped:
+                state.userActivity = MyActivityFeature.State(
+                    userID: state.post.authorID,
+                    userName: state.post.authorName,
+                    profileImageURL: state.post.authorProfileURL
+                )
+                return .none
+
             case .reportCommentTapped(let comment):
                 state.report = ReportFeature.State(targetType: .recruitComment, targetID: comment.id)
                 return .none
@@ -362,7 +411,7 @@ public struct RecruitDetailFeature {
                 state.showToast = false
                 return .none
 
-            case .report, .edit, .delegate:
+            case .report, .edit, .createStudy, .userActivity, .delegate:
                 return .none
             }
         }
@@ -371,6 +420,12 @@ public struct RecruitDetailFeature {
         }
         .ifLet(\.$edit, action: \.edit) {
             RecruitCreateFeature()
+        }
+        .ifLet(\.$createStudy, action: \.createStudy) {
+            StudyCreateFeature()
+        }
+        .ifLet(\.$userActivity, action: \.userActivity) {
+            MyActivityFeature()
         }
         .ifLet(\.$blockAlert, action: \.blockAlert)
     }
@@ -429,8 +484,10 @@ private extension RecruitPost {
             requirement: requirement,
             contactMethod: contactMethod,
             linkURL: linkURL,
+            studyID: studyID,
             authorID: authorID,
             authorName: authorName,
+            authorProfileURL: authorProfileURL,
             status: status,
             commentCount: count,
             createdAt: createdAt,

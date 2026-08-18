@@ -44,6 +44,14 @@ public struct NotificationRepositoryImpl: NotificationRepository {
         return response.count ?? 0
     }
 
+    public func fetchStartupAnnouncement() async throws -> AppNotification? {
+        let dtos: [NotificationDTO] = try await client
+            .rpc(SupabaseConfig.RPC.syncStartupAnnouncement)
+            .execute()
+            .value
+        return dtos.first.map(DTOMapper.toDomain)
+    }
+
     public func markAsRead(id: UUID) async throws {
         struct IsReadUpdate: Codable {
             let isRead: Bool

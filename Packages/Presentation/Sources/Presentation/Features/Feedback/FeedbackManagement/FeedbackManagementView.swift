@@ -1,8 +1,13 @@
 import SwiftUI
 import ComposableArchitecture
 import Core
+import Domain
 
 public struct FeedbackManagementView: View {
+    private enum Constants {
+        static let quickFeedbackPreviewCount = 3
+    }
+
     @Bindable var store: StoreOf<FeedbackManagementFeature>
 
     public init(store: StoreOf<FeedbackManagementFeature>) {
@@ -23,9 +28,10 @@ public struct FeedbackManagementView: View {
                     }
                 case .received:
                     FeedbackListView(
-                        store: store.scope(state: \.received, action: \.received)
+                        store: store.scope(state: \.received, action: \.received),
+                        sectionTitle: "스터디 피드백"
                     ) {
-                        tabHeader
+                        receivedHeader
                     }
                 case .given:
                     FeedbackListView(
@@ -41,6 +47,9 @@ public struct FeedbackManagementView: View {
             .navigationTitle("피드백")
             .navigationBarTitleDisplayMode(.inline)
         }
+        .sheet(item: $store.scope(state: \.quickFeedbackDetail, action: \.quickFeedbackDetail)) { detailStore in
+            NavigationStack { QuickFeedbackRequestDetailView(store: detailStore) }
+        }
         .background(FMColors.softCanvas)
     }
 
@@ -54,6 +63,101 @@ public struct FeedbackManagementView: View {
                 .padding(.horizontal, FMSpacing.md)
                 .padding(.vertical, FMSpacing.sm)
         }
+    }
+
+    private var receivedHeader: some View {
+        VStack(spacing: FMSpacing.md) {
+            tabHeader
+            quickFeedbackSection
+                .padding(.horizontal, FMSpacing.md)
+        }
+    }
+
+    @ViewBuilder
+    private var quickFeedbackSection: some View {
+        switch store.quickFeedback {
+        case .idle, .loading:
+            FMSkeletonView.card
+
+        case .failed(let error):
+            FMErrorView(error: error) {
+                store.send(.segmentChanged(.received))
+            }
+
+        case .loaded(let dashboard):
+            let requests = dashboard.myRequests.filter {
+                !dashboard.reviews(for: $0.id).isEmpty
+            }
+            if !requests.isEmpty {
+                VStack(alignment: .leading, spacing: FMSpacing.sm) {
+                    HStack(spacing: FMSpacing.xs) {
+                        Text("빠른 피드백")
+                            .font(FMTypography.sectionTitle)
+                            .foregroundStyle(FMColors.label)
+
+                        sectionCountBadge(requests.count)
+
+                        Spacer()
+
+                        if requests.count > Constants.quickFeedbackPreviewCount {
+                            NavigationLink {
+                                QuickFeedbackHistoryListView(
+                                    dashboard: dashboard,
+                                    onRequestTapped: {
+                                        store.send(.quickFeedbackRequestTapped($0))
+                                    }
+                                )
+                            } label: {
+                                Text("전체 보기")
+                                    .font(FMTypography.authorName)
+                            }
+                            .accessibilityLabel("빠른 피드백 요청 \(requests.count)개 전체 보기")
+                            .accessibilityHint("빠른 피드백 요청 전체 목록으로 이동합니다")
+                        }
+                    }
+
+                    ForEach(Array(requests.prefix(Constants.quickFeedbackPreviewCount))) { request in
+                        Button {
+                            store.send(.quickFeedbackRequestTapped(request.id))
+                        } label: {
+                            FMCard(style: .feed) {
+                                HStack(spacing: FMSpacing.sm) {
+                                    Image(systemName: "play.rectangle.fill")
+                                        .font(.title2)
+                                        .foregroundStyle(FMColors.iconAccent)
+                                    VStack(alignment: .leading, spacing: FMSpacing.xxs) {
+                                        Text(request.title)
+                                            .font(FMTypography.authorName)
+                                            .foregroundStyle(FMColors.label)
+                                        Text("받은 답변 \(dashboard.reviews(for: request.id).count)개")
+                                            .font(FMTypography.caption1)
+                                            .foregroundStyle(FMColors.secondaryLabel)
+                                    }
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .font(FMTypography.caption1)
+                                        .foregroundStyle(FMColors.secondaryLabel)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("업로드한 영상과 받은 빠른 피드백을 확인합니다")
+                    }
+                }
+            }
+        }
+    }
+
+    private func sectionCountBadge(_ count: Int) -> some View {
+        Text("\(count)")
+            .font(FMTypography.caption1.weight(.semibold))
+            .foregroundStyle(FMColors.actionForeground)
+            .monospacedDigit()
+            .padding(.horizontal, FMSpacing.xs)
+            .padding(.vertical, FMSpacing.xxxs)
+            .background(FMColors.accent.opacity(0.1), in: Capsule())
+            .accessibilityLabel("\(count)개 요청")
     }
 
     private var feedbackHeader: some View {
@@ -137,5 +241,56 @@ public struct FeedbackManagementView: View {
         case .given:
             "paperplane.fill"
         }
+    }
+}
+
+private struct QuickFeedbackHistoryListView: View {
+    let dashboard: QuickFeedbackDashboard
+    let onRequestTapped: (UUID) -> Void
+
+    private var requests: [QuickFeedbackRequest] {
+        dashboard.myRequests.filter {
+            !dashboard.reviews(for: $0.id).isEmpty
+        }
+    }
+
+    var body: some View {
+        ScrollView {
+            LazyVStack(spacing: FMSpacing.md) {
+                ForEach(requests) { request in
+                    Button { onRequestTapped(request.id) } label: {
+                        FMCard(style: .feed) {
+                            HStack(spacing: FMSpacing.sm) {
+                                Image(systemName: "play.rectangle.fill")
+                                    .font(.title2)
+                                    .foregroundStyle(FMColors.iconAccent)
+                                VStack(alignment: .leading, spacing: FMSpacing.xxs) {
+                                    Text(request.title)
+                                        .font(FMTypography.authorName)
+                                        .foregroundStyle(FMColors.label)
+                                    Text("받은 답변 \(dashboard.reviews(for: request.id).count)개")
+                                        .font(FMTypography.caption1)
+                                        .foregroundStyle(FMColors.secondaryLabel)
+                                    Text(request.createdAt.relativeString)
+                                        .font(FMTypography.caption1)
+                                        .foregroundStyle(FMColors.secondaryLabel)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(FMTypography.caption1)
+                                    .foregroundStyle(FMColors.secondaryLabel)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint("업로드한 영상과 받은 빠른 피드백을 확인합니다")
+                }
+            }
+            .padding(FMSpacing.md)
+        }
+        .background(FMColors.softCanvas)
+        .navigationTitle("빠른 피드백 전체")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }

@@ -1,6 +1,12 @@
 import Foundation
 
 public enum AppConstants {
+    /// 빠른 피드백 영상의 최대 길이.
+    public static let maxQuickFeedbackVideoDurationSeconds: TimeInterval = 60
+    /// 빠른 피드백 요청에 필요한 포인트.
+    public static let quickFeedbackRequestPointCost = 2
+    /// 빠른 피드백 요청 한 건의 목표 피드백 수.
+    public static let quickFeedbackTargetCount = 2
     /// 사용자 문의를 받는 고객 지원 이메일
     public static let supportEmail = "flymate.team.contact@gmail.com"
 

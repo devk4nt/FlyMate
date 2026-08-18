@@ -78,11 +78,15 @@ public struct StudyCreateView: View {
             .shadow(color: FMShadow.floatingColor, radius: FMShadow.floatingRadius, y: FMShadow.floatingY)
 
             VStack(alignment: .leading, spacing: FMSpacing.xxs) {
-                Text("새로운 팀을 시작해요")
+                Text(store.isRecruitmentPrefilled ? "스터디방을 열어 참여자를 맞이하세요" : "새로운 팀을 시작해요")
                     .font(FMTypography.title2)
                     .foregroundStyle(FMColors.label)
 
-                Text("목표를 공유하고 서로의 성장을 도와주세요.")
+                Text(
+                    store.isRecruitmentPrefilled
+                        ? "모집 글 정보를 미리 채웠어요. 확인 후 바로 시작할 수 있어요."
+                        : "영상을 공유하고 피드백과 알림을 한곳에서 관리하세요."
+                )
                     .font(FMTypography.callout)
                     .foregroundStyle(FMColors.secondaryLabel)
                     .fixedSize(horizontal: false, vertical: true)

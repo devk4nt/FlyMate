@@ -100,6 +100,41 @@ enum DTOMapper {
         )
     }
 
+    // MARK: - Quick Feedback
+
+    static func toDomain(_ dto: QuickFeedbackRequestDTO, videoURL: URL? = nil) -> QuickFeedbackRequest {
+        QuickFeedbackRequest(
+            id: dto.id,
+            uploaderID: dto.uploaderID,
+            uploaderName: dto.uploaderName,
+            uploaderProfileURL: dto.uploaderProfileURL.flatMap(URL.init(string:)),
+            title: dto.title,
+            videoURL: videoURL,
+            durationSeconds: dto.durationSeconds,
+            focusArea: QuickFeedbackFocusArea(rawValue: dto.focusArea) ?? .overall,
+            feedbackRequest: dto.feedbackRequest,
+            status: QuickFeedbackRequestStatus(rawValue: dto.status) ?? .closed,
+            feedbackCount: dto.feedbackCount,
+            targetFeedbackCount: dto.targetFeedbackCount,
+            expiresAt: parseDate(dto.expiresAt),
+            createdAt: parseDate(dto.createdAt)
+        )
+    }
+
+    static func toDomain(_ dto: QuickFeedbackReviewDTO) -> QuickFeedbackReview {
+        QuickFeedbackReview(
+            id: dto.id,
+            requestID: dto.requestID,
+            reviewerID: dto.reviewerID,
+            reviewerName: dto.reviewerName,
+            reviewerProfileURL: dto.reviewerProfileURL.flatMap(URL.init(string:)),
+            positiveText: dto.positiveText,
+            improvementText: dto.improvementText,
+            focusArea: QuickFeedbackFocusArea(rawValue: dto.focusArea) ?? .overall,
+            createdAt: parseDate(dto.createdAt)
+        )
+    }
+
     // MARK: - Feedback
 
     static func toDomain(_ dto: FeedbackDTO) -> Feedback {
@@ -215,6 +250,8 @@ enum DTOMapper {
             body: dto.body,
             referenceVideoID: dto.referenceVideoID,
             referenceFeedbackID: dto.referenceFeedbackID,
+            referenceAnnouncementID: dto.referenceAnnouncementID,
+            referenceQuickFeedbackRequestID: dto.referenceQuickFeedbackRequestID,
             isRead: dto.isRead,
             createdAt: parseDate(dto.createdAt)
         )
@@ -238,8 +275,10 @@ enum DTOMapper {
             requirement: dto.requirement,
             contactMethod: dto.contactMethod,
             linkURL: dto.linkURL.flatMap(URL.init(string:)),
+            studyID: dto.studyID,
             authorID: dto.authorID,
             authorName: dto.authorName,
+            authorProfileURL: dto.authorProfileURL.flatMap(URL.init(string:)),
             status: RecruitStatus(rawValue: dto.status) ?? .closed,
             commentCount: dto.commentCount,
             createdAt: parseDate(dto.createdAt),

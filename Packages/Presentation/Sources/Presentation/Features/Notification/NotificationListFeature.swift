@@ -10,6 +10,7 @@ public struct NotificationListFeature {
         public let userID: UUID
         public var notifications = PaginatedState<AppNotification>()
         public var loadingState: LoadingState<[AppNotification]> = .idle
+        @Presents public var announcement: AnnouncementDetailFeature.State?
 
         public var hasUnread: Bool {
             notifications.items.contains { !$0.isRead }
@@ -30,11 +31,13 @@ public struct NotificationListFeature {
         case markAllAsReadTapped
         case markAllAsReadResponse(Result<Void, AppError>)
         case markAsReadResponse(id: UUID, Result<Void, AppError>)
+        case announcement(PresentationAction<AnnouncementDetailFeature.Action>)
         case delegate(Delegate)
 
         @CasePathable
         public enum Delegate: Equatable {
             case navigateToVideo(videoID: UUID, feedbackID: UUID?)
+            case navigateToQuickFeedback
         }
     }
 
@@ -91,6 +94,25 @@ public struct NotificationListFeature {
                 return .none
 
             case .notificationTapped(let notification):
+                if notification.type == .announcement {
+                    state.announcement = AnnouncementDetailFeature.State(notification: notification)
+                    guard !notification.isRead else { return .none }
+                    if let index = state.notifications.items.firstIndex(where: { $0.id == notification.id }) {
+                        state.notifications.items[index].isRead = true
+                        state.loadingState = .loaded(state.notifications.items)
+                    }
+                    let client = notificationClient
+                    let notificationID = notification.id
+                    return .run { send in
+                        do {
+                            try await client.markAsRead(notificationID)
+                            await send(.markAsReadResponse(id: notificationID, .success(())))
+                        } catch {
+                            let appError = error as? AppError ?? .unexpected(error.localizedDescription)
+                            await send(.markAsReadResponse(id: notificationID, .failure(appError)))
+                        }
+                    }
+                }
                 // Optimistic update: mark as read immediately
                 if !notification.isRead {
                     if let index = state.notifications.items.firstIndex(where: { $0.id == notification.id }) {
@@ -109,16 +131,11 @@ public struct NotificationListFeature {
                                 await send(.markAsReadResponse(id: notificationID, .failure(appError)))
                             }
                         },
-                        notification.referenceVideoID.map { videoID in
-                            Effect<Action>.send(.delegate(.navigateToVideo(videoID: videoID, feedbackID: notification.referenceFeedbackID)))
-                        } ?? .none
+                        navigationEffect(for: notification)
                     )
                 }
                 // Already read — just navigate
-                if let videoID = notification.referenceVideoID {
-                    return .send(.delegate(.navigateToVideo(videoID: videoID, feedbackID: notification.referenceFeedbackID)))
-                }
-                return .none
+                return navigationEffect(for: notification)
 
             case .markAsReadResponse(let id, .failure):
                 // Rollback on failure
@@ -159,8 +176,27 @@ public struct NotificationListFeature {
 
             case .delegate:
                 return .none
+
+            case .announcement:
+                return .none
             }
         }
+        .ifLet(\.$announcement, action: \.announcement) {
+            AnnouncementDetailFeature()
+        }
+    }
+
+    private func navigationEffect(for notification: AppNotification) -> Effect<Action> {
+        if notification.referenceQuickFeedbackRequestID != nil {
+            return .send(.delegate(.navigateToQuickFeedback))
+        }
+        if let videoID = notification.referenceVideoID {
+            return .send(.delegate(.navigateToVideo(
+                videoID: videoID,
+                feedbackID: notification.referenceFeedbackID
+            )))
+        }
+        return .none
     }
 
     private func fetchNotifications(

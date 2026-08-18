@@ -115,6 +115,23 @@ public struct UserRepositoryImpl: UserRepository {
             feedbackGivenCount: response.feedbackGivenCount
         )
     }
+
+    public func fetchActivityStats(userID: UUID) async throws -> MyActivityStats {
+        let response: MyActivityStatsResponse = try await client.rpc(
+            "get_user_activity_stats",
+            params: ["p_user_id": userID]
+        )
+        .single()
+        .execute()
+        .value
+
+        return MyActivityStats(
+            studiesCount: response.studiesCount,
+            videosUploadedCount: response.videosUploadedCount,
+            feedbackReceivedCount: response.feedbackReceivedCount,
+            feedbackGivenCount: response.feedbackGivenCount
+        )
+    }
 }
 
 private struct MyActivityStatsResponse: Codable, Sendable {

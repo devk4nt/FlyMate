@@ -40,6 +40,33 @@ struct MyActivityFeatureTests {
     }
 
     @Test
+    func 다른사용자_활동통계_로드성공() async {
+        let targetID = UUID(uuidString: "00000000-0000-0000-0000-000000000002")!
+        let store = TestStore(
+            initialState: MyActivityFeature.State(
+                userID: targetID,
+                userName: "다른 사용자",
+                profileImageURL: nil
+            )
+        ) {
+            MyActivityFeature()
+        } withDependencies: {
+            $0.userClient.fetchActivityStats = { userID in
+                #expect(userID == targetID)
+                return testStats
+            }
+        }
+
+        await store.send(.onAppear) {
+            $0.stats = .loading
+        }
+
+        await store.receive(\.statsResponse.success) {
+            $0.stats = .loaded(testStats)
+        }
+    }
+
+    @Test
     func 로드실패후_재시도() async {
         let store = TestStore(initialState: MyActivityFeature.State(currentUser: testUser)) {
             MyActivityFeature()

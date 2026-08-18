@@ -15,6 +15,26 @@ public struct StorageService: Sendable {
         "\(studyID)/\(videoID).mp4"
     }
 
+    static func quickFeedbackVideoPath(userID: UUID, requestID: UUID) -> String {
+        "quick/\(userID.uuidString.lowercased())/\(requestID).mp4"
+    }
+
+    func uploadQuickFeedbackVideo(data: Data, userID: UUID, requestID: UUID) async throws -> String {
+        let path = Self.quickFeedbackVideoPath(userID: userID, requestID: requestID)
+        try await client.storage.from(SupabaseConfig.Bucket.videos)
+            .upload(path, data: data, options: .init(contentType: "video/mp4"))
+        return path
+    }
+
+    func signedVideoURL(path: String) async throws -> URL {
+        try await client.storage.from(SupabaseConfig.Bucket.videos)
+            .createSignedURL(path: path, expiresIn: AppConstants.signedVideoURLExpirySeconds)
+    }
+
+    func deleteQuickFeedbackVideo(path: String) async {
+        _ = try? await client.storage.from(SupabaseConfig.Bucket.videos).remove(paths: [path])
+    }
+
     /// 영상 파일을 업로드하고 스토리지 경로를 반환한다.
     func uploadVideo(
         data: Data,

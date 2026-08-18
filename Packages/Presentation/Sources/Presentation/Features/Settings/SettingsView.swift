@@ -119,6 +119,39 @@ public struct SettingsView: View {
                 .settingsSectionStyle()
 
                 Section("앱 정보") {
+                    Button {
+                        store.send(.clearCacheTapped)
+                    } label: {
+                        HStack {
+                            SettingsActionLabel(
+                                systemImage: "photo.stack",
+                                title: "이미지 캐시 비우기",
+                                description: "저장된 이미지 캐시를 삭제해 공간을 확보해요",
+                                tint: FMColors.brandInk,
+                                showsChevron: false
+                            )
+
+                            Spacer()
+
+                            switch store.cacheSize {
+                            case .idle, .loading:
+                                ProgressView()
+
+                            case .loaded(let bytes):
+                                Text(formattedCacheSize(bytes))
+                                    .font(FMTypography.authorName)
+                                    .foregroundStyle(FMColors.secondaryLabel)
+
+                            case .failed:
+                                Text("계산 실패")
+                                    .font(FMTypography.authorName)
+                                    .foregroundStyle(FMColors.secondaryLabel)
+                            }
+                        }
+                    }
+                    .accessibilityLabel("이미지 캐시 비우기")
+                    .accessibilityHint("저장된 이미지 캐시를 삭제합니다")
+
                     HStack {
                         SettingsActionLabel(
                             systemImage: "info.circle.fill",
@@ -237,6 +270,10 @@ public struct SettingsView: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(store.currentUser.name), \(store.currentUser.displayEmail), 프로필 편집")
         .accessibilityHint("프로필 정보를 수정하려면 이중 탭하세요")
+    }
+
+    private func formattedCacheSize(_ bytes: UInt) -> String {
+        ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
     }
 }
 

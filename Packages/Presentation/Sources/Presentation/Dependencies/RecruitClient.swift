@@ -7,6 +7,7 @@ public struct RecruitClient: Sendable {
     public var fetchPost: @Sendable (UUID) async throws -> RecruitPost
     public var createPost: @Sendable (RecruitPostDraft) async throws -> RecruitPost
     public var updatePost: @Sendable (UUID, RecruitPostDraft) async throws -> RecruitPost
+    public var linkStudy: @Sendable (UUID, UUID) async throws -> RecruitPost
     public var closePost: @Sendable (UUID) async throws -> RecruitPost
     public var reopenPost: @Sendable (UUID, Date) async throws -> RecruitPost
     public var deletePost: @Sendable (UUID) async throws -> Void
@@ -19,6 +20,7 @@ public struct RecruitClient: Sendable {
         fetchPost: @escaping @Sendable (UUID) async throws -> RecruitPost,
         createPost: @escaping @Sendable (RecruitPostDraft) async throws -> RecruitPost,
         updatePost: @escaping @Sendable (UUID, RecruitPostDraft) async throws -> RecruitPost,
+        linkStudy: @escaping @Sendable (UUID, UUID) async throws -> RecruitPost,
         closePost: @escaping @Sendable (UUID) async throws -> RecruitPost,
         reopenPost: @escaping @Sendable (UUID, Date) async throws -> RecruitPost,
         deletePost: @escaping @Sendable (UUID) async throws -> Void,
@@ -30,6 +32,7 @@ public struct RecruitClient: Sendable {
         self.fetchPost = fetchPost
         self.createPost = createPost
         self.updatePost = updatePost
+        self.linkStudy = linkStudy
         self.closePost = closePost
         self.reopenPost = reopenPost
         self.deletePost = deletePost
@@ -45,6 +48,7 @@ extension RecruitClient: TestDependencyKey {
         fetchPost: unimplemented("\(Self.self).fetchPost"),
         createPost: unimplemented("\(Self.self).createPost"),
         updatePost: unimplemented("\(Self.self).updatePost"),
+        linkStudy: unimplemented("\(Self.self).linkStudy"),
         closePost: unimplemented("\(Self.self).closePost"),
         reopenPost: unimplemented("\(Self.self).reopenPost"),
         deletePost: unimplemented("\(Self.self).deletePost"),

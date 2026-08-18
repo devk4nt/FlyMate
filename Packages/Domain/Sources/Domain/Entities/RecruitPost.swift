@@ -19,8 +19,11 @@ public struct RecruitPost: Equatable, Identifiable, Sendable, Hashable {
     public let requirement: String
     public let contactMethod: String
     public let linkURL: URL?
+    /// 모집 글에서 생성한 스터디. nil이면 아직 스터디방을 만들지 않은 상태다.
+    public let studyID: UUID?
     public let authorID: UUID
     public let authorName: String
+    public let authorProfileURL: URL?
     public let status: RecruitStatus
     public let commentCount: Int
     public let createdAt: Date
@@ -41,8 +44,10 @@ public struct RecruitPost: Equatable, Identifiable, Sendable, Hashable {
         requirement: String,
         contactMethod: String,
         linkURL: URL?,
+        studyID: UUID? = nil,
         authorID: UUID,
         authorName: String,
+        authorProfileURL: URL? = nil,
         status: RecruitStatus,
         commentCount: Int,
         createdAt: Date,
@@ -62,8 +67,10 @@ public struct RecruitPost: Equatable, Identifiable, Sendable, Hashable {
         self.requirement = requirement
         self.contactMethod = contactMethod
         self.linkURL = linkURL
+        self.studyID = studyID
         self.authorID = authorID
         self.authorName = authorName
+        self.authorProfileURL = authorProfileURL
         self.status = status
         self.commentCount = commentCount
         self.createdAt = createdAt
@@ -75,6 +82,33 @@ public struct RecruitPost: Equatable, Identifiable, Sendable, Hashable {
     // ponytail: 마감일 경과 시 자동 마감은 서버 상태 변경 없이 표시/필터 레벨에서 처리
     public func isRecruiting(asOf now: Date = Date()) -> Bool {
         status == .recruiting && deadline >= now
+    }
+
+    public func withStudyID(_ studyID: UUID) -> RecruitPost {
+        RecruitPost(
+            id: id,
+            title: title,
+            description: description,
+            field: field,
+            meetingType: meetingType,
+            region: region,
+            schedule: schedule,
+            startDate: startDate,
+            endDate: endDate,
+            maxMembers: maxMembers,
+            deadline: deadline,
+            requirement: requirement,
+            contactMethod: contactMethod,
+            linkURL: linkURL,
+            studyID: studyID,
+            authorID: authorID,
+            authorName: authorName,
+            authorProfileURL: authorProfileURL,
+            status: status,
+            commentCount: commentCount,
+            createdAt: createdAt,
+            updatedAt: updatedAt
+        )
     }
 }
 

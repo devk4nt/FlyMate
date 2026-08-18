@@ -50,6 +50,7 @@ public struct TabFeature {
         case showInviteCode(String)
         case newNotificationReceived(AppNotification)
         case unreadCountResponse(Int)
+        case refreshUnreadCount
     }
 
     private enum CancelID {
@@ -123,6 +124,19 @@ public struct TabFeature {
                 syncUnreadCount(&state)
                 return updateBadgeCount(count)
 
+            case .refreshUnreadCount:
+                let client = notificationClient
+                let userID = state.currentUser.id
+                let currentCount = state.unreadNotificationCount
+                return .run { send in
+                    do {
+                        let count = try await client.fetchUnreadCount(userID)
+                        await send(.unreadCountResponse(count))
+                    } catch {
+                        await send(.unreadCountResponse(currentCount))
+                    }
+                }
+
             case .notificationList(.delegate(.navigateToVideo(let videoID, let feedbackID))):
                 state.isNotificationSheetPresented = false
                 state.selectedTab = .study
@@ -141,6 +155,11 @@ public struct TabFeature {
                 state.unreadNotificationCount = 0
                 syncUnreadCount(&state)
                 return updateBadgeCount(0)
+
+            case .notificationList(.delegate(.navigateToQuickFeedback)):
+                state.isNotificationSheetPresented = false
+                state.selectedTab = .study
+                return .send(.study(.showQuickFeedback))
 
             case .notificationList(.markAllAsReadResponse(.failure)):
                 let client = notificationClient

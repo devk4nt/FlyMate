@@ -88,6 +88,9 @@ public protocol RecruitRepository: Sendable {
     /// 본인 모집 글을 수정한다.
     func updatePost(id: UUID, draft: RecruitPostDraft) async throws -> RecruitPost
 
+    /// 모집 글과 생성된 스터디를 연결한다 (작성자만).
+    func linkStudy(postID: UUID, studyID: UUID) async throws -> RecruitPost
+
     /// 모집을 마감한다 (작성자만).
     func closePost(id: UUID) async throws -> RecruitPost
 

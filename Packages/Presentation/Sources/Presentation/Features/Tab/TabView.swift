@@ -14,7 +14,7 @@ public struct MainTabView: View {
                 store: store.scope(state: \.study, action: \.study)
             )
             .tabItem {
-                Label("스터디", systemImage: "person.3")
+                Label("스터디", systemImage: "rectangle.3.group.bubble.left")
             }
             .tag(TabFeature.State.Tab.study)
 
@@ -22,7 +22,7 @@ public struct MainTabView: View {
                 store: store.scope(state: \.recruit, action: \.recruit)
             )
             .tabItem {
-                Label("모집", systemImage: "megaphone")
+                Label("모집", systemImage: "person.badge.plus")
             }
             .tag(TabFeature.State.Tab.recruit)
 

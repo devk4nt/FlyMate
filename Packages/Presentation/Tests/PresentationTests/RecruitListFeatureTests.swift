@@ -83,6 +83,84 @@ struct RecruitListFeatureTests {
         }
     }
 
+    @Test
+    func 모집글_등록후_정보가_채워진_스터디_생성으로_연결() async {
+        let post = RecruitPost.mock
+        var state = RecruitListFeature.State(currentUserID: Self.userID)
+        state.create = RecruitCreateFeature.State(mode: .create)
+
+        let store = TestStore(initialState: state) {
+            RecruitListFeature()
+        }
+
+        await store.send(.create(.presented(.delegate(.saved(post))))) {
+            $0.posts.items = [post]
+            $0.loadingState = .loaded([post])
+            $0.create = nil
+            $0.createStudy = StudyCreateFeature.State(recruitPost: post)
+        }
+    }
+
+    @Test
+    func 모집글_작성자는_상세에서_스터디방을_만들수_있음() async {
+        let post = RecruitPost.mock
+        let store = TestStore(
+            initialState: RecruitDetailFeature.State(
+                post: post,
+                currentUserID: post.authorID
+            )
+        ) {
+            RecruitDetailFeature()
+        }
+
+        await store.send(.createStudyTapped) {
+            $0.createStudy = StudyCreateFeature.State(recruitPost: post)
+        }
+    }
+
+    @Test
+    func 스터디_생성후_모집글에_연결() async {
+        let post = RecruitPost.mock
+        let study = Study.mock
+        let linkedPost = post.withStudyID(study.id)
+        var state = RecruitDetailFeature.State(post: post, currentUserID: post.authorID)
+        state.createStudy = StudyCreateFeature.State(recruitPost: post)
+
+        let store = TestStore(initialState: state) {
+            RecruitDetailFeature()
+        } withDependencies: {
+            $0.recruitClient.linkStudy = { postID, studyID in
+                #expect(postID == post.id)
+                #expect(studyID == study.id)
+                return linkedPost
+            }
+            $0.dismiss = DismissEffect {}
+        }
+
+        await store.send(.createStudy(.presented(.studyCreated(study))))
+        await store.receive(\.linkStudyResponse.success) {
+            $0.post = linkedPost
+            $0.toastMessage = "모집 글과 스터디방이 연결되었습니다"
+            $0.showToast = true
+        }
+        await store.receive(\.delegate.postUpdated)
+    }
+
+    @Test
+    func 이미_연결된_모집글은_스터디방을_중복_생성하지_않음() async {
+        let post = RecruitPost.mock.withStudyID(Study.mock.id)
+        let store = TestStore(
+            initialState: RecruitDetailFeature.State(
+                post: post,
+                currentUserID: post.authorID
+            )
+        ) {
+            RecruitDetailFeature()
+        }
+
+        await store.send(.createStudyTapped)
+    }
+
     // MARK: - 사용자 차단 (Guideline 1.2)
 
     @Test

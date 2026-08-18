@@ -15,8 +15,10 @@ struct RecruitPostDTO: Codable, Sendable {
     let requirement: String
     let contactMethod: String
     let linkURL: String?
+    let studyID: UUID?
     let authorID: UUID
     let authorName: String
+    let authorProfileURL: String?
     let status: String
     let commentCount: Int
     let createdAt: String
@@ -37,8 +39,10 @@ struct RecruitPostDTO: Codable, Sendable {
         case requirement
         case contactMethod = "contact_method"
         case linkURL = "link_url"
+        case studyID = "study_id"
         case authorID = "author_id"
         case authorName = "author_name"
+        case authorProfileURL = "author_profile_url"
         case status
         case commentCount = "comment_count"
         case createdAt = "created_at"

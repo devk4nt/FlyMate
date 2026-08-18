@@ -2,7 +2,7 @@ import SwiftUI
 import ComposableArchitecture
 
 public struct AppView: View {
-    let store: StoreOf<AppFeature>
+    @Bindable var store: StoreOf<AppFeature>
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isShowingSplash = true
     @State private var bugReportDraft: BugReportDraft?
@@ -40,6 +40,10 @@ public struct AppView: View {
         }
         .sheet(item: $bugReportDraft) { draft in
             BugReportView(draft: draft)
+        }
+        .sheet(item: $store.scope(state: \.announcement, action: \.announcement)) { announcementStore in
+            AnnouncementDetailView(store: announcementStore)
+                .interactiveDismissDisabled()
         }
     }
 
@@ -90,6 +94,10 @@ public struct AppView: View {
         }
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.3), value: store.onboarding != nil)
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.3), value: store.termsConsent != nil)
+        .task(id: store.startupAnnouncementUserID) {
+            guard store.startupAnnouncementUserID != nil else { return }
+            store.send(.startupAnnouncementRequested)
+        }
     }
 
     private func mapToastType(_ type: ToastState.ToastType) -> FMToast.ToastType {

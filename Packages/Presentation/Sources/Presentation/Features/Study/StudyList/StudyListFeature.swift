@@ -8,6 +8,7 @@ public struct StudyListFeature {
     @ObservableState
     public struct State: Equatable {
         public var studies: LoadingState<[Study]> = .idle
+        public var quickFeedback: LoadingState<QuickFeedbackDashboard> = .idle
         public var unreadNotificationCount: Int = 0
         @Presents public var createStudy: StudyCreateFeature.State?
         @Presents public var joinStudy: JoinStudyFeature.State?
@@ -19,6 +20,10 @@ public struct StudyListFeature {
         case onAppear
         case refresh
         case studiesResponse(Result<[Study], AppError>)
+        case quickFeedbackResponse(Result<QuickFeedbackDashboard, AppError>)
+        case refreshQuickFeedback
+        case quickFeedbackPrimaryTapped
+        case quickFeedbackHubTapped
         case studyTapped(Study)
         case notificationBellTapped
         case createStudyTapped
@@ -29,6 +34,7 @@ public struct StudyListFeature {
     }
 
     @Dependency(\.studyClient) private var studyClient
+    @Dependency(\.quickFeedbackClient) private var quickFeedbackClient
 
     public init() {}
 
@@ -38,30 +44,16 @@ public struct StudyListFeature {
             case .onAppear:
                 guard case .idle = state.studies else { return .none }
                 state.studies = .loading
-                let client = studyClient
-                return .run { send in
-                    do {
-                        let studies = try await client.fetchMyStudies()
-                        await send(.studiesResponse(.success(studies)))
-                    } catch {
-                        let appError = error as? AppError ?? .unexpected(error.localizedDescription)
-                        await send(.studiesResponse(.failure(appError)))
-                    }
-                }
+                state.quickFeedback = .loading
+                return .merge(fetchStudies(), fetchQuickFeedback())
 
             case .refresh:
                 // 로드된 콘텐츠는 유지 — pull-to-refresh 시 스켈레톤 대신 .refreshable 스피너가 로딩 표시
                 if state.studies.value == nil { state.studies = .loading }
-                let client = studyClient
-                return .run { send in
-                    do {
-                        let studies = try await client.fetchMyStudies()
-                        await send(.studiesResponse(.success(studies)))
-                    } catch {
-                        let appError = error as? AppError ?? .unexpected(error.localizedDescription)
-                        await send(.studiesResponse(.failure(appError)))
-                    }
-                }
+                return .merge(fetchStudies(), fetchQuickFeedback())
+
+            case .refreshQuickFeedback:
+                return fetchQuickFeedback()
 
             case .studiesResponse(.success(let studies)):
                 state.studies = .loaded(studies)
@@ -70,6 +62,17 @@ public struct StudyListFeature {
             case .studiesResponse(.failure(let error)):
                 state.studies = .failed(error)
                 return .none
+
+            case .quickFeedbackResponse(.success(let dashboard)):
+                state.quickFeedback = .loaded(dashboard)
+                return .none
+
+            case .quickFeedbackResponse(.failure(let error)):
+                state.quickFeedback = .failed(error)
+                return .none
+
+            case .quickFeedbackPrimaryTapped, .quickFeedbackHubTapped:
+                return .none // 부모 내비게이션에서 처리
 
             case .studyTapped:
                 return .none // Handled by parent
@@ -106,6 +109,30 @@ public struct StudyListFeature {
         }
         .ifLet(\.$joinStudy, action: \.joinStudy) {
             JoinStudyFeature()
+        }
+    }
+
+    private func fetchStudies() -> Effect<Action> {
+        let client = studyClient
+        return .run { send in
+            do {
+                await send(.studiesResponse(.success(try await client.fetchMyStudies())))
+            } catch {
+                let appError = error as? AppError ?? .unexpected(error.localizedDescription)
+                await send(.studiesResponse(.failure(appError)))
+            }
+        }
+    }
+
+    private func fetchQuickFeedback() -> Effect<Action> {
+        let client = quickFeedbackClient
+        return .run { send in
+            do {
+                await send(.quickFeedbackResponse(.success(try await client.fetchDashboard())))
+            } catch {
+                let appError = error as? AppError ?? .unexpected(error.localizedDescription)
+                await send(.quickFeedbackResponse(.failure(appError)))
+            }
         }
     }
 }

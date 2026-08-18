@@ -1,5 +1,6 @@
 import Foundation
 import ComposableArchitecture
+import Core
 import Domain
 
 @Reducer
@@ -19,6 +20,13 @@ public struct AppFeature : Sendable {
         public var entitlement: Entitlement?
         public var onboarding: OnboardingFeature.State?
         public var termsConsent: TermsConsentFeature.State?
+        public var hasCheckedOnboarding = false
+        @Presents public var announcement: AnnouncementDetailFeature.State?
+
+        public var startupAnnouncementUserID: UUID? {
+            guard hasCheckedOnboarding, onboarding == nil, termsConsent == nil else { return nil }
+            return currentUser?.id
+        }
 
         public init() {
             self.destination = .login(LoginFeature.State())
@@ -46,6 +54,10 @@ public struct AppFeature : Sendable {
         case termsConsent(TermsConsentFeature.Action)
         case entitlementLoaded(Entitlement)
         case transactionUpdated
+        case startupAnnouncementRequested
+        case startupAnnouncementResponse(Result<AppNotification?, AppError>)
+        case startupAnnouncementMarkedAsRead
+        case announcement(PresentationAction<AnnouncementDetailFeature.Action>)
 
         @CasePathable
         public enum Destination {
@@ -65,6 +77,7 @@ public struct AppFeature : Sendable {
     @Dependency(\.pushNotificationClient) private var pushNotificationClient
     @Dependency(\.subscriptionClient) private var subscriptionClient
     @Dependency(\.userDefaultsClient) private var userDefaultsClient
+    @Dependency(\.notificationClient) private var notificationClient
 
     public init() {}
 
@@ -106,6 +119,7 @@ public struct AppFeature : Sendable {
                 )
 
             case .checkOnboarding:
+                state.hasCheckedOnboarding = true
                 let hasCompleted = userDefaultsClient.boolForKey("hasCompletedOnboarding")
                 if !hasCompleted {
                     state.onboarding = OnboardingFeature.State()
@@ -253,6 +267,45 @@ public struct AppFeature : Sendable {
                     }
                 }
 
+            case .startupAnnouncementRequested:
+                guard state.startupAnnouncementUserID != nil,
+                      state.announcement == nil else { return .none }
+                let client = notificationClient
+                return .run { send in
+                    do {
+                        let announcement = try await client.fetchStartupAnnouncement()
+                        await send(.startupAnnouncementResponse(.success(announcement)))
+                    } catch {
+                        let appError = error as? AppError ?? .unexpected(error.localizedDescription)
+                        await send(.startupAnnouncementResponse(.failure(appError)))
+                    }
+                }
+
+            case .startupAnnouncementResponse(.success(let notification)):
+                state.announcement = notification.map(AnnouncementDetailFeature.State.init)
+                return .none
+
+            case .startupAnnouncementResponse(.failure):
+                return .none
+
+            case .announcement(.presented(.closeTapped)):
+                guard let notificationID = state.announcement?.notification.id else {
+                    return .none
+                }
+                state.announcement = nil
+                let client = notificationClient
+                return .run { send in
+                    try? await client.markAsRead(notificationID)
+                    await send(.startupAnnouncementMarkedAsRead)
+                }
+
+            case .startupAnnouncementMarkedAsRead:
+                guard case .tab = state.destination else { return .none }
+                return .send(.destination(.tab(.refreshUnreadCount)))
+
+            case .announcement:
+                return .none
+
             case .destination(.tab(.settings(.signOutCompleted))),
                  .destination(.tab(.settings(.deleteAccountCompleted))):
                 let fcmToken = state.fcmToken
@@ -277,6 +330,9 @@ public struct AppFeature : Sendable {
         }
         .ifLet(\.loginState, action: \.destination.login) {
             LoginFeature()
+        }
+        .ifLet(\.$announcement, action: \.announcement) {
+            AnnouncementDetailFeature()
         }
         .ifLet(\.tabState, action: \.destination.tab) {
             TabFeature()

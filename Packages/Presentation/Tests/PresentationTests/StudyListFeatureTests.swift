@@ -16,13 +16,18 @@ struct StudyListFeatureTests {
             StudyListFeature()
         } withDependencies: {
             $0.studyClient.fetchMyStudies = { mockStudies }
+            $0.quickFeedbackClient.fetchDashboard = { .mock }
         }
 
         await store.send(.onAppear) {
             $0.studies = .loading
+            $0.quickFeedback = .loading
         }
         await store.receive(\.studiesResponse.success) {
             $0.studies = .loaded(mockStudies)
+        }
+        await store.receive(\.quickFeedbackResponse.success) {
+            $0.quickFeedback = .loaded(.mock)
         }
     }
 
@@ -32,13 +37,18 @@ struct StudyListFeatureTests {
             StudyListFeature()
         } withDependencies: {
             $0.studyClient.fetchMyStudies = { throw AppError.network(.noConnection) }
+            $0.quickFeedbackClient.fetchDashboard = { .mock }
         }
 
         await store.send(.onAppear) {
             $0.studies = .loading
+            $0.quickFeedback = .loading
         }
         await store.receive(\.studiesResponse.failure) {
             $0.studies = .failed(.network(.noConnection))
+        }
+        await store.receive(\.quickFeedbackResponse.success) {
+            $0.quickFeedback = .loaded(.mock)
         }
     }
 
@@ -99,12 +109,25 @@ struct StudyListFeatureTests {
             StudyListFeature()
         } withDependencies: {
             $0.studyClient.fetchMyStudies = { [Study.mock] }
+            $0.quickFeedbackClient.fetchDashboard = { .mock }
         }
 
         // 로드된 콘텐츠는 유지 — 스켈레톤으로 돌아가지 않는다
         await store.send(.refresh)
         await store.receive(\.studiesResponse.success)
+        await store.receive(\.quickFeedbackResponse.success) {
+            $0.quickFeedback = .loaded(.mock)
+        }
     }
 }
 
 // Study.mock은 FeedbackWriteFeatureTests.swift의 공용 정의를 사용한다
+
+private extension QuickFeedbackDashboard {
+    static let mock = QuickFeedbackDashboard(
+        pointBalance: 2,
+        latestRequest: nil,
+        availableRequests: [],
+        receivedReviews: []
+    )
+}

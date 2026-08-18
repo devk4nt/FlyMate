@@ -7,6 +7,9 @@ public protocol NotificationRepository: Sendable {
     /// 읽지 않은 알림 개수를 조회한다.
     func fetchUnreadCount(userID: UUID) async throws -> Int
 
+    /// 활성 공지를 알림함에 동기화하고, 아직 팝업으로 표시하지 않은 공지 하나를 반환한다.
+    func fetchStartupAnnouncement() async throws -> AppNotification?
+
     /// 특정 알림을 읽음 처리한다.
     func markAsRead(id: UUID) async throws
 

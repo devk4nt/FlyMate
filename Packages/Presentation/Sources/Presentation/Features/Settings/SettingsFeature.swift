@@ -17,6 +17,7 @@ public struct SettingsFeature {
         public var blockedUsers = BlockedUsersFeature.State()
         public var isStudyManagementActive = false
         public var isBlockedUsersActive = false
+        public var cacheSize: LoadingState<UInt> = .idle
         @Presents public var destination: Destination.State?
         @Presents public var confirmAlert: AlertState<Action.ConfirmAlert>?
 
@@ -48,6 +49,9 @@ public struct SettingsFeature {
         case signOutFailed(AppError)
         case deleteAccountCompleted
         case deleteAccountFailed(AppError)
+        case cacheSizeResponse(Result<UInt, AppError>)
+        case clearCacheTapped
+        case clearCacheCompleted
 
         public enum ConfirmAlert: Equatable {
             case confirmSignOut
@@ -66,6 +70,7 @@ public struct SettingsFeature {
     @Dependency(\.appleSignInClient) private var appleSignInClient
     @Dependency(\.userClient) private var userClient
     @Dependency(\.pushNotificationClient) private var pushNotificationClient
+    @Dependency(\.cacheClient) private var cacheClient
     @Dependency(\.openURL) private var openURL
 
     public init() {}
@@ -80,11 +85,15 @@ public struct SettingsFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
+                state.cacheSize = .loading
                 let pushClient = pushNotificationClient
-                return .run { send in
-                    let status = await pushClient.getAuthorizationStatus()
-                    await send(.pushStatusResponse(status))
-                }
+                return .merge(
+                    .run { send in
+                        let status = await pushClient.getAuthorizationStatus()
+                        await send(.pushStatusResponse(status))
+                    },
+                    fetchCacheSize()
+                )
 
             case .pushStatusResponse(let status):
                 state.pushAuthorizationStatus = status
@@ -260,6 +269,26 @@ public struct SettingsFeature {
 
             case .destination, .confirmAlert:
                 return .none
+
+            case .cacheSizeResponse(.success(let bytes)):
+                state.cacheSize = .loaded(bytes)
+                return .none
+
+            case .cacheSizeResponse(.failure(let error)):
+                state.cacheSize = .failed(error)
+                return .none
+
+            case .clearCacheTapped:
+                guard case .loaded = state.cacheSize else { return .none }
+                state.cacheSize = .loading
+                let cache = cacheClient
+                return .run { send in
+                    await cache.clearCache()
+                    await send(.clearCacheCompleted)
+                }
+
+            case .clearCacheCompleted:
+                return fetchCacheSize()
             }
         }
         .ifLet(\.$destination, action: \.destination)
@@ -288,5 +317,18 @@ public struct SettingsFeature {
             ),
         ]
         return components.url
+    }
+
+    private func fetchCacheSize() -> Effect<Action> {
+        let cache = cacheClient
+        return .run { send in
+            do {
+                let bytes = try await cache.diskCacheSize()
+                await send(.cacheSizeResponse(.success(bytes)))
+            } catch {
+                let appError = error as? AppError ?? .unexpected(error.localizedDescription)
+                await send(.cacheSizeResponse(.failure(appError)))
+            }
+        }
     }
 }

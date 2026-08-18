@@ -13,6 +13,7 @@ public struct FeedbackListFeature {
         public var loadingState: LoadingState<[Feedback]> = .idle
         @Presents public var report: ReportFeature.State?
         @Presents public var edit: FeedbackEditFeature.State?
+        @Presents public var userActivity: MyActivityFeature.State?
         @Presents public var blockAlert: AlertState<Action.BlockAlert>?
         public var showToast = false
         public var toastMessage = ""
@@ -35,11 +36,13 @@ public struct FeedbackListFeature {
         case loadMore
         case loadMoreResponse(Result<[Feedback], AppError>)
         case feedbackTapped(Feedback)
+        case authorProfileTapped(Feedback)
         case reportFeedbackTapped(Feedback)
         case reportUserTapped(Feedback)
         case report(PresentationAction<ReportFeature.Action>)
         case editFeedbackTapped(Feedback)
         case edit(PresentationAction<FeedbackEditFeature.Action>)
+        case userActivity(PresentationAction<MyActivityFeature.Action>)
         case blockUserTapped(Feedback)
         case blockAlert(PresentationAction<BlockAlert>)
         case blockResponse(Result<UUID, AppError>)
@@ -117,6 +120,14 @@ public struct FeedbackListFeature {
             case .feedbackTapped:
                 return .none // Handled by parent
 
+            case .authorProfileTapped(let feedback):
+                state.userActivity = MyActivityFeature.State(
+                    userID: feedback.authorID,
+                    userName: feedback.authorName,
+                    profileImageURL: feedback.authorProfileURL
+                )
+                return .none
+
             case .reportFeedbackTapped(let feedback):
                 state.report = ReportFeature.State(
                     targetType: .feedback,
@@ -161,6 +172,9 @@ public struct FeedbackListFeature {
                 return .none
 
             case .edit:
+                return .none
+
+            case .userActivity:
                 return .none
 
             case .blockUserTapped(let feedback):
@@ -216,6 +230,9 @@ public struct FeedbackListFeature {
         }
         .ifLet(\.$edit, action: \.edit) {
             FeedbackEditFeature()
+        }
+        .ifLet(\.$userActivity, action: \.userActivity) {
+            MyActivityFeature()
         }
         .ifLet(\.$blockAlert, action: \.blockAlert)
     }

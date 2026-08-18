@@ -39,6 +39,14 @@ public struct RecruitListView: View {
                     }
                     .interactiveDismissDisabled(createStore.hasChanges)
                 }
+                .sheet(item: $store.scope(state: \.createStudy, action: \.createStudy)) { createStudyStore in
+                    NavigationStack {
+                        StudyCreateView(store: createStudyStore)
+                    }
+                }
+                .sheet(item: $store.scope(state: \.userActivity, action: \.userActivity)) { activityStore in
+                    MyActivitySheet(store: activityStore)
+                }
                 .fmToast(
                     isPresented: Binding(
                         get: { store.showToast },
@@ -80,7 +88,10 @@ public struct RecruitListView: View {
                         emptyCard
                     } else {
                         ForEach(posts) { post in
-                            RecruitPostRow(post: post)
+                            RecruitPostRow(
+                                post: post,
+                                onProfileTapped: { store.send(.authorProfileTapped(post)) }
+                            )
                                 .contentShape(Rectangle())
                                 .onTapGesture {
                                     store.send(.postTapped(post))
@@ -275,6 +286,7 @@ public struct RecruitListView: View {
 
 struct RecruitPostRow: View {
     let post: RecruitPost
+    let onProfileTapped: () -> Void
 
     var body: some View {
         FMCard(
@@ -315,9 +327,13 @@ struct RecruitPostRow: View {
                 .foregroundStyle(FMColors.secondaryLabel)
 
                 HStack(spacing: FMSpacing.xs) {
-                    Text(post.authorName)
-                        .font(FMTypography.feedMeta)
-                        .foregroundStyle(FMColors.secondaryLabel)
+                    FMUserProfileButton(
+                        url: post.authorProfileURL,
+                        name: post.authorName,
+                        imageSize: .sm,
+                        style: .compact,
+                        action: onProfileTapped
+                    )
 
                     Spacer(minLength: 0)
 
@@ -329,7 +345,7 @@ struct RecruitPostRow: View {
                 }
             }
         }
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .contain)
         // VoiceOver: 모집 상태 → 제목 → 진행 방식 → 지역 → 인원 → 마감일 순
         .accessibilityLabel(
             "\(post.isRecruiting() ? "모집 중" : "모집 마감"), \(post.title), \(post.meetingType.displayText), \(post.region ?? "지역 무관"), \(post.maxMembers)명 모집, 마감 \(post.deadline.koreanFormatted)"

@@ -16,6 +16,38 @@ struct AppFeatureDeepLinkTests {
         createdAt: Date(timeIntervalSince1970: 1_700_000_000)
     )
 
+    private static let mockAnnouncement = AppNotification(
+        id: UUID(uuidString: "00000000-0000-0000-0000-000000000020")!,
+        recipientID: mockUser.id,
+        type: .announcement,
+        title: "서비스 공지",
+        body: "새로운 공지 내용입니다.",
+        referenceAnnouncementID: UUID(uuidString: "00000000-0000-0000-0000-000000000021")!,
+        createdAt: Date(timeIntervalSince1970: 1_700_000_000)
+    )
+
+    // MARK: - 시작 공지
+
+    @Test
+    func 앱_시작시_미노출_공지를_팝업으로_표시() async {
+        let announcement = Self.mockAnnouncement
+        var state = AppFeature.State()
+        state.currentUser = Self.mockUser
+        state.hasCheckedOnboarding = true
+        state.destination = .tab(TabFeature.State(currentUser: Self.mockUser))
+
+        let store = TestStore(initialState: state) {
+            AppFeature()
+        } withDependencies: {
+            $0.notificationClient.fetchStartupAnnouncement = { announcement }
+        }
+
+        await store.send(.startupAnnouncementRequested)
+        await store.receive(\.startupAnnouncementResponse.success) {
+            $0.announcement = AnnouncementDetailFeature.State(notification: announcement)
+        }
+    }
+
     // MARK: - Tab 상태에서 딥링크
 
     @Test

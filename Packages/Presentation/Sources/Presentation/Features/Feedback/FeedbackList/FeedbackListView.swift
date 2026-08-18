@@ -6,12 +6,15 @@ import Domain
 public struct FeedbackListView<Header: View>: View {
     @Bindable var store: StoreOf<FeedbackListFeature>
     private let header: Header
+    private let sectionTitle: String?
 
     public init(
         store: StoreOf<FeedbackListFeature>,
+        sectionTitle: String? = nil,
         @ViewBuilder header: () -> Header
     ) {
         self.store = store
+        self.sectionTitle = sectionTitle
         self.header = header()
     }
 
@@ -34,6 +37,12 @@ public struct FeedbackListView<Header: View>: View {
                 if feedbacks.isEmpty {
                     ScrollView {
                         header
+                        if let sectionTitle {
+                            Text(sectionTitle)
+                                .font(FMTypography.sectionTitle)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, FMSpacing.md)
+                        }
                         FMEmptyState(
                             systemImage: store.listType == .received
                                 ? "bubble.left.and.bubble.right.fill"
@@ -56,6 +65,11 @@ public struct FeedbackListView<Header: View>: View {
                     ScrollView {
                         header
                         LazyVStack(spacing: FMSpacing.md) {
+                            if let sectionTitle {
+                                Text(sectionTitle)
+                                    .font(FMTypography.sectionTitle)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
                             ForEach(feedbacks) { feedback in
                                 FeedbackManagementRow(
                                     feedback: feedback,
@@ -70,7 +84,10 @@ public struct FeedbackListView<Header: View>: View {
                                     } : nil,
                                     onBlockUser: store.listType == .received ? {
                                         store.send(.blockUserTapped(feedback))
-                                    } : nil
+                                    } : nil,
+                                    onProfileTapped: {
+                                        store.send(.authorProfileTapped(feedback))
+                                    }
                                 )
                                 .contentShape(Rectangle())
                                 .onTapGesture {
@@ -117,6 +134,9 @@ public struct FeedbackListView<Header: View>: View {
                 FeedbackEditView(store: editStore)
             }
         }
+        .sheet(item: $store.scope(state: \.userActivity, action: \.userActivity)) { activityStore in
+            MyActivitySheet(store: activityStore)
+        }
         .alert($store.scope(state: \.blockAlert, action: \.blockAlert))
         .fmToast(
             isPresented: Binding(
@@ -138,6 +158,7 @@ struct FeedbackManagementRow: View {
     var onReportFeedback: (() -> Void)?
     var onReportUser: (() -> Void)?
     var onBlockUser: (() -> Void)?
+    var onProfileTapped: (() -> Void)?
 
     private func highlightedContent(_ content: String) -> Text {
         let pattern = "@\\S+"
@@ -175,107 +196,105 @@ struct FeedbackManagementRow: View {
     var body: some View {
         FMCard(style: .feed) {
             VStack(alignment: .leading, spacing: FMSpacing.md) {
-            HStack(spacing: FMSpacing.sm) {
-                FMProfileImage(
-                    url: feedback.authorProfileURL,
-                    name: feedback.authorName,
-                    size: .lg
-                )
-
-                VStack(alignment: .leading, spacing: FMSpacing.xxxs) {
-                    Text(feedback.authorName)
-                        .font(FMTypography.authorName)
-                        .foregroundStyle(FMColors.label)
-
-                    Text(feedback.createdAt.relativeString)
-                        .font(FMTypography.feedMeta)
-                        .foregroundStyle(FMColors.secondaryLabel)
-                }
-
-                Spacer(minLength: 0)
-
-                if onEdit != nil || onReportFeedback != nil || onReportUser != nil || onBlockUser != nil {
-                    Menu {
-                        if let onEdit {
-                            Button {
-                                onEdit()
-                            } label: {
-                                Label("수정하기", systemImage: "pencil")
-                            }
+                HStack(spacing: FMSpacing.sm) {
+                    HStack(spacing: FMSpacing.sm) {
+                        FMUserProfileButton(
+                            url: feedback.authorProfileURL,
+                            name: feedback.authorName,
+                            imageSize: .lg
+                        ) {
+                            onProfileTapped?()
                         }
-                        if let onReportFeedback {
-                            Button(role: .destructive) {
-                                onReportFeedback()
-                            } label: {
-                                Label("피드백 신고", systemImage: "exclamationmark.bubble")
-                            }
-                        }
-                        if let onReportUser {
-                            Button(role: .destructive) {
-                                onReportUser()
-                            } label: {
-                                Label("사용자 신고", systemImage: "person.crop.circle.badge.exclamationmark")
-                            }
-                        }
-                        if let onBlockUser {
-                            Button(role: .destructive) {
-                                onBlockUser()
-                            } label: {
-                                Label("사용자 차단", systemImage: "person.crop.circle.badge.xmark")
-                            }
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis")
-                            .font(FMTypography.body)
+
+                        Text(feedback.createdAt.relativeString)
+                            .font(FMTypography.feedMeta)
                             .foregroundStyle(FMColors.secondaryLabel)
-                            .frame(width: 36, height: 36)
-                            .background(FMColors.softCanvas, in: Circle())
-                            .contentShape(Circle())
                     }
-                    .accessibilityLabel(onEdit != nil ? "더보기 메뉴" : "신고 메뉴")
+
+                    Spacer(minLength: 0)
+
+                    if onEdit != nil || onReportFeedback != nil || onReportUser != nil || onBlockUser != nil {
+                        Menu {
+                            if let onEdit {
+                                Button {
+                                    onEdit()
+                                } label: {
+                                    Label("수정하기", systemImage: "pencil")
+                                }
+                            }
+                            if let onReportFeedback {
+                                Button(role: .destructive) {
+                                    onReportFeedback()
+                                } label: {
+                                    Label("피드백 신고", systemImage: "exclamationmark.bubble")
+                                }
+                            }
+                            if let onReportUser {
+                                Button(role: .destructive) {
+                                    onReportUser()
+                                } label: {
+                                    Label("사용자 신고", systemImage: "person.crop.circle.badge.exclamationmark")
+                                }
+                            }
+                            if let onBlockUser {
+                                Button(role: .destructive) {
+                                    onBlockUser()
+                                } label: {
+                                    Label("사용자 차단", systemImage: "person.crop.circle.badge.xmark")
+                                }
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis")
+                                .font(FMTypography.body)
+                                .foregroundStyle(FMColors.secondaryLabel)
+                                .frame(width: 36, height: 36)
+                                .background(FMColors.softCanvas, in: Circle())
+                                .contentShape(Circle())
+                        }
+                        .accessibilityLabel(onEdit != nil ? "더보기 메뉴" : "신고 메뉴")
+                    }
                 }
-            }
 
-            HStack(alignment: .top, spacing: FMSpacing.sm) {
-                Capsule()
-                    .fill(FMColors.selection)
-                    .frame(width: 3)
+                HStack(alignment: .top, spacing: FMSpacing.sm) {
+                    Capsule()
+                        .fill(FMColors.selection)
+                        .frame(width: 3)
 
-                highlightedContent(feedback.content)
-                    .font(FMTypography.feedBody)
-                    .foregroundStyle(FMColors.label)
-                    .lineLimit(4)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            HStack(spacing: FMSpacing.sm) {
-                Label(
-                    "영상 \(feedback.timestampSeconds.minuteSecondFormatted)",
-                    systemImage: "play.fill"
-                )
-                .font(FMTypography.feedMetaEmphasis)
-                .foregroundStyle(FMColors.badgeForeground)
-                .padding(.horizontal, FMSpacing.sm)
-                .padding(.vertical, FMSpacing.xs)
-                .background(FMColors.badgeForeground.opacity(0.12), in: Capsule())
-
-                if feedback.commentCount > 0 {
-                    Label("답글 \(feedback.commentCount)", systemImage: "bubble.left.fill")
-                        .font(FMTypography.feedMetaEmphasis)
-                        .foregroundStyle(FMColors.secondaryLabel)
+                    highlightedContent(feedback.content)
+                        .font(FMTypography.feedBody)
+                        .foregroundStyle(FMColors.label)
+                        .lineLimit(4)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
-                Spacer(minLength: 0)
+                HStack(spacing: FMSpacing.sm) {
+                    Label(
+                        "영상 \(feedback.timestampSeconds.minuteSecondFormatted)",
+                        systemImage: "play.fill"
+                    )
+                    .font(FMTypography.feedMetaEmphasis)
+                    .foregroundStyle(FMColors.badgeForeground)
+                    .padding(.horizontal, FMSpacing.sm)
+                    .padding(.vertical, FMSpacing.xs)
+                    .background(FMColors.badgeForeground.opacity(0.12), in: Capsule())
 
-                Image(systemName: "arrow.up.right")
-                    .font(FMTypography.badgeStrong)
-                    .foregroundStyle(FMColors.iconAccent)
-                    .frame(width: 30, height: 30)
-                    .background(FMColors.iconAccent.opacity(0.1), in: Circle())
-            }
+                    if feedback.commentCount > 0 {
+                        Label("답글 \(feedback.commentCount)", systemImage: "bubble.left.fill")
+                            .font(FMTypography.feedMetaEmphasis)
+                            .foregroundStyle(FMColors.secondaryLabel)
+                    }
+
+                    Spacer(minLength: 0)
+
+                    Image(systemName: "arrow.up.right")
+                        .font(FMTypography.badgeStrong)
+                        .foregroundStyle(FMColors.iconAccent)
+                        .frame(width: 30, height: 30)
+                        .background(FMColors.iconAccent.opacity(0.1), in: Circle())
+                }
             }
         }
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .contain)
         .accessibilityLabel("\(feedback.authorName)의 피드백, \(feedback.content), 영상 \(feedback.timestampSeconds.minuteSecondFormatted), 답글 \(feedback.commentCount)개")
         .accessibilityHint("영상의 해당 시점에서 피드백을 확인하려면 이중 탭하세요")
     }

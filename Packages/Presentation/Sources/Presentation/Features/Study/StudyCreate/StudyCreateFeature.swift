@@ -7,13 +7,35 @@ import Domain
 public struct StudyCreateFeature {
     @ObservableState
     public struct State: Equatable {
+        public let recruitPostID: UUID?
         public var name = ""
         public var description = ""
         public var maxMembers = AppConstants.maxStudyMembers
         public var isSubmitting = false
         public var error: AppError?
 
-        public init() {}
+        public init(
+            recruitPostID: UUID? = nil,
+            name: String = "",
+            description: String = "",
+            maxMembers: Int = AppConstants.maxStudyMembers
+        ) {
+            self.recruitPostID = recruitPostID
+            self.name = String(name.prefix(AppConstants.maxStudyNameLength))
+            self.description = description
+            self.maxMembers = max(2, min(maxMembers, AppConstants.maxStudyMembers))
+        }
+
+        public init(recruitPost: RecruitPost) {
+            self.init(
+                recruitPostID: recruitPost.id,
+                name: recruitPost.title,
+                description: recruitPost.description,
+                maxMembers: recruitPost.maxMembers
+            )
+        }
+
+        public var isRecruitmentPrefilled: Bool { recruitPostID != nil }
 
         public var isValid: Bool {
             !name.isBlank && !description.isBlank && maxMembers >= 2
@@ -26,7 +48,7 @@ public struct StudyCreateFeature {
         case maxMembersChanged(Int)
         case submitTapped
         case createResponse(Result<Study, AppError>)
-        case studyCreated
+        case studyCreated(Study)
         case cancelTapped
         case errorDismissed
     }
@@ -52,11 +74,7 @@ public struct StudyCreateFeature {
                 return .none
 
             case .submitTapped:
-                print("🟡 [StudyCreate] submitTapped - isValid: \(state.isValid), name: '\(state.name)', desc: '\(state.description)'")
-                guard state.isValid else {
-                    print("🔴 [StudyCreate] isValid = false, returning")
-                    return .none
-                }
+                guard state.isValid else { return .none }
                 state.isSubmitting = true
                 let request = CreateStudyRequest(
                     name: state.name,
@@ -66,21 +84,17 @@ public struct StudyCreateFeature {
                 let client = studyClient
                 return .run { send in
                     do {
-                        print("🟡 [StudyCreate] Calling createStudy API...")
                         let study = try await client.createStudy(request)
-                        print("🟢 [StudyCreate] Success: \(study.name)")
                         await send(.createResponse(.success(study)))
                     } catch {
-                        print("🔴 [StudyCreate] Error: \(error)")
                         let appError = error as? AppError ?? .unexpected(error.localizedDescription)
                         await send(.createResponse(.failure(appError)))
                     }
                 }
 
-            case .createResponse(.success):
-                print("🟢 [StudyCreate] createResponse success")
+            case .createResponse(.success(let study)):
                 state.isSubmitting = false
-                return .send(.studyCreated)
+                return .send(.studyCreated(study))
 
             case .createResponse(.failure(let error)):
                 print("🔴 [StudyCreate] createResponse failure: \(error)")

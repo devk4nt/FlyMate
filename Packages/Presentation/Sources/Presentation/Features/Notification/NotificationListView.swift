@@ -85,6 +85,9 @@ public struct NotificationListView: View {
         }
         .onAppear { store.send(.onAppear) }
         .fmSheetStyle()
+        .sheet(item: $store.scope(state: \.announcement, action: \.announcement)) { announcementStore in
+            AnnouncementDetailView(store: announcementStore)
+        }
     }
 }
 
@@ -146,6 +149,10 @@ private struct NotificationRow: View {
             return "arrowshape.turn.up.left.fill"
         case .mentionedInFeedbackComment:
             return "at"
+        case .announcement:
+            return "bell.badge.fill"
+        case .quickFeedbackReceived:
+            return "heart.text.square.fill"
         }
     }
 

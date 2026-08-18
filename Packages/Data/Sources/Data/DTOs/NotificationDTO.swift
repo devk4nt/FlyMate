@@ -8,6 +8,8 @@ struct NotificationDTO: Codable, Sendable {
     let body: String
     let referenceVideoID: UUID?
     let referenceFeedbackID: UUID?
+    let referenceAnnouncementID: UUID?
+    let referenceQuickFeedbackRequestID: UUID?
     let isRead: Bool
     let createdAt: String
 
@@ -19,6 +21,8 @@ struct NotificationDTO: Codable, Sendable {
         case body
         case referenceVideoID = "reference_video_id"
         case referenceFeedbackID = "reference_feedback_id"
+        case referenceAnnouncementID = "reference_announcement_id"
+        case referenceQuickFeedbackRequestID = "reference_quick_feedback_request_id"
         case isRead = "is_read"
         case createdAt = "created_at"
     }

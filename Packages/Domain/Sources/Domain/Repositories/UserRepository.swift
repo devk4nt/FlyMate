@@ -28,4 +28,7 @@ public protocol UserRepository: Sendable {
 
     /// 참여 중인 모든 스터디를 합산한 본인 활동 통계를 조회한다.
     func fetchMyActivityStats() async throws -> MyActivityStats
+
+    /// 지정한 사용자의 전체 활동 통계를 조회한다.
+    func fetchActivityStats(userID: UUID) async throws -> MyActivityStats
 }

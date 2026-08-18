@@ -7,6 +7,31 @@ import Core
 
 @MainActor
 struct NotificationListFeatureTests {
+    @Test
+    func 공지_알림_탭시_상세_팝업_표시_및_읽음처리() async {
+        let announcement = AppNotification.notificationMock(
+            id: .notificationID1,
+            type: .announcement,
+            videoID: nil
+        )
+        var state = NotificationListFeature.State(userID: .userMock)
+        state.notifications.items = [announcement]
+        state.loadingState = .loaded([announcement])
+
+        let store = TestStore(initialState: state) {
+            NotificationListFeature()
+        } withDependencies: {
+            $0.notificationClient.markAsRead = { _ in }
+        }
+
+        await store.send(.notificationTapped(announcement)) {
+            $0.notifications.items[0].isRead = true
+            $0.loadingState = .loaded($0.notifications.items)
+            $0.announcement = AnnouncementDetailFeature.State(notification: announcement)
+        }
+        await store.receive(\.markAsReadResponse)
+    }
+
 
     // MARK: - 로드
 
@@ -261,6 +286,27 @@ struct NotificationListFeatureTests {
         await store.send(.notificationTapped(notification))
     }
 
+    @Test
+    func 빠른_피드백_알림_탭시_허브로_이동한다() async {
+        let notification = AppNotification.notificationMock(
+            id: .notificationID1,
+            type: .quickFeedbackReceived,
+            isRead: true,
+            videoID: nil,
+            quickFeedbackRequestID: .quickFeedbackRequestMock
+        )
+        var state = NotificationListFeature.State(userID: .userMock)
+        state.notifications.items = [notification]
+        state.loadingState = .loaded([notification])
+
+        let store = TestStore(initialState: state) {
+            NotificationListFeature()
+        }
+
+        await store.send(.notificationTapped(notification))
+        await store.receive(\.delegate.navigateToQuickFeedback)
+    }
+
     // MARK: - 전체 읽음 처리
 
     @Test
@@ -334,24 +380,28 @@ private extension UUID {
     static let feedbackMock = UUID(uuidString: "00000000-0000-0000-0000-000000000400")!
     static let notificationID1 = UUID(uuidString: "00000000-0000-0000-0000-000000000601")!
     static let notificationID2 = UUID(uuidString: "00000000-0000-0000-0000-000000000602")!
+    static let quickFeedbackRequestMock = UUID(uuidString: "00000000-0000-0000-0000-000000000701")!
 }
 
 private extension AppNotification {
     static func notificationMock(
         id: UUID,
+        type: NotificationType = .feedbackOnMyVideo,
         isRead: Bool = false,
         videoID: UUID? = .videoMock,
         feedbackID: UUID? = nil,
+        quickFeedbackRequestID: UUID? = nil,
         createdAt: Date = Date(timeIntervalSince1970: 1_700_000_000)
     ) -> AppNotification {
         AppNotification(
             id: id,
             recipientID: .userMock,
-            type: .feedbackOnMyVideo,
+            type: type,
             title: "새 피드백",
             body: "회원님의 영상에 새 피드백이 달렸습니다.",
             referenceVideoID: videoID,
             referenceFeedbackID: feedbackID,
+            referenceQuickFeedbackRequestID: quickFeedbackRequestID,
             isRead: isRead,
             createdAt: createdAt
         )

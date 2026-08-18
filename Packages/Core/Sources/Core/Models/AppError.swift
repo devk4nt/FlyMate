@@ -49,6 +49,7 @@ public enum NetworkError: Equatable, Sendable {
 
 public enum BusinessError: Equatable, Sendable {
     case videoTooLong
+    case quickFeedbackVideoTooLong
     case videoTooLarge
     case invalidVideoFormat
     case studyFull
@@ -67,11 +68,17 @@ public enum BusinessError: Equatable, Sendable {
     case purchaseFailed(String)
     case receiptVerificationFailed
     case nameAlreadyTaken
+    case insufficientFeedbackPoints
+    case activeQuickFeedbackExists
+    case quickFeedbackUnavailable
+    case quickFeedbackExpired
 
     public var userMessage: String {
         switch self {
         case .videoTooLong:
             return "영상은 최대 \(Int(AppConstants.maxVideoDurationSeconds) / 60)분까지 업로드할 수 있습니다."
+        case .quickFeedbackVideoTooLong:
+            return "빠른 피드백 영상은 최대 \(Int(AppConstants.maxQuickFeedbackVideoDurationSeconds))초까지 업로드할 수 있습니다."
         case .videoTooLarge:
             return "영상 파일 크기가 너무 큽니다. 더 짧은 영상을 선택해주세요."
         case .invalidVideoFormat:
@@ -108,6 +115,14 @@ public enum BusinessError: Equatable, Sendable {
             return "영수증 검증에 실패했습니다. 잠시 후 다시 시도해주세요."
         case .nameAlreadyTaken:
             return "이미 사용 중인 이름입니다. 다른 이름을 입력해주세요."
+        case .insufficientFeedbackPoints:
+            return "빠른 피드백을 요청하려면 포인트 2개가 필요합니다. 다른 영상에 피드백을 남겨보세요."
+        case .activeQuickFeedbackExists:
+            return "진행 중인 빠른 피드백 요청을 먼저 완료해주세요."
+        case .quickFeedbackUnavailable:
+            return "이미 배정되었거나 참여할 수 없는 요청입니다. 다른 영상을 선택해주세요."
+        case .quickFeedbackExpired:
+            return "피드백 작성 시간이 만료되었습니다."
         }
     }
 }

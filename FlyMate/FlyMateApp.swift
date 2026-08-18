@@ -91,6 +91,16 @@ struct FlyMateApp: App {
             deleteVideo: { try await videoRepo.deleteVideo(id: $0) }
         )
 
+        // Quick Feedback
+        let quickFeedbackRepo = QuickFeedbackRepositoryImpl(client: supabaseClient)
+        dependencies.quickFeedbackClient = QuickFeedbackClient(
+            fetchDashboard: { try await quickFeedbackRepo.fetchDashboard() },
+            upload: { try await quickFeedbackRepo.upload($0, progress: $1) },
+            claim: { try await quickFeedbackRepo.claim(requestID: $0) },
+            submitReview: { try await quickFeedbackRepo.submitReview($0) },
+            closeRequest: { try await quickFeedbackRepo.closeRequest(id: $0) }
+        )
+
         // Feedback
         let feedbackRepo = FeedbackRepositoryImpl(client: supabaseClient)
         dependencies.feedbackClient = FeedbackClient(
@@ -120,7 +130,8 @@ struct FlyMateApp: App {
             registerDeviceToken: { try await userRepo.registerDeviceToken($0) },
             removeDeviceToken: { try await userRepo.removeDeviceToken($0) },
             updateNotificationSettings: { try await userRepo.updateNotificationSettings(enabled: $0) },
-            fetchMyActivityStats: { try await userRepo.fetchMyActivityStats() }
+            fetchMyActivityStats: { try await userRepo.fetchMyActivityStats() },
+            fetchActivityStats: { try await userRepo.fetchActivityStats(userID: $0) }
         )
 
         // Push Notification
@@ -185,6 +196,7 @@ struct FlyMateApp: App {
         dependencies.notificationClient = NotificationClient(
             fetchNotifications: { try await notificationRepo.fetchNotifications(userID: $0, cursor: $1) },
             fetchUnreadCount: { try await notificationRepo.fetchUnreadCount(userID: $0) },
+            fetchStartupAnnouncement: { try await notificationRepo.fetchStartupAnnouncement() },
             markAsRead: { try await notificationRepo.markAsRead(id: $0) },
             markAllAsRead: { try await notificationRepo.markAllAsRead(userID: $0) },
             observeNotifications: { notificationRepo.observeNotifications(userID: $0) }
@@ -212,6 +224,7 @@ struct FlyMateApp: App {
             fetchPost: { try await recruitRepo.fetchPost(id: $0) },
             createPost: { try await recruitRepo.createPost($0) },
             updatePost: { try await recruitRepo.updatePost(id: $0, draft: $1) },
+            linkStudy: { try await recruitRepo.linkStudy(postID: $0, studyID: $1) },
             closePost: { try await recruitRepo.closePost(id: $0) },
             reopenPost: { try await recruitRepo.reopenPost(id: $0, deadline: $1) },
             deletePost: { try await recruitRepo.deletePost(id: $0) },
@@ -255,6 +268,7 @@ struct FlyMateApp: App {
         let now = Date()
         let day: TimeInterval = 86_400
         let hour: TimeInterval = 3_600
+        let minute: TimeInterval = 60
         let loadingDelayMilliseconds = Int(
             ProcessInfo.processInfo.environment["MOCK_LOADING_DELAY_MS"] ?? "0"
         ) ?? 0
@@ -461,6 +475,75 @@ struct FlyMateApp: App {
         let videoStore = LockIsolated(videos)
         let myVideoIDs = Set(videos.filter { $0.uploaderID == meID }.map(\.id))
 
+        let quickFeedbackRequests = [
+            QuickFeedbackRequest(
+                id: uuid(601), uploaderID: haneulID, uploaderName: "김하늘",
+                title: "항공사 지원동기 1분 답변", videoURL: sampleVideoURL(sintelTrailer),
+                durationSeconds: 52, focusArea: .answer,
+                feedbackRequest: "지원 동기가 구체적으로 들리는지 봐주세요.",
+                status: .open, feedbackCount: 0, targetFeedbackCount: 2,
+                expiresAt: now.addingTimeInterval(30 * hour), createdAt: now.addingTimeInterval(-2 * hour)
+            ),
+            QuickFeedbackRequest(
+                id: uuid(602), uploaderID: seoyeonID, uploaderName: "박서연",
+                title: "영상면접 첫인사 연습", videoURL: sampleVideoURL(sintelTrailer720),
+                durationSeconds: 38, focusArea: .expression,
+                feedbackRequest: "시선과 미소가 자연스러운지 알려주세요.",
+                status: .open, feedbackCount: 1, targetFeedbackCount: 2,
+                expiresAt: now.addingTimeInterval(18 * hour), createdAt: now.addingTimeInterval(-4 * hour)
+            ),
+            // 내 요청에 상대방 피드백이 도착한 상태 — 빠른 피드백 수신 UI 확인용
+            QuickFeedbackRequest(
+                id: uuid(603), uploaderID: meID, uploaderName: me.name,
+                title: "1분 자기소개 최종 점검", videoURL: sampleVideoURL(sintelTrailer),
+                durationSeconds: 55, focusArea: .overall,
+                feedbackRequest: "첫인상과 답변 전달력을 전체적으로 봐주세요.",
+                status: .completed, feedbackCount: 2, targetFeedbackCount: 2,
+                expiresAt: now.addingTimeInterval(20 * hour), createdAt: now.addingTimeInterval(-1 * hour)
+            ),
+            QuickFeedbackRequest(
+                id: uuid(606), uploaderID: meID, uploaderName: me.name,
+                title: "영어 지원동기 답변", videoURL: sampleVideoURL(sintelTrailer720),
+                durationSeconds: 49, focusArea: .voice,
+                feedbackRequest: "영어 발음과 말의 속도를 확인해주세요.",
+                status: .completed, feedbackCount: 2, targetFeedbackCount: 2,
+                expiresAt: now.addingTimeInterval(-1 * day), createdAt: now.addingTimeInterval(-3 * day)
+            ),
+            QuickFeedbackRequest(
+                id: uuid(607), uploaderID: meID, uploaderName: me.name,
+                title: "승무원 면접 첫인사", videoURL: sampleVideoURL(sintelTrailer),
+                durationSeconds: 34, focusArea: .expression,
+                feedbackRequest: "첫인상과 시선 처리가 자연스러운지 봐주세요.",
+                status: .expired, feedbackCount: 1, targetFeedbackCount: 2,
+                expiresAt: now.addingTimeInterval(-5 * day), createdAt: now.addingTimeInterval(-7 * day)
+            ),
+            QuickFeedbackRequest(
+                id: uuid(608), uploaderID: meID, uploaderName: me.name,
+                title: "상황 대처 답변 연습", videoURL: sampleVideoURL(sintelTrailer720),
+                durationSeconds: 58, focusArea: .answer,
+                feedbackRequest: "답변 구조가 논리적인지 확인해주세요.",
+                status: .closed, feedbackCount: 0, targetFeedbackCount: 2,
+                expiresAt: now.addingTimeInterval(-9 * day), createdAt: now.addingTimeInterval(-10 * day)
+            ),
+        ]
+        let quickFeedbackRequestStore = LockIsolated(quickFeedbackRequests)
+        let quickFeedbackReviewStore = LockIsolated([
+            QuickFeedbackReview(
+                id: uuid(604), requestID: uuid(603), reviewerID: haneulID, reviewerName: "김하늘",
+                positiveText: "첫 문장에서 미소와 목소리가 밝아서 편안하고 자신감 있는 인상을 받았어요.",
+                improvementText: "지원 동기를 말하는 중간 부분의 속도를 조금만 늦추면 핵심 경험이 더 잘 전달될 것 같아요.",
+                focusArea: .voice, createdAt: now.addingTimeInterval(-35 * minute)
+            ),
+            QuickFeedbackReview(
+                id: uuid(605), requestID: uuid(603), reviewerID: seoyeonID, reviewerName: "박서연",
+                positiveText: "답변의 시작과 마무리가 명확하고 카메라를 바라보는 시선도 전반적으로 자연스러웠어요.",
+                improvementText: "마지막 문장에서 고개가 살짝 내려가니 끝까지 렌즈를 바라보며 미소를 유지하면 더 좋아요.",
+                focusArea: .expression, createdAt: now.addingTimeInterval(-20 * minute)
+            ),
+        ])
+        let quickFeedbackAssignmentStore = LockIsolated<[UUID: QuickFeedbackRequest]>([:])
+        let quickFeedbackPointStore = LockIsolated(2)
+
         // MARK: Feedbacks
         // 상황별 다양화: 업로더 요청에 직접 응답 / 칭찬 / 개선 지적 / 질문·제안 / 멘션
         let feedbackStore = MockFeedbackStore(initialFeedbacks: [
@@ -589,7 +672,16 @@ struct FlyMateApp: App {
         ])
 
         // MARK: Notifications
+        let mockAnnouncement = AppNotification(
+            id: uuid(304), recipientID: meID, type: .announcement,
+            title: "FlyMate 공지 기능을 확인해보세요",
+            body: "앱 시작 시 한 번 표시되는 공지 팝업입니다. 확인을 누른 뒤 스터디 화면 오른쪽 위 알림 버튼에서 이 공지를 다시 열어볼 수 있습니다.",
+            referenceAnnouncementID: uuid(305),
+            isRead: false, createdAt: now
+        )
+        let startupAnnouncementStore = LockIsolated<AppNotification?>(mockAnnouncement)
         let notificationStore = LockIsolated<[AppNotification]>([
+            mockAnnouncement,
             AppNotification(
                 id: uuid(300), recipientID: meID, type: .feedbackOnMyVideo,
                 title: "새 피드백이 달렸어요",
@@ -885,6 +977,78 @@ struct FlyMateApp: App {
             deleteVideo: { id in videoStore.withValue { $0.removeAll { $0.id == id } } }
         )
 
+        // Quick Feedback
+        dependencies.quickFeedbackClient = QuickFeedbackClient(
+            fetchDashboard: {
+                try await simulateLoading()
+                let requests = quickFeedbackRequestStore.value
+                let myRequests = requests
+                    .filter { $0.uploaderID == meID }
+                    .sorted { $0.createdAt > $1.createdAt }
+                return QuickFeedbackDashboard(
+                    pointBalance: quickFeedbackPointStore.value,
+                    myRequests: myRequests,
+                    availableRequests: requests.filter { $0.uploaderID != meID && $0.status == .open },
+                    receivedReviews: quickFeedbackReviewStore.value.filter { review in
+                        myRequests.contains { $0.id == review.requestID }
+                    }
+                )
+            },
+            upload: { request, progress in
+                guard quickFeedbackPointStore.value >= AppConstants.quickFeedbackRequestPointCost else {
+                    throw AppError.business(.insufficientFeedbackPoints)
+                }
+                guard !quickFeedbackRequestStore.value.contains(where: { $0.uploaderID == meID && $0.status == .open }) else {
+                    throw AppError.business(.activeQuickFeedbackExists)
+                }
+                for step in [0.25, 0.5, 0.75, 1.0] as [Double] {
+                    try await Task.sleep(for: .milliseconds(180))
+                    progress(step)
+                }
+                let result = QuickFeedbackRequest(
+                    id: UUID(), uploaderID: meID, uploaderName: me.name,
+                    title: request.title, videoURL: uploadedVideoURL,
+                    durationSeconds: request.durationSeconds, focusArea: request.focusArea,
+                    feedbackRequest: request.feedbackRequest, status: .open,
+                    feedbackCount: 0, targetFeedbackCount: AppConstants.quickFeedbackTargetCount,
+                    expiresAt: Date().addingTimeInterval(48 * hour), createdAt: Date()
+                )
+                quickFeedbackPointStore.withValue { $0 -= AppConstants.quickFeedbackRequestPointCost }
+                quickFeedbackRequestStore.withValue { $0.append(result) }
+                return result
+            },
+            claim: { requestID in
+                guard let request = quickFeedbackRequestStore.value.first(where: { $0.id == requestID }) else {
+                    throw AppError.business(.quickFeedbackUnavailable)
+                }
+                let assignmentID = UUID()
+                quickFeedbackAssignmentStore.withValue { $0[assignmentID] = request }
+                return ClaimedQuickFeedback(assignmentID: assignmentID, request: request)
+            },
+            submitReview: { request in
+                guard let target = quickFeedbackAssignmentStore.value[request.assignmentID] else {
+                    throw AppError.business(.quickFeedbackExpired)
+                }
+                let review = QuickFeedbackReview(
+                    id: UUID(), requestID: target.id, reviewerID: meID, reviewerName: me.name,
+                    positiveText: request.positiveText, improvementText: request.improvementText,
+                    focusArea: request.focusArea, createdAt: Date()
+                )
+                quickFeedbackReviewStore.withValue { $0.append(review) }
+                quickFeedbackAssignmentStore.withValue { $0[request.assignmentID] = nil }
+                quickFeedbackRequestStore.withValue { $0.removeAll { $0.id == target.id } }
+                quickFeedbackPointStore.withValue { $0 += 1 }
+                return review
+            },
+            closeRequest: { requestID in
+                guard let request = quickFeedbackRequestStore.value.first(where: { $0.id == requestID }) else { return }
+                quickFeedbackRequestStore.withValue { $0.removeAll { $0.id == requestID } }
+                quickFeedbackPointStore.withValue {
+                    $0 += request.targetFeedbackCount - request.feedbackCount
+                }
+            }
+        )
+
         // Feedback
         dependencies.feedbackClient = FeedbackClient(
             fetchFeedbacks: { videoID in
@@ -981,6 +1145,15 @@ struct FlyMateApp: App {
                     feedbackReceivedCount: 12,
                     feedbackGivenCount: 9
                 )
+            },
+            fetchActivityStats: { _ in
+                try await simulateLoading()
+                return MyActivityStats(
+                    studiesCount: 2,
+                    videosUploadedCount: 5,
+                    feedbackReceivedCount: 12,
+                    feedbackGivenCount: 9
+                )
             }
         )
 
@@ -1001,6 +1174,12 @@ struct FlyMateApp: App {
             },
             fetchUnreadCount: { _ in
                 notificationStore.value.filter { !$0.isRead }.count
+            },
+            fetchStartupAnnouncement: {
+                startupAnnouncementStore.withValue { announcement in
+                    defer { announcement = nil }
+                    return announcement
+                }
             },
             markAsRead: { id in
                 notificationStore.withValue { notifications in
@@ -1157,7 +1336,8 @@ struct FlyMateApp: App {
                     schedule: draft.schedule, startDate: draft.startDate, endDate: draft.endDate,
                     maxMembers: draft.maxMembers, deadline: draft.deadline,
                     requirement: draft.requirement, contactMethod: draft.contactMethod,
-                    linkURL: draft.linkURL, authorID: old.authorID, authorName: old.authorName,
+                    linkURL: draft.linkURL, studyID: old.studyID,
+                    authorID: old.authorID, authorName: old.authorName,
                     status: old.status, commentCount: old.commentCount,
                     createdAt: old.createdAt, updatedAt: Date()
                 )
@@ -1165,6 +1345,16 @@ struct FlyMateApp: App {
                     if let index = store.firstIndex(where: { $0.id == id }) { store[index] = updated }
                 }
                 return updated
+            },
+            linkStudy: { postID, studyID in
+                guard let old = recruitPostStore.value.first(where: { $0.id == postID }) else {
+                    throw AppError.business(.notFound)
+                }
+                let linked = old.withStudyID(studyID)
+                recruitPostStore.withValue { store in
+                    if let index = store.firstIndex(where: { $0.id == postID }) { store[index] = linked }
+                }
+                return linked
             },
             closePost: { id in
                 try mockUpdateRecruitStatus(recruitPostStore, id: id, status: .closed, deadline: nil)
@@ -1247,7 +1437,8 @@ struct FlyMateApp: App {
             schedule: old.schedule, startDate: old.startDate, endDate: old.endDate,
             maxMembers: old.maxMembers, deadline: deadline ?? old.deadline,
             requirement: old.requirement, contactMethod: old.contactMethod,
-            linkURL: old.linkURL, authorID: old.authorID, authorName: old.authorName,
+            linkURL: old.linkURL, studyID: old.studyID,
+            authorID: old.authorID, authorName: old.authorName,
             status: status, commentCount: old.commentCount,
             createdAt: old.createdAt, updatedAt: old.updatedAt
         )

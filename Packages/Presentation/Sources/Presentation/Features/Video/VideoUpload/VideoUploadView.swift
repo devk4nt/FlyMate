@@ -3,6 +3,7 @@ import PhotosUI
 import AVFoundation
 import ComposableArchitecture
 import Core
+import Domain
 
 public struct VideoUploadView: View {
     @Bindable var store: StoreOf<VideoUploadFeature>
@@ -42,11 +43,11 @@ public struct VideoUploadView: View {
             .scrollDismissesKeyboard(.interactively)
             .dismissKeyboardOnTap()
         }
-        .navigationTitle("영상 업로드")
+        .navigationTitle(store.isQuickFeedback ? "빠른 피드백 요청" : "영상 업로드")
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) {
             FMButton(
-                title: "영상 업로드",
+                title: store.isQuickFeedback ? "피드백 요청하기" : "영상 업로드",
                 isLoading: store.uploadState == .uploading,
                 isEnabled: store.isValid
             ) {
@@ -116,11 +117,13 @@ public struct VideoUploadView: View {
             .shadow(color: FMShadow.floatingColor, radius: FMShadow.floatingRadius, y: FMShadow.floatingY)
 
             VStack(alignment: .leading, spacing: FMSpacing.xxs) {
-                Text("연습 영상을 공유해요")
+                Text(store.isQuickFeedback ? "스터디 없이 바로 피드백" : "연습 영상을 공유해요")
                     .font(FMTypography.title2)
                     .foregroundStyle(FMColors.label)
 
-                Text("3분 이내 영상을 올리고 구체적인 피드백을 받아보세요.")
+                Text(store.isQuickFeedback
+                    ? "1분 이내 영상을 올리면 서로 다른 두 명이 피드백해요."
+                    : "3분 이내 영상을 올리고 구체적인 피드백을 받아보세요.")
                     .font(FMTypography.callout)
                     .foregroundStyle(FMColors.secondaryLabel)
                     .fixedSize(horizontal: false, vertical: true)
@@ -135,6 +138,7 @@ public struct VideoUploadView: View {
     private var videoSelectionCard: some View {
         let hasSelectedVideo = store.selectedVideoData != nil
         let durationText = store.videoDuration.minuteSecondFormatted
+        let maximumDurationText = store.isQuickFeedback ? "1분" : "3분"
         let thumbnailImage = store.selectedThumbnailData
             .flatMap(UIImage.init(data:))
             .map { Image(uiImage: $0) }
@@ -170,7 +174,7 @@ public struct VideoUploadView: View {
                                     .font(FMTypography.headline)
                                     .foregroundStyle(FMColors.label)
 
-                                Text("MOV 또는 MP4 · 최대 3분 · 50MB")
+                                Text("MOV 또는 MP4 · 최대 \(maximumDurationText) · 50MB")
                                     .font(FMTypography.caption1)
                                     .foregroundStyle(FMColors.secondaryLabel)
                             }
@@ -229,21 +233,60 @@ public struct VideoUploadView: View {
 
     private var coachingNotesCard: some View {
         uploadCard(title: "코칭 노트", step: "03 · 선택") {
-            noteEditor(
-                title: "촬영 포인트",
-                placeholder: "표정, 시선 처리 등 중점적으로 연습한 부분",
-                text: $store.focusPoints.sending(\.focusPointsChanged),
-                systemImage: "scope"
-            )
-
-            Divider()
+            if store.isQuickFeedback {
+                quickFeedbackFocusPicker
+                Divider()
+            } else {
+                noteEditor(
+                    title: "촬영 포인트",
+                    placeholder: "표정, 시선 처리 등 중점적으로 연습한 부분",
+                    text: $store.focusPoints.sending(\.focusPointsChanged),
+                    systemImage: "scope"
+                )
+                Divider()
+            }
 
             noteEditor(
                 title: "피드백 요청",
-                placeholder: "스터디원에게 구체적으로 묻고 싶은 내용",
+                placeholder: store.isQuickFeedback
+                    ? "피드백 참여자에게 구체적으로 묻고 싶은 내용"
+                    : "스터디원에게 구체적으로 묻고 싶은 내용",
                 text: $store.feedbackRequest.sending(\.feedbackRequestChanged),
                 systemImage: "bubble.left.and.text.bubble.right"
             )
+        }
+    }
+
+    private var quickFeedbackFocusPicker: some View {
+        VStack(alignment: .leading, spacing: FMSpacing.xs) {
+            Label("집중해서 봐주세요", systemImage: "scope")
+                .font(FMTypography.authorName)
+                .foregroundStyle(FMColors.label)
+
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: FMSpacing.xs) {
+                ForEach(QuickFeedbackFocusArea.allCases, id: \.self) { area in
+                    Button {
+                        store.send(.quickFeedbackFocusAreaSelected(area))
+                    } label: {
+                        Text(area.title)
+                            .font(FMTypography.callout)
+                            .foregroundStyle(
+                                store.quickFeedbackFocusArea == area
+                                    ? FMColors.selection
+                                    : FMColors.secondaryLabel
+                            )
+                            .frame(maxWidth: .infinity, minHeight: 42)
+                            .background(
+                                store.quickFeedbackFocusArea == area
+                                    ? FMColors.primary.opacity(0.14)
+                                    : FMColors.secondaryBackground,
+                                in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(store.quickFeedbackFocusArea == area ? .isSelected : [])
+                }
+            }
         }
     }
 

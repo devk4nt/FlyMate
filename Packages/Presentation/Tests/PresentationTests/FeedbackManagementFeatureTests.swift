@@ -25,10 +25,18 @@ struct FeedbackManagementFeatureTests {
 
     @Test
     func 세그먼트_전환() async {
+        let dashboard = QuickFeedbackDashboard(
+            pointBalance: 2,
+            myRequests: [.managementMock],
+            availableRequests: [],
+            receivedReviews: []
+        )
         let store = TestStore(
             initialState: FeedbackManagementFeature.State(userID: userID)
         ) {
             FeedbackManagementFeature()
+        } withDependencies: {
+            $0.quickFeedbackClient.fetchDashboard = { dashboard }
         }
 
         await store.send(.segmentChanged(.given)) {
@@ -37,6 +45,10 @@ struct FeedbackManagementFeatureTests {
 
         await store.send(.segmentChanged(.received)) {
             $0.selectedSegment = .received
+            $0.quickFeedback = .loading
+        }
+        await store.receive(\.quickFeedbackResponse.success) {
+            $0.quickFeedback = .loaded(dashboard)
         }
     }
 
@@ -100,6 +112,23 @@ private extension Feedback {
         authorName: "피드백 작성자",
         content: "좋은 답변이었습니다!",
         timestampSeconds: 30.0,
+        createdAt: Date(timeIntervalSince1970: 1_700_000_000)
+    )
+}
+
+private extension QuickFeedbackRequest {
+    static let managementMock = QuickFeedbackRequest(
+        id: UUID(uuidString: "00000000-0000-0000-0004-000000000001")!,
+        uploaderID: UUID(uuidString: "00000000-0000-0000-0004-000000000002")!,
+        uploaderName: "유나",
+        title: "1분 자기소개",
+        videoURL: URL(string: "https://example.com/quick.mp4"),
+        durationSeconds: 55,
+        focusArea: .overall,
+        status: .completed,
+        feedbackCount: 2,
+        targetFeedbackCount: 2,
+        expiresAt: Date(timeIntervalSince1970: 1_700_100_000),
         createdAt: Date(timeIntervalSince1970: 1_700_000_000)
     )
 }

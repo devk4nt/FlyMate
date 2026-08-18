@@ -21,6 +21,9 @@ public struct RecruitDetailView: View {
                     header
                     infoSection
                     descriptionSection
+                    if store.isAuthor {
+                        studyRoomSection
+                    }
                     contactSection
                     commentSection
 
@@ -70,6 +73,14 @@ public struct RecruitDetailView: View {
                 RecruitCreateView(store: editStore)
             }
             .interactiveDismissDisabled(editStore.hasChanges)
+        }
+        .sheet(item: $store.scope(state: \.createStudy, action: \.createStudy)) { createStudyStore in
+            NavigationStack {
+                StudyCreateView(store: createStudyStore)
+            }
+        }
+        .sheet(item: $store.scope(state: \.userActivity, action: \.userActivity)) { activityStore in
+            MyActivitySheet(store: activityStore)
         }
         .sheet(isPresented: Binding(
             get: { store.showReopenSheet },
@@ -133,9 +144,14 @@ public struct RecruitDetailView: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             HStack(spacing: FMSpacing.xs) {
-                Text(store.post.authorName)
-                    .font(FMTypography.feedMetaEmphasis)
-                    .foregroundStyle(FMColors.label)
+                FMUserProfileButton(
+                    url: store.post.authorProfileURL,
+                    name: store.post.authorName,
+                    imageSize: .sm,
+                    style: .compact
+                ) {
+                    store.send(.authorProfileTapped)
+                }
 
                 Text(store.post.createdAt.relativeString)
                     .font(FMTypography.feedMeta)
@@ -230,6 +246,54 @@ public struct RecruitDetailView: View {
                 .foregroundStyle(FMColors.label)
                 .fixedSize(horizontal: false, vertical: true)
         }
+    }
+
+    // MARK: - Study Room
+
+    private var studyRoomSection: some View {
+        sectionCard("스터디방") {
+            if store.post.studyID == nil {
+                HStack(alignment: .top, spacing: FMSpacing.sm) {
+                    Image(systemName: "person.3.fill")
+                        .font(.system(size: FMSizing.IconSize.md, weight: .semibold))
+                        .foregroundStyle(FMColors.iconAccent)
+                        .frame(width: 40, height: 40)
+                        .background(FMColors.iconAccent.opacity(0.1), in: Circle())
+
+                    VStack(alignment: .leading, spacing: FMSpacing.xxs) {
+                        Text(studyRoomTitle)
+                            .font(FMTypography.headline)
+                            .foregroundStyle(FMColors.label)
+
+                        Text("모집 글 정보를 그대로 사용해 빠르게 만들 수 있어요.")
+                            .font(FMTypography.callout)
+                            .foregroundStyle(FMColors.secondaryLabel)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+
+                FMButton(title: "스터디방 만들기") {
+                    store.send(.createStudyTapped)
+                }
+                .accessibilityHint("모집 글 정보가 입력된 스터디 생성 화면을 엽니다")
+                .accessibilityIdentifier("스터디_상세_스터디방만들기")
+            } else {
+                Label("스터디방 준비 완료", systemImage: "checkmark.circle.fill")
+                    .font(FMTypography.headline)
+                    .foregroundStyle(FMColors.success)
+
+                Text("참여 문의를 확인하고 스터디 초대 코드를 안내해주세요.")
+                    .font(FMTypography.callout)
+                    .foregroundStyle(FMColors.secondaryLabel)
+            }
+        }
+    }
+
+    private var studyRoomTitle: String {
+        let count = store.interestedUserCount
+        return count > 0
+            ? "\(count)명이 참여를 기다리고 있어요"
+            : "참여자를 받을 방을 미리 준비하세요"
     }
 
     // MARK: - Contact

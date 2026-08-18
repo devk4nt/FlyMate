@@ -1,5 +1,6 @@
 import Foundation
 import ComposableArchitecture
+import Core
 import Domain
 
 @Reducer
@@ -20,6 +21,7 @@ public struct StudyNavigationFeature {
         case path(StackActionOf<Path>)
         case navigateToVideo(Study, Video, feedbackID: UUID? = nil)
         case showInviteCode(String)
+        case showQuickFeedback
     }
 
     @Reducer(state: .equatable)
@@ -27,6 +29,7 @@ public struct StudyNavigationFeature {
         case studyDetail(StudyDetailFeature)
         case videoFeed(VideoFeedFeature)
         case videoUpload(VideoUploadFeature)
+        case quickFeedbackHub(QuickFeedbackHubFeature)
         case memberManagement(MemberManagementFeature)
         case joinRequestManagement(JoinRequestManagementFeature)
     }
@@ -43,8 +46,31 @@ public struct StudyNavigationFeature {
                 state.path.removeAll()
                 return .send(.studyList(.showJoinStudy(inviteCode: code)))
 
+            case .showQuickFeedback:
+                state.path.removeAll()
+                state.path.append(.quickFeedbackHub(QuickFeedbackHubFeature.State()))
+                return .none
+
             case .studyList(.studyTapped(let study)):
                 state.path.append(.studyDetail(StudyDetailFeature.State(study: study, currentUserID: state.currentUserID)))
+                return .none
+
+            case .studyList(.quickFeedbackPrimaryTapped):
+                if case .loaded(let dashboard) = state.studyList.quickFeedback,
+                   dashboard.pointBalance >= AppConstants.quickFeedbackRequestPointCost,
+                   dashboard.latestRequest?.status != .open {
+                    state.path.append(.videoUpload(VideoUploadFeature.State(destination: .quickFeedback)))
+                } else {
+                    state.path.append(.quickFeedbackHub(QuickFeedbackHubFeature.State()))
+                }
+                return .none
+
+            case .studyList(.quickFeedbackHubTapped):
+                state.path.append(.quickFeedbackHub(QuickFeedbackHubFeature.State()))
+                return .none
+
+            case .path(.element(_, action: .quickFeedbackHub(.uploadTapped))):
+                state.path.append(.videoUpload(VideoUploadFeature.State(destination: .quickFeedback)))
                 return .none
 
             case .path(.element(_, action: .studyDetail(.videoTapped(let video)))):
@@ -122,7 +148,11 @@ public struct StudyNavigationFeature {
                    case .studyDetail = state.path[id: lastID] {
                     return .send(.path(.element(id: lastID, action: .studyDetail(.refresh))))
                 }
-                return .none
+                if let lastID = state.path.ids.last,
+                   case .quickFeedbackHub = state.path[id: lastID] {
+                    return .send(.path(.element(id: lastID, action: .quickFeedbackHub(.refresh))))
+                }
+                return .send(.studyList(.refreshQuickFeedback))
 
             case .navigateToVideo(let study, let video, let feedbackID):
                 state.path.removeAll()

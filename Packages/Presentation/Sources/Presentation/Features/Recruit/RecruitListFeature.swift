@@ -13,6 +13,8 @@ public struct RecruitListFeature {
         public var filter = RecruitPostFilter()
         @Presents public var detail: RecruitDetailFeature.State?
         @Presents public var create: RecruitCreateFeature.State?
+        @Presents public var createStudy: StudyCreateFeature.State?
+        @Presents public var userActivity: MyActivityFeature.State?
         public var showToast = false
         public var toastMessage = ""
 
@@ -28,12 +30,16 @@ public struct RecruitListFeature {
         case loadMore
         case loadMoreResponse(Result<[RecruitPost], AppError>)
         case postTapped(RecruitPost)
+        case authorProfileTapped(RecruitPost)
         case createTapped
         case recruitingOnlyToggled
         case fieldFilterSelected(RecruitField?)
         case meetingTypeFilterSelected(RecruitMeetingType?)
         case detail(PresentationAction<RecruitDetailFeature.Action>)
         case create(PresentationAction<RecruitCreateFeature.Action>)
+        case createStudy(PresentationAction<StudyCreateFeature.Action>)
+        case userActivity(PresentationAction<MyActivityFeature.Action>)
+        case linkStudyResponse(Result<RecruitPost, AppError>)
         case toastDismissed
     }
 
@@ -89,6 +95,14 @@ public struct RecruitListFeature {
                 )
                 return .none
 
+            case .authorProfileTapped(let post):
+                state.userActivity = MyActivityFeature.State(
+                    userID: post.authorID,
+                    userName: post.authorName,
+                    profileImageURL: post.authorProfileURL
+                )
+                return .none
+
             case .createTapped:
                 state.create = RecruitCreateFeature.State(mode: .create)
                 return .none
@@ -108,7 +122,34 @@ public struct RecruitListFeature {
             case .create(.presented(.delegate(.saved(let post)))):
                 state.posts.items.insert(post, at: 0)
                 state.loadingState = .loaded(state.posts.items)
-                state.toastMessage = "모집 글이 등록되었습니다"
+                state.create = nil
+                state.createStudy = StudyCreateFeature.State(recruitPost: post)
+                return .none
+
+            case .createStudy(.presented(.studyCreated(let study))):
+                guard let postID = state.createStudy?.recruitPostID else { return .none }
+                let client = recruitClient
+                return .run { send in
+                    do {
+                        let post = try await client.linkStudy(postID, study.id)
+                        await send(.linkStudyResponse(.success(post)))
+                    } catch {
+                        let appError = error as? AppError ?? .unexpected(error.localizedDescription)
+                        await send(.linkStudyResponse(.failure(appError)))
+                    }
+                }
+
+            case .linkStudyResponse(.success(let post)):
+                if let index = state.posts.items.firstIndex(where: { $0.id == post.id }) {
+                    state.posts.items[index] = post
+                    state.loadingState = .loaded(state.posts.items)
+                }
+                state.toastMessage = "모집 글과 스터디방이 준비되었습니다"
+                state.showToast = true
+                return .none
+
+            case .linkStudyResponse(.failure):
+                state.toastMessage = "스터디방은 만들어졌지만 모집 글 연결에 실패했습니다"
                 state.showToast = true
                 return .none
 
@@ -142,7 +183,7 @@ public struct RecruitListFeature {
                 state.showToast = false
                 return .none
 
-            case .detail, .create:
+            case .detail, .create, .createStudy, .userActivity:
                 return .none
             }
         }
@@ -151,6 +192,12 @@ public struct RecruitListFeature {
         }
         .ifLet(\.$create, action: \.create) {
             RecruitCreateFeature()
+        }
+        .ifLet(\.$createStudy, action: \.createStudy) {
+            StudyCreateFeature()
+        }
+        .ifLet(\.$userActivity, action: \.userActivity) {
+            MyActivityFeature()
         }
     }
 

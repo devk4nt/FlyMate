@@ -27,6 +27,9 @@ public struct StudyNavigationView: View {
             case .videoUpload(let uploadStore):
                 VideoUploadView(store: uploadStore)
                     .toolbar(.hidden, for: .tabBar)
+            case .quickFeedbackHub(let quickFeedbackStore):
+                QuickFeedbackHubView(store: quickFeedbackStore)
+                    .toolbar(.hidden, for: .tabBar)
             case .memberManagement(let memberStore):
                 MemberManagementView(store: memberStore)
             case .joinRequestManagement(let requestStore):

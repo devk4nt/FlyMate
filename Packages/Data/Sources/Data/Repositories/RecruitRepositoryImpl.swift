@@ -54,27 +54,36 @@ public struct RecruitRepositoryImpl: RecruitRepository {
         let session = try await client.auth.session
         let user = session.user
         let userName = user.userMetadata["name"]?.stringValue ?? ""
+        let authorProfileURL = user.userMetadata["profile_image_url"]?.stringValue
 
         struct InsertPost: Encodable {
             let payload: PostPayload
             let authorID: UUID
             let authorName: String
+            let authorProfileURL: String?
 
             func encode(to encoder: Encoder) throws {
                 try payload.encode(to: encoder)
                 var container = encoder.container(keyedBy: CodingKeys.self)
                 try container.encode(authorID, forKey: .authorID)
                 try container.encode(authorName, forKey: .authorName)
+                try container.encodeIfPresent(authorProfileURL, forKey: .authorProfileURL)
             }
 
             enum CodingKeys: String, CodingKey {
                 case authorID = "author_id"
                 case authorName = "author_name"
+                case authorProfileURL = "author_profile_url"
             }
         }
 
         let dto: RecruitPostDTO = try await client.from(SupabaseConfig.Table.recruitPosts)
-            .insert(InsertPost(payload: postPayload(draft), authorID: user.id, authorName: userName))
+            .insert(InsertPost(
+                payload: postPayload(draft),
+                authorID: user.id,
+                authorName: userName,
+                authorProfileURL: authorProfileURL
+            ))
             .select()
             .single()
             .execute()
@@ -86,6 +95,25 @@ public struct RecruitRepositoryImpl: RecruitRepository {
         let dto: RecruitPostDTO = try await client.from(SupabaseConfig.Table.recruitPosts)
             .update(postPayload(draft))
             .eq("id", value: id)
+            .select()
+            .single()
+            .execute()
+            .value
+        return DTOMapper.toDomain(dto)
+    }
+
+    public func linkStudy(postID: UUID, studyID: UUID) async throws -> RecruitPost {
+        struct StudyLinkUpdate: Encodable {
+            let studyID: UUID
+
+            enum CodingKeys: String, CodingKey {
+                case studyID = "study_id"
+            }
+        }
+
+        let dto: RecruitPostDTO = try await client.from(SupabaseConfig.Table.recruitPosts)
+            .update(StudyLinkUpdate(studyID: studyID))
+            .eq("id", value: postID)
             .select()
             .single()
             .execute()

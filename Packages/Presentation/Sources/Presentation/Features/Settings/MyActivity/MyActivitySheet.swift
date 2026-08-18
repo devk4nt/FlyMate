@@ -3,14 +3,14 @@ import ComposableArchitecture
 import Core
 import Domain
 
-/// 설정 > 나의 활동 — 참여 중인 모든 스터디를 합산한 활동 현황 시트 (MemberStatsSheet와 동일한 레이아웃)
+/// 본인 또는 다른 사용자의 전체 스터디 활동 현황 시트.
 struct MyActivitySheet: View {
     let store: StoreOf<MyActivityFeature>
 
     var body: some View {
         NavigationStack {
             contentView
-                .navigationTitle("나의 활동")
+                .navigationTitle(store.isCurrentUser ? "나의 활동" : "활동 내역")
                 .navigationBarTitleDisplayMode(.inline)
         }
         .fmSheetStyle()
@@ -63,17 +63,17 @@ struct MyActivitySheet: View {
     private var profileHeader: some View {
         VStack(spacing: FMSpacing.xs) {
             FMProfileImage(
-                url: store.currentUser.profileImageURL,
-                name: store.currentUser.name,
+                url: store.profileImageURL,
+                name: store.userName,
                 size: .xl
             )
 
-            Text(store.currentUser.name)
+            Text(store.userName)
                 .font(FMTypography.headline)
                 .foregroundStyle(FMColors.label)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(store.currentUser.name)
+        .accessibilityLabel(store.userName)
     }
 
     // MARK: - Activity Card

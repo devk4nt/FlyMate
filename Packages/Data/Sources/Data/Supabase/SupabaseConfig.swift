@@ -33,6 +33,11 @@ public enum SupabaseConfig {
         public static let recruitPosts = "recruit_posts"
         public static let recruitComments = "recruit_comments"
         public static let blockedUsers = "blocked_users"
+        public static let announcements = "announcements"
+        public static let quickFeedbackWallets = "quick_feedback_wallets"
+        public static let quickFeedbackRequests = "quick_feedback_requests"
+        public static let quickFeedbackAssignments = "quick_feedback_assignments"
+        public static let quickFeedbackReviews = "quick_feedback_reviews"
     }
 
     public enum Bucket {
@@ -49,6 +54,12 @@ public enum SupabaseConfig {
     public enum RPC {
         public static let getUserEntitlements = "get_user_entitlements"
         public static let checkFeatureLimit = "check_feature_limit"
+        public static let syncStartupAnnouncement = "sync_startup_announcement"
+        public static let reconcileQuickFeedbackRequests = "reconcile_quick_feedback_requests"
+        public static let createQuickFeedbackRequest = "create_quick_feedback_request"
+        public static let claimQuickFeedbackRequest = "claim_quick_feedback_request"
+        public static let submitQuickFeedbackReview = "submit_quick_feedback_review"
+        public static let closeQuickFeedbackRequest = "close_quick_feedback_request"
     }
 
     public enum EdgeFunction {
