@@ -1,0 +1,32 @@
+name: App Store Submit
+
+# TestFlight 빌드 처리 완료를 기다렸다가 버전에 연결하고 심사 요청까지 수행
+# (release-upload.yml로 빌드 업로드가 끝난 뒤 실행)
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "심사 제출할 마케팅 버전"
+        required: true
+        default: "1.1"
+      whats_new:
+        description: "새로운 기능 (릴리즈 노트)"
+        required: false
+        default: ""
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Submit for review
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8_B64: ${{ secrets.ASC_KEY_P8 }}
+          TARGET_VERSION: ${{ inputs.version }}
+          WHATS_NEW: ${{ inputs.whats_new }}
+        run: |
+          export ASC_PRIVATE_KEY="$(echo "$ASC_KEY_P8_B64" | base64 -d)"
+          node scripts/submit-appstore-review.mjs
