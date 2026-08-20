@@ -144,6 +144,10 @@ struct RecruitListFeatureTests {
             $0.showToast = true
         }
         await store.receive(\.delegate.postUpdated)
+        // 생성 완료 시 StudyCreateFeature가 스스로 dismiss한다
+        await store.receive(\.createStudy.dismiss) {
+            $0.createStudy = nil
+        }
     }
 
     @Test

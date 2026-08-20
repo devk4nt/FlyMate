@@ -141,12 +141,18 @@ struct SettingsFeatureTests {
             SettingsFeature()
         } withDependencies: {
             $0.pushNotificationClient.getAuthorizationStatus = { .denied }
+            $0.cacheClient.diskCacheSize = { 1_024 }
         }
 
-        await store.send(.onAppear)
+        await store.send(.onAppear) {
+            $0.cacheSize = .loading
+        }
         await store.receive(\.pushStatusResponse) {
             $0.pushAuthorizationStatus = .denied
             $0.notificationsEnabled = false
+        }
+        await store.receive(\.cacheSizeResponse.success) {
+            $0.cacheSize = .loaded(1_024)
         }
     }
 
@@ -156,11 +162,17 @@ struct SettingsFeatureTests {
             SettingsFeature()
         } withDependencies: {
             $0.pushNotificationClient.getAuthorizationStatus = { .authorized }
+            $0.cacheClient.diskCacheSize = { 1_024 }
         }
 
-        await store.send(.onAppear)
+        await store.send(.onAppear) {
+            $0.cacheSize = .loading
+        }
         await store.receive(\.pushStatusResponse) {
             $0.pushAuthorizationStatus = .authorized
+        }
+        await store.receive(\.cacheSizeResponse.success) {
+            $0.cacheSize = .loaded(1_024)
         }
     }
 
