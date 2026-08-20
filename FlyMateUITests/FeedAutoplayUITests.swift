@@ -14,10 +14,10 @@ final class FeedAutoplayUITests: XCTestCase {
         feedbackTab.tap()
 
         // 첫 번째 영상 카드 탭 → 임머시브 플레이어 진입
-        // (FMFeedCell 라벨은 "○○의 영상" — 스크롤뷰 첫 버튼 fallback은
-        //  빠른 피드백 카드 등 다른 버튼을 집을 수 있어 라벨 매칭만 사용)
+        // (FMFeedCell 라벨은 "○○의 영상, 제목, ..." — 콤마까지 매칭해야
+        //  빠른 피드백 배너("다른 사람의 영상을...")를 잡지 않는다)
         let firstCell = app.buttons.matching(
-            NSPredicate(format: "label CONTAINS %@", "의 영상")
+            NSPredicate(format: "label CONTAINS %@", "의 영상,")
         ).firstMatch
         XCTAssertTrue(firstCell.waitForExistence(timeout: 10), "피드 영상 카드를 찾지 못함")
         firstCell.tap()
