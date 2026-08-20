@@ -77,7 +77,7 @@ public struct FeedbackManagementView: View {
     private var quickFeedbackSection: some View {
         switch store.quickFeedback {
         case .idle, .loading:
-            FMSkeletonView.card
+            quickFeedbackSkeleton
 
         case .failed(let error):
             FMErrorView(error: error) {
@@ -147,6 +147,55 @@ public struct FeedbackManagementView: View {
                 }
             }
         }
+    }
+
+    private var quickFeedbackSkeleton: some View {
+        VStack(alignment: .leading, spacing: FMSpacing.sm) {
+            HStack(spacing: FMSpacing.xs) {
+                FMSkeletonView(
+                    width: 88,
+                    height: 20,
+                    isShimmering: false
+                )
+                FMSkeletonView(
+                    width: 28,
+                    height: 20,
+                    cornerRadius: 10,
+                    isShimmering: false
+                )
+            }
+
+            FMCard(style: .feed) {
+                HStack(spacing: FMSpacing.sm) {
+                    FMSkeletonView(
+                        width: 28,
+                        height: 24,
+                        cornerRadius: FMSpacing.CornerRadius.sm,
+                        isShimmering: false
+                    )
+
+                    VStack(alignment: .leading, spacing: FMSpacing.xxs) {
+                        FMSkeletonView(
+                            width: 144,
+                            height: 16,
+                            isShimmering: false
+                        )
+                        FMSkeletonView(
+                            width: 80,
+                            height: 12,
+                            isShimmering: false
+                        )
+                    }
+
+                    Spacer(minLength: 0)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .shimmer()
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("빠른 피드백 로딩 중")
     }
 
     private func sectionCountBadge(_ count: Int) -> some View {
