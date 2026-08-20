@@ -91,7 +91,7 @@ public struct VideoFeedView<Header: View>: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(FMColors.softCanvas.ignoresSafeArea())
+        .background(FMColors.canvas.ignoresSafeArea())
     }
 
     private var loadingQueue: some View {
@@ -111,7 +111,7 @@ public struct VideoFeedView<Header: View>: View {
     private func loadedQueue(_ videos: [Video]) -> some View {
         ScrollView {
             header
-            LazyVStack(spacing: 0) {
+            LazyVStack(spacing: FMSpacing.sm) {
                 ForEach(videos) { video in
                     Button {
                         store.send(.videoTapped(video.id))

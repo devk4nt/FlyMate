@@ -14,7 +14,7 @@ public struct FMNotificationBell: View {
             ZStack(alignment: .topTrailing) {
                 Image(systemName: "bell")
                     .font(.system(size: 19, weight: .medium))
-                    .foregroundStyle(FMColors.label)
+                    .foregroundStyle(FMColors.brandTitle)
                     .frame(width: 32, height: 32)
 
                 if unreadCount > 0 {

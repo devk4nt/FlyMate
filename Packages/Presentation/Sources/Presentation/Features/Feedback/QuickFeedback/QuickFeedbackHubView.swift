@@ -6,7 +6,7 @@ import Domain
 
 public struct QuickFeedbackHubView: View {
     private enum Constants {
-        static let requestPreviewCount = 3
+        static let historyPreviewCount = 1
     }
 
     @Bindable var store: StoreOf<QuickFeedbackHubFeature>
@@ -24,9 +24,10 @@ public struct QuickFeedbackHubView: View {
                 case .failed(let error):
                     FMErrorView(error: error) { store.send(.refresh) }
                 case .loaded(let dashboard):
-                    pointCard(dashboard)
-                    myRequestsSection(dashboard)
                     availableSection(dashboard.availableRequests)
+                    pointCard(dashboard)
+                    activeRequestSection(dashboard)
+                    requestHistorySection(dashboard)
                 }
             }
             .frame(maxWidth: FMSizing.ContentWidth.regular)
@@ -34,7 +35,7 @@ public struct QuickFeedbackHubView: View {
             .padding(FMSpacing.md)
             .padding(.bottom, FMSpacing.xxxl)
         }
-        .background(FMColors.softCanvas)
+        .background(FMColors.canvas)
         .navigationTitle("빠른 피드백")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { store.send(.onAppear) }
@@ -71,23 +72,31 @@ public struct QuickFeedbackHubView: View {
     }
 
     private func pointCard(_ dashboard: QuickFeedbackDashboard) -> some View {
-        FMCard {
-            HStack(spacing: FMSpacing.md) {
-                Image(systemName: "heart.text.square.fill")
-                    .font(.system(size: 28))
-                    .foregroundStyle(FMColors.iconAccent)
+        FMCard(style: .feed) {
+            HStack(spacing: FMSpacing.sm) {
+                Image(systemName: "ticket.fill")
+                    .font(.system(size: FMSizing.IconSize.md, weight: .semibold))
+                    .foregroundStyle(FMColors.blushCoral)
+                    .frame(width: FMSizing.IconContainer.sm, height: FMSizing.IconContainer.sm)
+                    .background(FMColors.blushCoral.opacity(0.1), in: Circle())
+
                 VStack(alignment: .leading, spacing: FMSpacing.xxs) {
-                    Text("내 피드백 포인트")
+                    Text("내 포인트 \(dashboard.pointBalance)개")
+                        .font(FMTypography.authorName)
+                        .foregroundStyle(FMColors.brandTitle)
+                        .monospacedDigit()
+
+                    Text("2개로 내 영상 피드백을 요청할 수 있어요")
                         .font(FMTypography.caption1)
                         .foregroundStyle(FMColors.secondaryLabel)
-                    Text("\(dashboard.pointBalance)개")
-                        .font(FMTypography.title2)
-                        .foregroundStyle(FMColors.label)
-                        .monospacedDigit()
                 }
+
                 Spacer()
-                Button("영상 올리기") { store.send(.uploadTapped) }
-                    .buttonStyle(.borderedProminent)
+
+                Button("내 영상 요청") { store.send(.uploadTapped) }
+                    .font(FMTypography.feedMetaEmphasis)
+                    .buttonStyle(.bordered)
+                    .tint(FMColors.primaryAction)
                     .disabled(
                         dashboard.pointBalance < AppConstants.quickFeedbackRequestPointCost
                             || dashboard.myRequests.contains { $0.status == .open }
@@ -98,41 +107,63 @@ public struct QuickFeedbackHubView: View {
     }
 
     @ViewBuilder
-    private func myRequestsSection(_ dashboard: QuickFeedbackDashboard) -> some View {
-        if !dashboard.myRequests.isEmpty {
+    private func activeRequestSection(_ dashboard: QuickFeedbackDashboard) -> some View {
+        if let request = dashboard.myRequests.first(where: { $0.status == .open }) {
             VStack(alignment: .leading, spacing: FMSpacing.sm) {
                 HStack(spacing: FMSpacing.xs) {
-                    Text("내 요청 기록")
+                    Text("진행 중인 내 요청")
                         .font(FMTypography.sectionTitle)
+                        .foregroundStyle(FMColors.brandTitle)
 
-                    sectionCountBadge(dashboard.myRequests.count)
+                    Spacer()
+                }
+
+                QuickFeedbackRequestHistoryCard(
+                    request: request,
+                    onTapped: { store.send(.requestHistoryTapped(request.id)) },
+                    onCloseTapped: { store.send(.closeRequestTapped(request.id)) }
+                )
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func requestHistorySection(_ dashboard: QuickFeedbackDashboard) -> some View {
+        let requests = dashboard.myRequests.filter { $0.status != .open }
+
+        if !requests.isEmpty {
+            VStack(alignment: .leading, spacing: FMSpacing.sm) {
+                HStack(spacing: FMSpacing.xs) {
+                    Text("지난 요청")
+                        .font(FMTypography.sectionTitle)
+                        .foregroundStyle(FMColors.brandTitle)
+
+                    sectionCountBadge(requests.count)
 
                     Spacer()
 
-                    if dashboard.myRequests.count > Constants.requestPreviewCount {
-                        NavigationLink {
-                            QuickFeedbackRequestHistoryListView(
-                                requests: dashboard.myRequests,
-                                onRequestTapped: {
-                                    store.send(.requestHistoryTapped($0))
-                                },
-                                onCloseRequestTapped: {
-                                    store.send(.closeRequestTapped($0))
-                                }
-                            )
-                        } label: {
-                            Text("전체 보기")
-                                .font(FMTypography.authorName)
-                        }
-                        .accessibilityLabel("내 요청 기록 \(dashboard.myRequests.count)개 전체 보기")
-                        .accessibilityHint("내 빠른 피드백 요청 전체 목록으로 이동합니다")
+                    NavigationLink {
+                        QuickFeedbackRequestHistoryListView(
+                            requests: dashboard.myRequests,
+                            onRequestTapped: {
+                                store.send(.requestHistoryTapped($0))
+                            },
+                            onCloseRequestTapped: {
+                                store.send(.closeRequestTapped($0))
+                            }
+                        )
+                    } label: {
+                        Text("전체 보기")
+                            .font(FMTypography.authorName)
                     }
+                    .accessibilityLabel("내 요청 기록 \(dashboard.myRequests.count)개 전체 보기")
+                    .accessibilityHint("내 빠른 피드백 요청 전체 목록으로 이동합니다")
                 }
-                ForEach(Array(dashboard.myRequests.prefix(Constants.requestPreviewCount))) { request in
-                    QuickFeedbackRequestHistoryCard(
+
+                ForEach(Array(requests.prefix(Constants.historyPreviewCount))) { request in
+                    QuickFeedbackRequestHistoryRow(
                         request: request,
-                        onTapped: { store.send(.requestHistoryTapped(request.id)) },
-                        onCloseTapped: { store.send(.closeRequestTapped(request.id)) }
+                        onTapped: { store.send(.requestHistoryTapped(request.id)) }
                     )
                 }
             }
@@ -155,10 +186,12 @@ public struct QuickFeedbackHubView: View {
             HStack {
                 Text("내가 도울 수 있는 영상")
                     .font(FMTypography.sectionTitle)
+                    .foregroundStyle(FMColors.brandTitle)
                 Spacer()
-                Text("\(requests.count)개")
-                    .font(FMTypography.authorName)
-                    .foregroundStyle(FMColors.secondaryLabel)
+                Text("\(requests.count)개 대기")
+                    .font(FMTypography.feedMetaEmphasis)
+                    .foregroundStyle(FMColors.supportAccent)
+                    .monospacedDigit()
             }
 
             if requests.isEmpty {
@@ -170,14 +203,39 @@ public struct QuickFeedbackHubView: View {
                 )
             } else {
                 Button { store.send(.startFeedbackTapped) } label: {
-                    FMCard(style: .feed) {
+                    FMCard(style: .hero, background: FMColors.supportSurface) {
                         VStack(alignment: .leading, spacing: FMSpacing.sm) {
-                            Label("대기 중인 영상 1개 받기", systemImage: "play.circle.fill")
-                                .font(FMTypography.cardTitle)
-                                .foregroundStyle(FMColors.label)
-                            Text("시작하면 영상 하나가 30분 동안 임시 배정돼요. 제출을 마치면 포인트 1개를 받아요.")
-                                .font(FMTypography.callout)
+                            HStack(spacing: FMSpacing.sm) {
+                                waitingProfileStack(requests)
+
+                                VStack(alignment: .leading, spacing: FMSpacing.xxxs) {
+                                    Text("\(waitingPeopleCount(requests))명이 피드백을 기다리고 있어요")
+                                        .font(FMTypography.cardTitle)
+                                        .foregroundStyle(FMColors.brandTitle)
+                                        .monospacedDigit()
+
+                                    Text("한 사람을 도우면 포인트 1개를 받아요")
+                                        .font(FMTypography.caption1)
+                                        .foregroundStyle(FMColors.secondaryLabel)
+                                }
+
+                                Spacer(minLength: 0)
+                            }
+
+                            Label("영상 받아서 도와주기", systemImage: "play.circle.fill")
+                                .font(FMTypography.authorName)
+                                .foregroundStyle(FMColors.onAccent)
+                                .frame(maxWidth: .infinity)
+                                .frame(minHeight: 44)
+                                .background(
+                                    FMColors.primaryAction,
+                                    in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm, style: .continuous)
+                                )
+
+                            Text("시작하면 영상 하나가 30분 동안 임시 배정돼요.")
+                                .font(FMTypography.caption1)
                                 .foregroundStyle(FMColors.secondaryLabel)
+
                             if store.isClaiming {
                                 ProgressView()
                                     .frame(maxWidth: .infinity)
@@ -193,6 +251,34 @@ public struct QuickFeedbackHubView: View {
                 .accessibilityHint("30분 동안 영상 하나를 임시 배정받고 피드백을 작성합니다")
             }
         }
+    }
+
+    private func waitingProfileStack(_ requests: [QuickFeedbackRequest]) -> some View {
+        HStack(spacing: -FMSpacing.xs) {
+            ForEach(Array(requests.prefix(3))) { request in
+                FMProfileImage(
+                    url: request.uploaderProfileURL,
+                    name: request.uploaderName,
+                    size: .md
+                )
+                .overlay {
+                    Circle()
+                        .stroke(FMColors.supportSurface, lineWidth: 2)
+                }
+            }
+
+            if requests.count > 3 {
+                Text("+\(requests.count - 3)")
+                    .font(FMTypography.eyebrow)
+                    .foregroundStyle(FMColors.brandTitle)
+                    .frame(width: 32, height: 32)
+                    .background(FMColors.background, in: Circle())
+            }
+        }
+    }
+
+    private func waitingPeopleCount(_ requests: [QuickFeedbackRequest]) -> Int {
+        Set(requests.map(\.uploaderID)).count
     }
 
 }
@@ -279,6 +365,59 @@ private struct QuickFeedbackRequestHistoryCard: View {
         case .expired: "요청이 만료되었어요"
         case .closed: "요청을 종료했어요"
         }
+    }
+}
+
+private struct QuickFeedbackRequestHistoryRow: View {
+    let request: QuickFeedbackRequest
+    let onTapped: () -> Void
+
+    var body: some View {
+        Button(action: onTapped) {
+            FMCard(style: .feed) {
+                HStack(spacing: FMSpacing.sm) {
+                    Image(systemName: statusIcon)
+                        .font(.system(size: FMSizing.IconSize.sm, weight: .semibold))
+                        .foregroundStyle(statusColor)
+                        .frame(width: FMSizing.IconContainer.sm, height: FMSizing.IconContainer.sm)
+                        .background(statusColor.opacity(0.1), in: Circle())
+
+                    VStack(alignment: .leading, spacing: FMSpacing.xxxs) {
+                        Text(request.title)
+                            .font(FMTypography.authorName)
+                            .foregroundStyle(FMColors.brandTitle)
+                            .lineLimit(1)
+
+                        Text("피드백 \(request.feedbackCount)/\(request.targetFeedbackCount) · \(request.createdAt.relativeString)")
+                            .font(FMTypography.caption1)
+                            .foregroundStyle(FMColors.secondaryLabel)
+                            .monospacedDigit()
+                    }
+
+                    Spacer(minLength: 0)
+
+                    Image(systemName: "chevron.right")
+                        .font(FMTypography.caption1)
+                        .foregroundStyle(FMColors.secondaryLabel)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(request.title), 피드백 \(request.feedbackCount)/\(request.targetFeedbackCount)")
+        .accessibilityHint("영상과 받은 빠른 피드백을 확인합니다")
+    }
+
+    private var statusIcon: String {
+        switch request.status {
+        case .completed: "checkmark"
+        case .expired: "clock"
+        case .closed: "xmark"
+        case .open: "ellipsis"
+        }
+    }
+
+    private var statusColor: Color {
+        request.status == .completed ? FMColors.blushCoral : FMColors.supportAccent
     }
 }
 

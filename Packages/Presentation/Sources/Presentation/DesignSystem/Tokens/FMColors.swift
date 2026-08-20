@@ -28,17 +28,40 @@ public enum FMColors {
     public static let mediaBadgeForeground = deepIndigo
     public static let success = Color(red: 0.12, green: 0.67, blue: 0.42)
     public static let warning = Color(red: 0.96, green: 0.58, blue: 0.12)
-
     // Destructive colors have separate roles so text remains legible while
     // filled buttons can continue to use white labels in both appearances.
     public static let destructiveFill = Color(red: 0.780392, green: 0.207843, blue: 0.270588)
 
     #if canImport(UIKit)
-    public static let actionForeground = Color(UIColor { traits in
+    /// 주요 제목과 핵심 행동에 사용하는 FlyMate 딥 네이비.
+    public static let brandTitle = Color(UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 0.67, green: 0.86, blue: 0.96, alpha: 1)
+            : UIColor(red: 0.019608, green: 0.090196, blue: 0.400000, alpha: 1)
+    })
+    public static let primaryAction = Color(UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 0.29, green: 0.66, blue: 0.85, alpha: 1)
+            : UIColor(red: 0.019608, green: 0.090196, blue: 0.400000, alpha: 1)
+    })
+    /// 아이콘, 상태, 선택 배경에 사용하는 현재의 하늘색 계열.
+    public static let supportAccent = Color(UIColor { traits in
         traits.userInterfaceStyle == .dark
             ? UIColor(red: 0.55, green: 0.84, blue: 0.93, alpha: 1)
-            : UIColor(red: 0.188235, green: 0.427451, blue: 0.650980, alpha: 1)
+            : UIColor(red: 0.29, green: 0.66, blue: 0.85, alpha: 1)
     })
+    public static let supportSurface = Color(UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 0.07, green: 0.16, blue: 0.23, alpha: 1)
+            : UIColor(red: 0.92, green: 0.97, blue: 1.00, alpha: 1)
+    })
+    public static let notificationBadgeFill = primaryAction
+    public static let notificationBadgeForeground = Color(UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 0.019608, green: 0.090196, blue: 0.400000, alpha: 1)
+            : .white
+    })
+    public static let actionForeground = primaryAction
     public static let attentionFill = Color(UIColor { traits in
         traits.userInterfaceStyle == .dark
             ? UIColor(red: 1.00, green: 0.61, blue: 0.71, alpha: 1)
@@ -65,7 +88,13 @@ public enum FMColors {
             : UIColor(red: 0.95, green: 0.72, blue: 0.75, alpha: 1)
     })
     #else
-    public static let actionForeground = accentFill
+    public static let brandTitle = deepIndigo
+    public static let primaryAction = deepIndigo
+    public static let supportAccent = airBlue
+    public static let supportSurface = Color(red: 0.92, green: 0.97, blue: 1.00)
+    public static let notificationBadgeFill = primaryAction
+    public static let notificationBadgeForeground = Color.white
+    public static let actionForeground = primaryAction
     public static let attentionFill = Color(red: 0.71, green: 0.25, blue: 0.44)
     public static let attentionForeground = Color.white
     public static let destructive = Color(red: 0.78, green: 0.21, blue: 0.27)
@@ -74,9 +103,9 @@ public enum FMColors {
     #endif
 
     // Semantic roles for non-button interactive and decorative content.
-    public static let iconAccent = actionForeground
-    public static let selection = actionForeground
-    public static let badgeForeground = actionForeground
+    public static let iconAccent = supportAccent
+    public static let selection = primaryAction
+    public static let badgeForeground = supportAccent
     public static let decorativeBrand = brandInk
 
     // Adaptive brand surfaces keep highlighted content readable in both modes.
@@ -88,8 +117,8 @@ public enum FMColors {
     })
     public static let softCanvas = Color(UIColor { traits in
         traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.05, green: 0.07, blue: 0.10, alpha: 1)
-            : UIColor(red: 0.95, green: 0.98, blue: 1.00, alpha: 1)
+            ? UIColor(red: 0.045, green: 0.045, blue: 0.05, alpha: 1)
+            : UIColor(red: 0.985, green: 0.988, blue: 0.992, alpha: 1)
     })
     #else
     public static let brandInk = airBlue
@@ -129,6 +158,7 @@ public enum FMColors {
     public static let label = Color(UIColor.label)
     public static let secondaryLabel = Color(UIColor.secondaryLabel)
     public static let border = Color(UIColor.separator)
+    /// 콘텐츠 중심 화면의 기본 바탕. 카드보다 콘텐츠가 먼저 보이도록 시스템 배경을 사용한다.
     public static let canvas = softCanvas
     public static let elevatedBackground = Color(UIColor.secondarySystemGroupedBackground)
     #else

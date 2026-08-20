@@ -40,21 +40,21 @@ public enum FMOpacity {
 }
 
 public enum FMShadow {
-    public static let cardColor = Color.black.opacity(0.07)
-    public static let cardRadius: CGFloat = 14
-    public static let cardY: CGFloat = 7
+    public static let cardColor = FMColors.deepIndigo.opacity(0.055)
+    public static let cardRadius: CGFloat = 8
+    public static let cardY: CGFloat = 3
 
-    public static let heroColor = FMColors.brandInk.opacity(0.2)
-    public static let heroRadius: CGFloat = 22
-    public static let heroY: CGFloat = 12
+    public static let heroColor = Color.black.opacity(0.08)
+    public static let heroRadius: CGFloat = 12
+    public static let heroY: CGFloat = 4
 
-    public static let sectionColor = FMColors.brandInk.opacity(0.06)
-    public static let sectionRadius: CGFloat = 12
-    public static let sectionY: CGFloat = 6
+    public static let sectionColor = FMColors.deepIndigo.opacity(0.045)
+    public static let sectionRadius: CGFloat = 7
+    public static let sectionY: CGFloat = 3
 
-    public static let floatingColor = FMColors.brandInk.opacity(0.14)
-    public static let floatingRadius: CGFloat = 7
-    public static let floatingY: CGFloat = 4
+    public static let floatingColor = Color.black.opacity(0.08)
+    public static let floatingRadius: CGFloat = 3
+    public static let floatingY: CGFloat = 1
 
     public static let avatarColor = FMColors.brandInk.opacity(0.2)
     public static let avatarRadius: CGFloat = 12

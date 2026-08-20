@@ -15,10 +15,10 @@ public struct FMBadge: View {
         if count > 0 {
             Text(displayText)
                 .font(FMTypography.caption2)
-                .foregroundStyle(FMColors.attentionForeground)
+                .foregroundStyle(FMColors.notificationBadgeForeground)
                 .padding(.horizontal, FMSpacing.xxs + 2)
                 .padding(.vertical, FMSpacing.xxxs)
-                .background(FMColors.attentionFill)
+                .background(FMColors.notificationBadgeFill)
                 .clipShape(Capsule())
                 .accessibilityLabel("알림 \(count)개")
         }

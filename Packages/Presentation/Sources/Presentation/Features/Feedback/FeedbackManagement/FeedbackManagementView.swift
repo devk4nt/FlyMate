@@ -43,14 +43,14 @@ public struct FeedbackManagementView: View {
             }
             .frame(maxWidth: FMSizing.ContentWidth.regular)
             .frame(maxWidth: .infinity)
-            .background(FMColors.softCanvas)
+            .background(FMColors.canvas)
             .navigationTitle("피드백")
             .navigationBarTitleDisplayMode(.inline)
         }
         .sheet(item: $store.scope(state: \.quickFeedbackDetail, action: \.quickFeedbackDetail)) { detailStore in
             NavigationStack { QuickFeedbackRequestDetailView(store: detailStore) }
         }
-        .background(FMColors.softCanvas)
+        .background(FMColors.canvas)
     }
 
     private var tabHeader: some View {
@@ -93,7 +93,7 @@ public struct FeedbackManagementView: View {
                     HStack(spacing: FMSpacing.xs) {
                         Text("빠른 피드백")
                             .font(FMTypography.sectionTitle)
-                            .foregroundStyle(FMColors.label)
+                            .foregroundStyle(FMColors.brandTitle)
 
                         sectionCountBadge(requests.count)
 
@@ -128,7 +128,7 @@ public struct FeedbackManagementView: View {
                                     VStack(alignment: .leading, spacing: FMSpacing.xxs) {
                                         Text(request.title)
                                             .font(FMTypography.authorName)
-                                            .foregroundStyle(FMColors.label)
+                                            .foregroundStyle(FMColors.brandTitle)
                                         Text("받은 답변 \(dashboard.reviews(for: request.id).count)개")
                                             .font(FMTypography.caption1)
                                             .foregroundStyle(FMColors.secondaryLabel)
@@ -161,41 +161,35 @@ public struct FeedbackManagementView: View {
     }
 
     private var feedbackHeader: some View {
-        FMCard {
-            HStack(spacing: FMSpacing.sm) {
-                Image(systemName: "bubble.left.and.bubble.right.fill")
-                    .font(.system(size: FMSizing.IconSize.sm, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: FMSizing.IconContainer.md, height: FMSizing.IconContainer.md)
-                    .background(FMColors.brandGradient, in: Circle())
+        HStack(spacing: FMSpacing.sm) {
+            FMPracticeSymbol(size: 44)
 
-                VStack(alignment: .leading, spacing: FMSpacing.xxs) {
-                    Text("GROW TOGETHER")
-                        .font(FMTypography.eyebrow)
-                        .tracking(0.5)
-                        .foregroundStyle(FMColors.decorativeBrand)
+            VStack(alignment: .leading, spacing: FMSpacing.xxs) {
+                Text("함께 만드는 피드백")
+                    .font(FMTypography.feedMetaEmphasis)
+                    .foregroundStyle(FMColors.secondaryLabel)
 
-                    Text("한마디가 다음 영상을 바꿔요")
-                        .font(FMTypography.authorName)
-                        .foregroundStyle(FMColors.label)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.88)
-                }
-
-                Spacer(minLength: 0)
+                Text("한마디가 다음 영상을 바꿔요")
+                    .font(FMTypography.headline)
+                    .foregroundStyle(FMColors.brandTitle)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.88)
             }
+
+            Spacer(minLength: 0)
         }
+        .padding(.vertical, FMSpacing.sm)
         .accessibilityElement(children: .combine)
     }
 
     private var segmentControl: some View {
-        HStack(spacing: FMSpacing.xs) {
+        HStack(spacing: 0) {
             ForEach(FeedbackManagementFeature.State.Segment.allCases, id: \.self) { segment in
                 Button {
                     store.send(.segmentChanged(segment), animation: .snappy)
                 } label: {
                     HStack(spacing: FMSpacing.xxs) {
-                        Label(segment.rawValue, systemImage: segmentIcon(for: segment))
+                        Text(segment.rawValue)
                             .font(FMTypography.authorName)
                             .foregroundStyle(
                                 store.selectedSegment == segment
@@ -209,12 +203,16 @@ public struct FeedbackManagementView: View {
                         }
                     }
                     .frame(maxWidth: .infinity)
-                    .frame(minHeight: 38)
+                    .frame(minHeight: 44)
                     .background {
                         if store.selectedSegment == segment {
                             Capsule()
                                 .fill(FMColors.background)
-                                .shadow(color: FMShadow.floatingColor, radius: FMShadow.floatingRadius, y: FMShadow.floatingY)
+                                .shadow(
+                                    color: FMShadow.floatingColor,
+                                    radius: FMShadow.floatingRadius,
+                                    y: FMShadow.floatingY
+                                )
                         }
                     }
                     .contentShape(Capsule())
@@ -224,7 +222,7 @@ public struct FeedbackManagementView: View {
             }
         }
         .padding(4)
-        .background(FMColors.accent.opacity(0.1), in: Capsule())
+        .background(FMColors.supportAccent.opacity(0.12), in: Capsule())
     }
 
     private var pendingCount: Int {
@@ -289,7 +287,7 @@ private struct QuickFeedbackHistoryListView: View {
             }
             .padding(FMSpacing.md)
         }
-        .background(FMColors.softCanvas)
+        .background(FMColors.canvas)
         .navigationTitle("빠른 피드백 전체")
         .navigationBarTitleDisplayMode(.inline)
     }

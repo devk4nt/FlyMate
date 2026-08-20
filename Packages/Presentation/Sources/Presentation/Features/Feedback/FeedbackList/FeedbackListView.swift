@@ -24,7 +24,7 @@ public struct FeedbackListView<Header: View>: View {
             case .idle, .loading:
                 ScrollView {
                     header
-                    LazyVStack(spacing: FMSpacing.md) {
+                    LazyVStack(spacing: FMSpacing.sm) {
                         ForEach(0..<3, id: \.self) { _ in
                             FMSkeletonView(height: 164)
                         }
@@ -64,7 +64,7 @@ public struct FeedbackListView<Header: View>: View {
                 } else {
                     ScrollView {
                         header
-                        LazyVStack(spacing: FMSpacing.md) {
+                        LazyVStack(spacing: FMSpacing.sm) {
                             if let sectionTitle {
                                 Text(sectionTitle)
                                     .font(FMTypography.sectionTitle)
@@ -124,7 +124,7 @@ public struct FeedbackListView<Header: View>: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(FMColors.softCanvas)
+        .background(FMColors.canvas)
         .onAppear { store.send(.onAppear) }
         .sheet(item: $store.scope(state: \.report, action: \.report)) { reportStore in
             ReportView(store: reportStore)
@@ -195,7 +195,7 @@ struct FeedbackManagementRow: View {
 
     var body: some View {
         FMCard(style: .feed) {
-            VStack(alignment: .leading, spacing: FMSpacing.md) {
+            VStack(alignment: .leading, spacing: FMSpacing.sm) {
                 HStack(spacing: FMSpacing.sm) {
                     HStack(spacing: FMSpacing.sm) {
                         FMUserProfileButton(
@@ -248,24 +248,17 @@ struct FeedbackManagementRow: View {
                                 .font(FMTypography.body)
                                 .foregroundStyle(FMColors.secondaryLabel)
                                 .frame(width: 36, height: 36)
-                                .background(FMColors.softCanvas, in: Circle())
                                 .contentShape(Circle())
                         }
                         .accessibilityLabel(onEdit != nil ? "더보기 메뉴" : "신고 메뉴")
                     }
                 }
 
-                HStack(alignment: .top, spacing: FMSpacing.sm) {
-                    Capsule()
-                        .fill(FMColors.selection)
-                        .frame(width: 3)
-
-                    highlightedContent(feedback.content)
-                        .font(FMTypography.feedBody)
-                        .foregroundStyle(FMColors.label)
-                        .lineLimit(4)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                highlightedContent(feedback.content)
+                    .font(FMTypography.feedBody)
+                    .foregroundStyle(FMColors.label)
+                    .lineLimit(4)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 HStack(spacing: FMSpacing.sm) {
                     Label(
@@ -274,9 +267,9 @@ struct FeedbackManagementRow: View {
                     )
                     .font(FMTypography.feedMetaEmphasis)
                     .foregroundStyle(FMColors.badgeForeground)
-                    .padding(.horizontal, FMSpacing.sm)
-                    .padding(.vertical, FMSpacing.xs)
-                    .background(FMColors.badgeForeground.opacity(0.12), in: Capsule())
+                    .padding(.horizontal, FMSpacing.xs)
+                    .padding(.vertical, FMSpacing.xxs)
+                    .background(FMColors.supportSurface, in: Capsule())
 
                     if feedback.commentCount > 0 {
                         Label("답글 \(feedback.commentCount)", systemImage: "bubble.left.fill")
@@ -286,11 +279,9 @@ struct FeedbackManagementRow: View {
 
                     Spacer(minLength: 0)
 
-                    Image(systemName: "arrow.up.right")
-                        .font(FMTypography.badgeStrong)
-                        .foregroundStyle(FMColors.iconAccent)
-                        .frame(width: 30, height: 30)
-                        .background(FMColors.iconAccent.opacity(0.1), in: Circle())
+                    Image(systemName: "chevron.right")
+                        .font(FMTypography.caption1)
+                        .foregroundStyle(FMColors.secondaryLabel)
                 }
             }
         }

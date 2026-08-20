@@ -46,7 +46,7 @@ public struct FMButton: View {
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity)
-            .frame(minHeight: 52)
+            .frame(minHeight: 48)
             .padding(.horizontal, FMSpacing.md)
             .background(backgroundColor)
             .foregroundStyle(foregroundColor)
@@ -54,14 +54,9 @@ public struct FMButton: View {
             .overlay {
                 if style == .secondary {
                     RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous)
-                        .stroke(FMColors.actionForeground.opacity(0.42), lineWidth: 1)
+                        .stroke(FMColors.supportAccent.opacity(0.42), lineWidth: 1)
                 }
             }
-            .shadow(
-                color: style == .primary ? FMColors.accentFill.opacity(0.18) : .clear,
-                radius: 8,
-                y: 4
-            )
         }
         .disabled(!isEnabled || isLoading)
         .opacity(isEnabled ? 1.0 : 0.5)
@@ -75,7 +70,7 @@ public struct FMButton: View {
     private var backgroundColor: Color {
         switch style {
         case .primary:
-            return FMColors.accentFill
+            return FMColors.primaryAction
         case .secondary:
             return FMColors.background
         case .destructive:
@@ -90,7 +85,7 @@ public struct FMButton: View {
         case .primary:
             return FMColors.onAccent
         case .secondary:
-            return FMColors.actionForeground
+            return FMColors.brandTitle
         case .destructive:
             return .white
         case .text:

@@ -186,7 +186,7 @@ public struct SettingsView: View {
             .contentMargins(.top, 0, for: .scrollContent)
             .listSectionSpacing(FMSpacing.lg)
             .scrollContentBackground(.hidden)
-            .background(FMColors.softCanvas)
+            .background(FMColors.canvas)
             .tint(FMColors.actionForeground)
             .navigationTitle("설정")
             .navigationBarTitleDisplayMode(.inline)
@@ -197,7 +197,7 @@ public struct SettingsView: View {
                 BlockedUsersView(store: store.scope(state: \.blockedUsers, action: \.blockedUsers))
             }
         }
-        .background(FMColors.softCanvas)
+        .background(FMColors.canvas)
         .onAppear { store.send(.onAppear) }
         // 시스템 설정에서 권한 변경 후 복귀 시 토글 상태 재동기화
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
@@ -224,47 +224,32 @@ public struct SettingsView: View {
         Button {
             store.send(.profileEditTapped)
         } label: {
-            HStack(spacing: FMSpacing.md) {
-                FMProfileImage(
-                    url: store.currentUser.profileImageURL,
-                    name: store.currentUser.name,
-                    size: .xl
-                )
-                .background(.white.opacity(0.92), in: Circle())
-                .overlay {
-                    Circle()
-                        .stroke(.white.opacity(0.8), lineWidth: 2)
+            FMCard(style: .feed, background: FMColors.supportSurface) {
+                HStack(spacing: FMSpacing.sm) {
+                    FMProfileImage(
+                        url: store.currentUser.profileImageURL,
+                        name: store.currentUser.name,
+                        size: .lg
+                    )
+
+                    VStack(alignment: .leading, spacing: FMSpacing.xxxs) {
+                        Text(store.currentUser.name)
+                            .font(FMTypography.headline)
+                            .foregroundStyle(FMColors.brandTitle)
+
+                        Text(store.currentUser.displayEmail)
+                            .font(FMTypography.caption1)
+                            .foregroundStyle(FMColors.secondaryLabel)
+                            .lineLimit(1)
+                    }
+
+                    Spacer(minLength: 0)
+
+                    Label("편집", systemImage: "pencil")
+                        .font(FMTypography.feedMetaEmphasis)
+                        .foregroundStyle(FMColors.primaryAction)
                 }
-
-                VStack(alignment: .leading, spacing: FMSpacing.xxs) {
-                    Text("MY FLYMATE")
-                        .font(FMTypography.eyebrow)
-                        .tracking(0.6)
-                        .foregroundStyle(FMColors.onBrand)
-
-                    Text(store.currentUser.name)
-                        .font(FMTypography.sectionTitle)
-                        .foregroundStyle(.white)
-
-                    Text(store.currentUser.displayEmail)
-                        .font(FMTypography.caption1)
-                        .foregroundStyle(FMColors.onBrand)
-                        .lineLimit(1)
-                }
-
-                Spacer(minLength: 0)
-
-                Image(systemName: "pencil")
-                    .font(FMTypography.badgeStrong)
-                    .foregroundStyle(.white)
-                    .frame(width: FMSizing.IconContainer.sm, height: FMSizing.IconContainer.sm)
-                    .background(.white.opacity(0.16), in: Circle())
             }
-            .padding(FMSpacing.lg)
-            .background(FMColors.brandGradient)
-            .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
-            .shadow(color: FMShadow.heroColor, radius: FMShadow.heroRadius, y: FMShadow.heroY)
-            .contentShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
@@ -321,6 +306,6 @@ private extension View {
     func settingsSectionStyle() -> some View {
         self
             .listRowBackground(FMColors.background)
-            .listRowSeparatorTint(FMColors.accent.opacity(0.18))
+            .listRowSeparatorTint(FMColors.supportAccent.opacity(0.18))
     }
 }

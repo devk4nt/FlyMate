@@ -47,27 +47,36 @@ public struct FMCard<Content: View>: View {
     }
 
     private var padding: CGFloat {
-        paddingOverride ?? (style == .feed ? FMSpacing.lg : FMSpacing.md)
+        paddingOverride ?? FMSpacing.md
     }
 
     private var cornerRadius: CGFloat {
         switch style {
         case .standard: FMSpacing.CornerRadius.lg
-        case .feed: FMSpacing.CornerRadius.xl
+        case .feed: FMSpacing.CornerRadius.lg
         case .hero: FMSpacing.CornerRadius.hero
         }
     }
 
     private var backgroundColor: Color {
-        backgroundOverride ?? (style == .standard ? FMColors.elevatedBackground : FMColors.background)
+        if let backgroundOverride { return backgroundOverride }
+        switch style {
+        case .standard: return FMColors.elevatedBackground
+        case .feed, .hero: return FMColors.background
+        }
     }
 
     private var borderColor: Color {
-        borderOverride ?? (style == .standard ? FMColors.border.opacity(0.22) : FMColors.accent.opacity(0.2))
+        if let borderOverride { return borderOverride }
+        switch style {
+        case .standard: return FMColors.border.opacity(0.28)
+        case .feed: return FMColors.supportAccent.opacity(0.2)
+        case .hero: return FMColors.border.opacity(0.18)
+        }
     }
 
     private var borderWidth: CGFloat {
-        style == .standard ? 0.5 : 1
+        0.5
     }
 
     private var shadowColor: Color {
@@ -80,6 +89,48 @@ public struct FMCard<Content: View>: View {
 
     private var shadowY: CGFloat {
         style == .hero ? FMShadow.heroY : FMShadow.cardY
+    }
+}
+
+/// 카메라 프레임, 피드백 말풍선, 완료 체크를 결합한 FlyMate 전용 심벌입니다.
+public struct FMPracticeSymbol: View {
+    private let size: CGFloat
+    private let showsEncouragement: Bool
+
+    public init(size: CGFloat = 52, showsEncouragement: Bool = true) {
+        self.size = size
+        self.showsEncouragement = showsEncouragement
+    }
+
+    public var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.2, style: .continuous)
+                .stroke(FMColors.brandTitle, lineWidth: 2)
+                .frame(width: size * 0.72, height: size * 0.56)
+                .overlay {
+                    Circle()
+                        .stroke(FMColors.supportAccent, lineWidth: 2)
+                        .frame(width: size * 0.2, height: size * 0.2)
+                }
+                .offset(x: -size * 0.05, y: -size * 0.04)
+
+            Image(systemName: "bubble.left.fill")
+                .font(.system(size: size * 0.31, weight: .semibold))
+                .foregroundStyle(FMColors.supportAccent)
+                .symbolRenderingMode(.hierarchical)
+                .offset(x: size * 0.28, y: size * 0.25)
+
+            if showsEncouragement {
+                Image(systemName: "checkmark")
+                    .font(.system(size: size * 0.15, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: size * 0.3, height: size * 0.3)
+                    .background(FMColors.blushCoral, in: Circle())
+                    .offset(x: size * 0.31, y: -size * 0.28)
+            }
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
     }
 }
 

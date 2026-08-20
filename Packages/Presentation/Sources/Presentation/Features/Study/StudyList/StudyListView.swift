@@ -37,7 +37,7 @@ public struct StudyListView: View {
 
     public var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: FMSpacing.xl) {
+            LazyVStack(alignment: .leading, spacing: FMSpacing.lg) {
                 practiceHero(studies: loadedStudies)
                 quickFeedbackOverview
                 studyContent
@@ -48,7 +48,7 @@ public struct StudyListView: View {
             .padding(.top, FMSpacing.xs)
             .padding(.bottom, FMSpacing.xxxl)
         }
-        .background(FMColors.softCanvas)
+        .background(FMColors.canvas)
         .refreshable {
             await store.send(.refresh).finish()
         }
@@ -133,68 +133,63 @@ public struct StudyListView: View {
     }
 
     private func practiceHero(studies: [Study]?) -> some View {
-        VStack(alignment: .leading, spacing: FMSpacing.sm) {
+        FMCard(style: .hero, background: FMColors.supportSurface) {
             VStack(alignment: .leading, spacing: FMSpacing.sm) {
-                Label("TODAY'S PRACTICE", systemImage: "sparkles")
-                    .font(FMTypography.badgeStrong)
-                    .tracking(0.8)
-                    .foregroundStyle(FMColors.onBrand)
+                HStack(spacing: FMSpacing.sm) {
+                    FMPracticeSymbol(size: 48)
 
-                Text(heroPhrase)
-                    .font(FMTypography.sectionTitle)
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                    VStack(alignment: .leading, spacing: FMSpacing.xxs) {
+                        HStack(spacing: FMSpacing.xs) {
+                            Text("오늘 할 일")
+                                .font(FMTypography.eyebrow)
+                                .foregroundStyle(FMColors.supportAccent)
+
+                            Text("오늘도 파이팅")
+                                .font(FMTypography.eyebrow)
+                                .foregroundStyle(FMColors.blushCoral)
+                        }
+
+                        Text(store.awaitingFirstUploadPointBalance == nil ? heroPhrase : "웰컴 포인트로 첫 피드백을 받아보세요")
+                            .font(FMTypography.headline)
+                            .foregroundStyle(FMColors.brandTitle)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+
+                        if let balance = store.awaitingFirstUploadPointBalance {
+                            Text("포인트 \(balance)개 보유 · \(Int(AppConstants.maxQuickFeedbackVideoDurationSeconds))초 영상이면 충분해요")
+                                .font(FMTypography.caption1)
+                                .monospacedDigit()
+                                .foregroundStyle(FMColors.secondaryLabel)
+                        } else if let studies {
+                            Text("스터디 \(studies.count)개 · 함께하는 멤버 \(studies.reduce(0) { $0 + $1.memberCount })명")
+                                .font(FMTypography.caption1)
+                                .monospacedDigit()
+                                .foregroundStyle(FMColors.secondaryLabel)
+                        }
+                    }
+
+                    Spacer(minLength: 0)
+                }
+
+                heroActions
             }
-
-            if let studies {
-                Text("참여 중인 스터디 \(studies.count)개 · 멤버 \(studies.reduce(0) { $0 + $1.memberCount })명")
-                    .font(FMTypography.caption1)
-                    .monospacedDigit()
-                    .foregroundStyle(FMColors.onBrand)
-            }
-
-            heroActions
         }
-        .padding(.horizontal, FMSpacing.lg)
-        .padding(.vertical, FMSpacing.md)
-        .background {
-            ZStack(alignment: .topTrailing) {
-                RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.hero, style: .continuous)
-                    .fill(FMColors.brandGradient)
-
-                Circle()
-                    .fill(FMColors.secondary.opacity(0.34))
-                    .frame(width: 150, height: 150)
-                    .blur(radius: 4)
-                    .offset(x: 56, y: -62)
-
-                Circle()
-                    .fill(.white.opacity(0.13))
-                    .frame(width: 90, height: 90)
-                    .offset(x: -30, y: 128)
-            }
-            .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.hero, style: .continuous))
-        }
-        .shadow(color: FMShadow.heroColor, radius: FMShadow.heroRadius, y: FMShadow.heroY)
         .accessibilityElement(children: .contain)
     }
 
     private var heroActions: some View {
-        VStack(spacing: FMSpacing.sm) {
-            quickFeedbackHeroAction
-
-            FMGlassContainer(spacing: FMSpacing.sm) {
-                if dynamicTypeSize.isAccessibilitySize {
-                    VStack(spacing: FMSpacing.sm) {
-                        createStudyAction
-                        joinStudyAction
-                    }
-                } else {
-                    HStack(spacing: FMSpacing.sm) {
-                        createStudyAction
-                        joinStudyAction
-                    }
+        FMGlassContainer(spacing: FMSpacing.xs) {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: FMSpacing.xs) {
+                    quickFeedbackHeroAction
+                    createStudyAction
+                    joinStudyAction
+                }
+            } else {
+                HStack(spacing: FMSpacing.xs) {
+                    quickFeedbackHeroAction
+                    createStudyAction
+                    joinStudyAction
                 }
             }
         }
@@ -202,40 +197,37 @@ public struct StudyListView: View {
 
     private var quickFeedbackHeroAction: some View {
         heroActionButton(
-            title: "영상 올리고 피드백 받기",
+            title: store.awaitingFirstUploadPointBalance == nil ? "연습 시작" : "첫 영상 올리기",
             systemImage: "video.badge.plus",
             isPrimary: true
         ) {
             store.send(.quickFeedbackPrimaryTapped)
         }
-        .background(.white, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md))
-        .fmGlass(tint: .white.opacity(0.94))
+        .background(FMColors.primaryAction, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm, style: .continuous))
         .accessibilityHint("스터디 없이 빠른 피드백을 요청합니다")
     }
 
     private var createStudyAction: some View {
         heroActionButton(
-            title: "스터디 만들기",
+            title: "만들기",
             systemImage: "plus",
             isPrimary: false
         ) {
             store.send(.createStudyTapped)
         }
-        .background(.white.opacity(0.52), in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md))
-        .fmGlass(tint: .white.opacity(0.52))
+        .background(FMColors.background, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm, style: .continuous))
         .accessibilityHint("새 스터디를 만듭니다")
     }
 
     private var joinStudyAction: some View {
         heroActionButton(
-            title: "코드로 참여",
+            title: "코드 참여",
             systemImage: "ticket",
             isPrimary: false
         ) {
             store.send(.joinStudyTapped)
         }
-        .background(.white.opacity(0.52), in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md))
-        .fmGlass(tint: .white.opacity(0.52))
+        .background(FMColors.background, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm, style: .continuous))
         .accessibilityHint("초대 코드로 스터디에 참여합니다")
     }
 
@@ -247,10 +239,10 @@ public struct StudyListView: View {
     ) -> some View {
         Button(action: action) {
             Label(title, systemImage: systemImage)
-                .font(isPrimary ? FMTypography.headline : FMTypography.authorName)
-                .foregroundStyle(FMColors.onLightSurface)
+                .font(FMTypography.feedMetaEmphasis)
+                .foregroundStyle(isPrimary ? FMColors.onAccent : FMColors.brandTitle)
                 .frame(maxWidth: .infinity)
-                .frame(minHeight: 48)
+                .frame(minHeight: 42)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -274,18 +266,18 @@ public struct StudyListView: View {
         case .loaded(let dashboard):
             Button { store.send(.quickFeedbackHubTapped) } label: {
                 FMCard(style: .feed) {
-                    VStack(alignment: .leading, spacing: FMSpacing.md) {
+                    VStack(alignment: .leading, spacing: FMSpacing.sm) {
                         HStack(spacing: FMSpacing.sm) {
                             Image(systemName: "heart.text.square.fill")
                                 .font(.system(size: 22, weight: .semibold))
                                 .foregroundStyle(FMColors.iconAccent)
                             Text("빠른 피드백")
                                 .font(FMTypography.sectionTitle)
-                                .foregroundStyle(FMColors.label)
+                                .foregroundStyle(FMColors.brandTitle)
                             Spacer()
                             Label("\(dashboard.pointBalance)", systemImage: "ticket.fill")
                                 .font(FMTypography.authorName)
-                                .foregroundStyle(FMColors.badgeForeground)
+                                .foregroundStyle(FMColors.blushCoral)
                         }
 
                         if let request = dashboard.latestRequest, request.status == .open {
@@ -336,7 +328,7 @@ public struct StudyListView: View {
         HStack(alignment: .firstTextBaseline) {
             Text("내 스터디")
                 .font(FMTypography.sectionTitle)
-                .foregroundStyle(FMColors.label)
+                .foregroundStyle(FMColors.brandTitle)
 
             Spacer()
 
@@ -369,7 +361,7 @@ private struct StudyRow: View {
 
     var body: some View {
         FMCard(style: .feed) {
-            VStack(alignment: .leading, spacing: FMSpacing.md) {
+            VStack(alignment: .leading, spacing: FMSpacing.sm) {
                 HStack(spacing: FMSpacing.sm) {
                     memberStack
 
@@ -389,7 +381,7 @@ private struct StudyRow: View {
                 VStack(alignment: .leading, spacing: FMSpacing.xs) {
                     Text(study.name)
                         .font(FMTypography.cardTitle)
-                        .foregroundStyle(FMColors.label)
+                        .foregroundStyle(FMColors.brandTitle)
 
                     Text(study.description)
                         .font(FMTypography.feedBody)

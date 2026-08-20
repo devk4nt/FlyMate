@@ -30,20 +30,25 @@ public struct FMFeedCell: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            header
-            media
-            footer
+        FMCard(style: .feed, padding: 0) {
+            VStack(alignment: .leading, spacing: 0) {
+                header
+                media
+
+                VStack(alignment: .leading, spacing: FMSpacing.xs) {
+                    Text(title)
+                        .font(FMTypography.cardTitle)
+                        .foregroundStyle(FMColors.brandTitle)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    footer
+                }
+                .padding(FMSpacing.sm)
+            }
         }
-        .background(FMColors.elevatedBackground)
-        .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.lg, style: .continuous)
-                .stroke(FMColors.border.opacity(0.2), lineWidth: 0.5)
-        }
-        .shadow(color: FMShadow.cardColor, radius: 12, y: 5)
         .padding(.horizontal, FMSpacing.md)
-        .padding(.vertical, FMSpacing.xs)
+        .padding(.vertical, FMSpacing.xxs)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(authorName)의 영상, \(title), 피드백 \(feedbackCount)개, \(timeText)")
     }
@@ -52,17 +57,23 @@ public struct FMFeedCell: View {
 
     private var header: some View {
         HStack(spacing: FMSpacing.xs) {
-            FMProfileImage(url: authorProfileURL, name: authorName, size: .md)
+            FMProfileImage(url: authorProfileURL, name: authorName, size: .sm)
 
-            Text(authorName)
-                .font(FMTypography.authorName)
-                .foregroundStyle(FMColors.label)
+            VStack(alignment: .leading, spacing: FMSpacing.xxxs) {
+                Text(authorName)
+                    .font(FMTypography.authorName)
+                    .foregroundStyle(FMColors.brandTitle)
 
-            Spacer()
+                Text("최근 활동 · \(timeText)")
+                    .font(FMTypography.feedMeta)
+                    .foregroundStyle(FMColors.secondaryLabel)
+            }
 
-            Text(timeText)
-                .font(FMTypography.feedMeta)
-                .foregroundStyle(FMColors.secondaryLabel)
+            Spacer(minLength: 0)
+
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: FMSizing.IconSize.sm, weight: .semibold))
+                .foregroundStyle(FMColors.supportAccent)
         }
         .padding(FMSpacing.sm)
     }
@@ -101,7 +112,7 @@ public struct FMFeedCell: View {
                 }
                 .shadow(color: .black.opacity(0.2), radius: 12, y: 5)
         }
-        .aspectRatio(16 / 9, contentMode: .fit)
+        .aspectRatio(1.85, contentMode: .fit)
         .clipped()
         .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous))
         .overlay(alignment: .bottomTrailing) {
@@ -115,33 +126,25 @@ public struct FMFeedCell: View {
                 .clipShape(Capsule())
                 .padding(FMSpacing.xs)
         }
-        .padding(.horizontal, FMSpacing.sm)
     }
 
     // MARK: - Footer
 
     private var footer: some View {
-        VStack(alignment: .leading, spacing: FMSpacing.xs) {
-            Text(title)
-                .font(FMTypography.headline)
-                .foregroundStyle(FMColors.label)
-                .lineLimit(2)
+        HStack(spacing: FMSpacing.md) {
+            Label(
+                feedbackCount > 0 ? "피드백 \(feedbackCount)" : "첫 피드백 남기기",
+                systemImage: feedbackCount > 0 ? "heart.fill" : "bubble.left"
+            )
+            .foregroundStyle(feedbackCount > 0 ? FMColors.blushCoral : FMColors.supportAccent)
 
-            HStack(spacing: FMSpacing.xs) {
-                Image(systemName: feedbackCount > 0 ? "bubble.left.fill" : "bubble.left")
-                    .foregroundStyle(feedbackCount > 0 ? FMColors.primary : FMColors.secondaryLabel)
+            Label("함께 보기", systemImage: "person.2")
+                .foregroundStyle(FMColors.supportAccent)
 
-                Text(feedbackCount > 0 ? "피드백 \(feedbackCount)개" : "첫 피드백을 남겨보세요")
-
-                Spacer()
-
-                Image(systemName: "arrow.up.right")
-            }
-            .font(FMTypography.feedMetaEmphasis)
-            .foregroundStyle(FMColors.secondaryLabel)
+            Spacer(minLength: 0)
         }
+        .font(FMTypography.feedMetaEmphasis)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(FMSpacing.sm)
     }
 }
 

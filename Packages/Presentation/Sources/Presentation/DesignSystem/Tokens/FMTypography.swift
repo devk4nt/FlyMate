@@ -2,19 +2,19 @@ import SwiftUI
 
 public enum FMTypography {
     public static var heroTitle: Font {
-        .system(.largeTitle, design: .rounded, weight: .bold)
+        .system(.title, design: .rounded, weight: .bold)
     }
 
     public static var sectionTitle: Font {
-        .system(.title2, design: .rounded, weight: .bold)
+        .system(.headline, weight: .semibold)
     }
 
     public static var largeTitle: Font {
-        .system(.title, weight: .bold)
+        .system(.title2, weight: .semibold)
     }
 
     public static var title1: Font {
-        .system(.title2, weight: .bold)
+        .system(.title3, weight: .semibold)
     }
 
     public static var title2: Font {
@@ -46,15 +46,15 @@ public enum FMTypography {
     }
 
     public static var eyebrow: Font {
-        .system(.caption2, weight: .bold)
+        .system(.caption2, weight: .semibold)
     }
 
     public static var cardTitle: Font {
-        .system(.title3, weight: .bold)
+        .system(.headline, weight: .semibold)
     }
 
     public static var badgeStrong: Font {
-        .system(.caption, weight: .bold)
+        .system(.caption, weight: .semibold)
     }
 
     // MARK: - Feed (인스타그램형 피드 전용)

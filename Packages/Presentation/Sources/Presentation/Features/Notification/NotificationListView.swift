@@ -108,7 +108,7 @@ private struct NotificationRow: View {
             VStack(alignment: .leading, spacing: FMSpacing.xxs) {
                 Text(notification.title)
                     .font(FMTypography.headline)
-                    .foregroundStyle(FMColors.label)
+                    .foregroundStyle(FMColors.brandTitle)
                     .lineLimit(1)
 
                 Text(notification.body)
@@ -126,14 +126,14 @@ private struct NotificationRow: View {
             // Unread indicator
             if !notification.isRead {
                 Circle()
-                    .fill(FMColors.highlight)
+                    .fill(FMColors.notificationBadgeFill)
                     .frame(width: 8, height: 8)
                     .accessibilityLabel("읽지 않음")
             }
         }
         .padding(.horizontal, FMSpacing.md)
         .padding(.vertical, FMSpacing.sm)
-        .background(notification.isRead ? Color.clear : FMColors.secondaryBackground.opacity(0.5))
+        .background(notification.isRead ? Color.clear : FMColors.supportSurface.opacity(0.72))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(notification.title), \(notification.body)")
         .accessibilityHint(notification.isRead ? "" : "읽지 않은 알림")
@@ -157,6 +157,6 @@ private struct NotificationRow: View {
     }
 
     private var iconColor: Color {
-        FMColors.highlight
+        FMColors.supportAccent
     }
 }

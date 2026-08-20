@@ -14,7 +14,7 @@ public struct RecruitListView: View {
         NavigationStack {
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(FMColors.softCanvas)
+                .background(FMColors.canvas)
                 .navigationTitle("모집")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -130,54 +130,40 @@ public struct RecruitListView: View {
     // MARK: - Hero
 
     private var recruitmentHero: some View {
-        VStack(alignment: .leading, spacing: FMSpacing.sm) {
-            VStack(alignment: .leading, spacing: FMSpacing.sm) {
-                Label("STUDY TOGETHER", systemImage: "person.3.fill")
-                    .font(FMTypography.badgeStrong)
-                    .tracking(0.8)
-                    .foregroundStyle(FMColors.onBrand)
+        FMCard(style: .hero, background: FMColors.supportSurface) {
+            HStack(spacing: FMSpacing.sm) {
+                FMPracticeSymbol(size: 44, showsEncouragement: false)
 
-                Text("함께 연습할 동료를 찾아보세요")
-                    .font(FMTypography.sectionTitle)
-                    .foregroundStyle(.white)
-            }
+                VStack(alignment: .leading, spacing: FMSpacing.xxs) {
+                    Text("스터디 모집")
+                        .font(FMTypography.eyebrow)
+                        .foregroundStyle(FMColors.supportAccent)
 
-            Button {
-                store.send(.createTapped)
-            } label: {
-                Label("모집 글 작성", systemImage: "square.and.pencil")
-                    .font(FMTypography.authorName)
-                    .foregroundStyle(FMColors.onLightSurface)
-                    .frame(maxWidth: .infinity)
-                    .frame(minHeight: 48)
-                    .contentShape(Rectangle())
+                    Text("함께 연습할 동료를 찾아보세요")
+                        .font(FMTypography.headline)
+                        .foregroundStyle(FMColors.brandTitle)
+                }
+
+                Spacer(minLength: 0)
+
+                Button {
+                    store.send(.createTapped)
+                } label: {
+                    Label("글쓰기", systemImage: "square.and.pencil")
+                        .font(FMTypography.feedMetaEmphasis)
+                        .foregroundStyle(FMColors.onAccent)
+                        .padding(.horizontal, FMSpacing.sm)
+                        .frame(minHeight: 40)
+                }
+                .buttonStyle(.plain)
+                .background(
+                    FMColors.primaryAction,
+                    in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm, style: .continuous)
+                )
+                .accessibilityHint("새 스터디원 모집 글을 작성합니다")
+                .accessibilityIdentifier("스터디_목록_히어로_모집글작성")
             }
-            .buttonStyle(.plain)
-            .background(.white.opacity(0.92), in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous))
-            .accessibilityHint("새 스터디원 모집 글을 작성합니다")
-            .accessibilityIdentifier("스터디_목록_히어로_모집글작성")
         }
-        .padding(.horizontal, FMSpacing.lg)
-        .padding(.vertical, FMSpacing.md)
-        .background {
-            ZStack(alignment: .topTrailing) {
-                RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.hero, style: .continuous)
-                    .fill(FMColors.brandGradient)
-
-                Circle()
-                    .fill(FMColors.secondary.opacity(0.34))
-                    .frame(width: 150, height: 150)
-                    .blur(radius: 4)
-                    .offset(x: 56, y: -62)
-
-                Circle()
-                    .fill(.white.opacity(0.13))
-                    .frame(width: 90, height: 90)
-                    .offset(x: -30, y: 88)
-            }
-            .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.hero, style: .continuous))
-        }
-        .shadow(color: FMShadow.heroColor, radius: FMShadow.heroRadius, y: FMShadow.heroY)
         .accessibilityElement(children: .contain)
     }
 
@@ -187,7 +173,7 @@ public struct RecruitListView: View {
         VStack(alignment: .leading, spacing: FMSpacing.sm) {
             Text("모집 글")
                 .font(FMTypography.sectionTitle)
-                .foregroundStyle(FMColors.label)
+                .foregroundStyle(FMColors.brandTitle)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: FMSpacing.xs) {
@@ -250,7 +236,7 @@ public struct RecruitListView: View {
         .foregroundStyle(isActive ? FMColors.onAccent : FMColors.label)
         .padding(.horizontal, FMSpacing.sm)
         .padding(.vertical, FMSpacing.xs)
-        .background(isActive ? FMColors.accentFill : FMColors.background, in: Capsule())
+        .background(isActive ? FMColors.primaryAction : FMColors.background, in: Capsule())
         .overlay {
             Capsule().stroke(FMColors.border.opacity(0.4), lineWidth: isActive ? 0 : 1)
         }
@@ -262,7 +248,7 @@ public struct RecruitListView: View {
             .foregroundStyle(isActive ? FMColors.onAccent : FMColors.label)
             .padding(.horizontal, FMSpacing.sm)
             .padding(.vertical, FMSpacing.xs)
-            .background(isActive ? FMColors.accentFill : FMColors.background, in: Capsule())
+        .background(isActive ? FMColors.primaryAction : FMColors.background, in: Capsule())
             .overlay {
                 Capsule().stroke(FMColors.border.opacity(0.4), lineWidth: isActive ? 0 : 1)
             }
@@ -292,7 +278,7 @@ struct RecruitPostRow: View {
         FMCard(
             style: .feed,
             background: post.isRecruiting() ? FMColors.background : FMColors.secondaryBackground,
-            border: post.isRecruiting() ? FMColors.accent.opacity(0.2) : FMColors.border
+            border: post.isRecruiting() ? FMColors.supportAccent.opacity(0.2) : FMColors.border.opacity(0.3)
         ) {
             VStack(alignment: .leading, spacing: FMSpacing.sm) {
                 HStack(spacing: FMSpacing.xs) {
@@ -314,7 +300,7 @@ struct RecruitPostRow: View {
 
                 Text(post.title)
                     .font(FMTypography.headline)
-                    .foregroundStyle(FMColors.label)
+                    .foregroundStyle(FMColors.brandTitle)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
 
@@ -367,7 +353,7 @@ struct RecruitPostRow: View {
             .padding(.horizontal, FMSpacing.xs)
             .padding(.vertical, FMSpacing.xxs)
             .background(
-                post.isRecruiting() ? FMColors.accentFill : FMColors.secondaryBackground,
+                post.isRecruiting() ? FMColors.primaryAction : FMColors.secondaryBackground,
                 in: Capsule()
             )
     }
