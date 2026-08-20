@@ -139,16 +139,6 @@ public struct StudyListView: View {
                     FMPracticeSymbol(size: 48)
 
                     VStack(alignment: .leading, spacing: FMSpacing.xxs) {
-                        HStack(spacing: FMSpacing.xs) {
-                            Text("오늘 할 일")
-                                .font(FMTypography.eyebrow)
-                                .foregroundStyle(FMColors.supportAccent)
-
-                            Text("오늘도 파이팅")
-                                .font(FMTypography.eyebrow)
-                                .foregroundStyle(FMColors.blushCoral)
-                        }
-
                         Text(store.awaitingFirstUploadPointBalance == nil ? heroPhrase : "웰컴 포인트로 첫 피드백을 받아보세요")
                             .font(FMTypography.headline)
                             .foregroundStyle(FMColors.brandTitle)
