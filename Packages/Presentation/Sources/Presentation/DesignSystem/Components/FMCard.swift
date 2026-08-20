@@ -92,6 +92,38 @@ public struct FMCard<Content: View>: View {
     }
 }
 
+/// FlyMate 앱 아이콘을 원본 색상과 동일한 비율로 표시합니다.
+public struct FMAppIcon: View {
+    private let size: CGFloat
+    private let showsShadow: Bool
+
+    public init(size: CGFloat, showsShadow: Bool = false) {
+        self.size = size
+        self.showsShadow = showsShadow
+    }
+
+    public var body: some View {
+        Image("FlyMateAppIcon", bundle: .module)
+            .renderingMode(.original)
+            .resizable()
+            .interpolation(.high)
+            .scaledToFill()
+            .frame(width: size, height: size)
+            .clipShape(
+                RoundedRectangle(
+                    cornerRadius: size * 0.22,
+                    style: .continuous
+                )
+            )
+            .shadow(
+                color: showsShadow ? FMShadow.cardColor : .clear,
+                radius: showsShadow ? FMShadow.cardRadius : 0,
+                y: showsShadow ? FMShadow.cardY : 0
+            )
+            .accessibilityHidden(true)
+    }
+}
+
 /// 카메라 프레임, 피드백 말풍선, 완료 체크를 결합한 FlyMate 전용 심벌입니다.
 public struct FMPracticeSymbol: View {
     private let size: CGFloat

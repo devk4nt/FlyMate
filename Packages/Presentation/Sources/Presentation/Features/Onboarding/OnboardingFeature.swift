@@ -31,18 +31,23 @@ public struct OnboardingFeature: Sendable {
             self.pages = [
                 OnboardingPage(
                     id: 0,
-                    title: "면접 영상을 업로드하세요",
-                    description: "모의 면접 영상을 촬영하고 스터디원들과 공유하세요. 실전처럼 연습하고 객관적인 시선으로 성장할 수 있어요."
+                    title: "면접 영상을 올려보세요",
+                    description: "모의 면접 영상을 스터디원과 공유하고 객관적인 시선으로 연습해요."
                 ),
                 OnboardingPage(
                     id: 1,
-                    title: "타임스탬프 피드백을 받아보세요",
-                    description: "영상의 특정 시점에 맞춘 정확한 피드백을 주고받으세요. 어떤 부분을 개선해야 할지 한눈에 파악할 수 있어요."
+                    title: "필요한 순간에 피드백을 받아요",
+                    description: "영상 속 정확한 시점에 의견을 남겨 개선할 부분을 빠르게 확인해요."
                 ),
                 OnboardingPage(
                     id: 2,
-                    title: "함께 성장하세요",
-                    description: "스터디원들과 서로 피드백을 나누며 면접 실력을 함께 키워가세요. FlyMate와 함께라면 면접이 두렵지 않아요."
+                    title: "서로 돕고 함께 성장해요",
+                    description: "멤버의 활동과 응원을 확인하고 서로 피드백을 주고받아요."
+                ),
+                OnboardingPage(
+                    id: 3,
+                    title: "웰컴 포인트 2개가 준비됐어요",
+                    description: "첫 영상을 올려 피드백을 받고, 다른 사람을 도우며 포인트를 다시 쌓아보세요."
                 ),
             ]
         }
@@ -52,10 +57,13 @@ public struct OnboardingFeature: Sendable {
         case pageChanged(Int)
         case skipTapped
         case startTapped
+        case uploadFirstVideoTapped
         case delegate(Delegate)
 
+        @CasePathable
         public enum Delegate {
             case onboardingCompleted
+            case firstUploadRequested
         }
     }
 
@@ -82,6 +90,13 @@ public struct OnboardingFeature: Sendable {
                 return .run { send in
                     await client.setBool(true, Constants.onboardingCompletedKey)
                     await send(.delegate(.onboardingCompleted))
+                }
+
+            case .uploadFirstVideoTapped:
+                let client = userDefaultsClient
+                return .run { send in
+                    await client.setBool(true, Constants.onboardingCompletedKey)
+                    await send(.delegate(.firstUploadRequested))
                 }
 
             case .delegate:

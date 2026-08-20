@@ -21,10 +21,13 @@ public struct AppFeature : Sendable {
         public var onboarding: OnboardingFeature.State?
         public var termsConsent: TermsConsentFeature.State?
         public var hasCheckedOnboarding = false
+        /// 온보딩을 본 첫 세션에는 공지 팝업을 보류한다 (첫 실행 팝업 연타 방지)
+        public var didShowOnboardingThisSession = false
         @Presents public var announcement: AnnouncementDetailFeature.State?
 
         public var startupAnnouncementUserID: UUID? {
-            guard hasCheckedOnboarding, onboarding == nil, termsConsent == nil else { return nil }
+            guard hasCheckedOnboarding, onboarding == nil, termsConsent == nil,
+                  !didShowOnboardingThisSession else { return nil }
             return currentUser?.id
         }
 
@@ -114,15 +117,17 @@ public struct AppFeature : Sendable {
                             await send(.pushNotificationTapped(payload))
                         }
                     }
-                    .cancellable(id: CancelID.pushNotificationObserver),
-                    .send(.checkOnboarding)
+                    .cancellable(id: CancelID.pushNotificationObserver)
                 )
 
             case .checkOnboarding:
                 state.hasCheckedOnboarding = true
                 let hasCompleted = userDefaultsClient.boolForKey("hasCompletedOnboarding")
                 if !hasCompleted {
+                    // 가이드라인 동의(authStateChanged에서 세팅)보다 위 레이어 —
+                    // 온보딩 → 가이드라인 → 업로드 순서로 이어진다
                     state.onboarding = OnboardingFeature.State()
+                    state.didShowOnboardingThisSession = true
                 }
                 return .none
 
@@ -130,12 +135,21 @@ public struct AppFeature : Sendable {
                 state.onboarding = nil
                 return .none
 
+            case .onboarding(.delegate(.firstUploadRequested)):
+                state.onboarding = nil
+                guard case .tab = state.destination else { return .none }
+                return .send(.destination(.tab(.study(.startFirstVideoUpload))))
+
             case .onboarding:
                 return .none
 
             case .termsConsent(.delegate(.consented)):
                 state.termsConsent = nil
-                return .send(.requestPushPermission)
+                // 로그인 전에 동의한 경우 푸시 권한은 로그인 완료(authStateChanged) 시점에 요청
+                if case .tab = state.destination {
+                    return .send(.requestPushPermission)
+                }
+                return .none
 
             case .termsConsent:
                 return .none
@@ -167,6 +181,8 @@ public struct AppFeature : Sendable {
                             // }
                             // .cancellable(id: CancelID.transactionUpdates)
                         ]
+                        // 온보딩은 로그인 후에 노출 — 웰컴 포인트/첫 업로드 안내는 계정이 생긴 뒤에 의미가 있다
+                        effects.append(.send(.checkOnboarding))
                         if let pendingDeepLink = state.pendingDeepLink {
                             state.pendingDeepLink = nil
                             effects.append(.send(.deepLink(pendingDeepLink)))

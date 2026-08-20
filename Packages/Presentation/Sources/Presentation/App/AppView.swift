@@ -94,8 +94,10 @@ public struct AppView: View {
         }
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.3), value: store.onboarding != nil)
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.3), value: store.termsConsent != nil)
-        .task(id: store.startupAnnouncementUserID) {
-            guard store.startupAnnouncementUserID != nil else { return }
+        .task(id: isShowingSplash ? nil : store.startupAnnouncementUserID) {
+            guard !isShowingSplash, store.startupAnnouncementUserID != nil else { return }
+            // 스플래시가 걷히고 홈이 먼저 보인 뒤에 공지를 띄운다
+            do { try await Task.sleep(for: .seconds(0.8)) } catch { return }
             store.send(.startupAnnouncementRequested)
         }
     }

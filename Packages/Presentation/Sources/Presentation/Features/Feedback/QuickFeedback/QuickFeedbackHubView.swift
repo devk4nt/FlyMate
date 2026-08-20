@@ -38,6 +38,7 @@ public struct QuickFeedbackHubView: View {
         .background(FMColors.canvas)
         .navigationTitle("빠른 피드백")
         .navigationBarTitleDisplayMode(.inline)
+        .alert($store.scope(state: \.closeRequestAlert, action: \.closeRequestAlert))
         .onAppear { store.send(.onAppear) }
         .refreshable { await store.send(.refresh).finish() }
         .sheet(item: $store.scope(state: \.review, action: \.review)) { reviewStore in
@@ -315,45 +316,75 @@ private struct QuickFeedbackRequestHistoryCard: View {
     var body: some View {
         FMCard {
             VStack(alignment: .leading, spacing: FMSpacing.sm) {
-                Button(action: onTapped) {
-                    VStack(alignment: .leading, spacing: FMSpacing.sm) {
-                        HStack {
-                            Text(request.title).font(FMTypography.headline)
-                            Spacer()
-                            Text("\(request.feedbackCount)/\(request.targetFeedbackCount)")
-                                .font(FMTypography.authorName)
-                                .monospacedDigit()
+                HStack(alignment: .top, spacing: FMSpacing.xs) {
+                    Text(request.title)
+                        .font(FMTypography.headline)
+                        .foregroundStyle(FMColors.brandTitle)
+
+                    Spacer(minLength: 0)
+
+                    HStack(spacing: FMSpacing.xs) {
+                        Text("\(request.feedbackCount)/\(request.targetFeedbackCount)")
+                            .font(FMTypography.authorName)
+                            .foregroundStyle(FMColors.brandTitle)
+                            .monospacedDigit()
+
+                        if request.status == .open {
+                            Menu {
+                                Button(role: .destructive, action: onCloseTapped) {
+                                    Label("요청 종료", systemImage: "xmark.circle")
+                                }
+                            } label: {
+                                Image(systemName: "ellipsis")
+                                    .font(.system(size: FMSizing.IconSize.sm, weight: .semibold))
+                                    .foregroundStyle(FMColors.secondaryLabel)
+                                    .frame(width: 32, height: 32)
+                                    .contentShape(Rectangle())
+                            }
+                            .accessibilityLabel("요청 관리")
+                            .accessibilityHint("요청 종료 메뉴를 엽니다")
                         }
-                        HStack {
-                            Label(request.focusArea.title, systemImage: "scope")
-                            Spacer()
-                            Text(request.createdAt.relativeString)
-                        }
-                        .font(FMTypography.caption1)
-                        .foregroundStyle(FMColors.secondaryLabel)
-                        ProgressView(
-                            value: Double(request.feedbackCount),
-                            total: Double(request.targetFeedbackCount)
-                        )
-                        .tint(FMColors.primary)
-                        HStack {
-                            Text(statusText)
-                            Spacer()
-                            Label("영상과 피드백 보기", systemImage: "chevron.right")
-                        }
-                        .font(FMTypography.caption1)
-                        .foregroundStyle(FMColors.secondaryLabel)
                     }
+                }
+
+                HStack {
+                    Label(request.focusArea.title, systemImage: "scope")
+                    Spacer()
+                    Text(request.createdAt.relativeString)
+                }
+                .font(FMTypography.caption1)
+                .foregroundStyle(FMColors.secondaryLabel)
+
+                ProgressView(
+                    value: Double(request.feedbackCount),
+                    total: Double(request.targetFeedbackCount)
+                )
+                .tint(FMColors.supportAccent)
+
+                Divider()
+
+                Button(action: onTapped) {
+                    HStack(spacing: FMSpacing.xs) {
+                        Text(statusText)
+                            .foregroundStyle(FMColors.secondaryLabel)
+
+                        Spacer(minLength: FMSpacing.sm)
+
+                        Text("영상과 피드백 보기")
+                            .fontWeight(.semibold)
+                            .foregroundStyle(FMColors.brandTitle)
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(FMColors.supportAccent)
+                    }
+                    .font(FMTypography.caption1)
+                    .frame(minHeight: 32)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("\(statusText), 영상과 피드백 보기")
                 .accessibilityHint("업로드한 영상과 받은 빠른 피드백을 확인합니다")
-                if request.status == .open {
-                    Button("요청 종료", action: onCloseTapped)
-                        .font(FMTypography.callout)
-                        .foregroundStyle(FMColors.destructive)
-                        .accessibilityHint("아직 받지 못한 피드백만큼 포인트를 돌려받습니다")
-                }
             }
         }
     }

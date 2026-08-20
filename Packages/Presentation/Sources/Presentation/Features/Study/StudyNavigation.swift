@@ -22,6 +22,7 @@ public struct StudyNavigationFeature {
         case navigateToVideo(Study, Video, feedbackID: UUID? = nil)
         case showInviteCode(String)
         case showQuickFeedback
+        case startFirstVideoUpload
     }
 
     @Reducer(state: .equatable)
@@ -49,6 +50,11 @@ public struct StudyNavigationFeature {
             case .showQuickFeedback:
                 state.path.removeAll()
                 state.path.append(.quickFeedbackHub(QuickFeedbackHubFeature.State()))
+                return .none
+
+            case .startFirstVideoUpload:
+                state.path.removeAll()
+                state.path.append(.videoUpload(VideoUploadFeature.State(destination: .quickFeedback)))
                 return .none
 
             case .studyList(.studyTapped(let study)):

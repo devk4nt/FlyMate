@@ -190,6 +190,64 @@ struct AppFeatureDeepLinkTests {
         }
     }
 
+    // MARK: - 첫 실행 동선 (로그인 → 온보딩 → 가이드라인)
+
+    @Test
+    func 로그인_완료시_온보딩과_가이드라인_동의가_함께_준비() async {
+        var state = AppFeature.State()
+        state.destination = .login(LoginFeature.State())
+
+        let store = TestStore(initialState: state) {
+            AppFeature()
+        } withDependencies: {
+            $0.userDefaultsClient.boolForKey = { _ in false }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.authStateChanged(Self.mockUser)) {
+            $0.destination = .tab(TabFeature.State(currentUser: Self.mockUser))
+            $0.termsConsent = TermsConsentFeature.State()
+        }
+
+        await store.receive(\.checkOnboarding) {
+            $0.hasCheckedOnboarding = true
+            $0.didShowOnboardingThisSession = true
+            $0.onboarding = OnboardingFeature.State()
+        }
+    }
+
+    @Test
+    func 온보딩에서_첫_업로드_선택시_업로드_화면으로_라우팅() async {
+        var state = AppFeature.State()
+        state.currentUser = Self.mockUser
+        state.destination = .tab(TabFeature.State(currentUser: Self.mockUser))
+        state.onboarding = OnboardingFeature.State()
+
+        let store = TestStore(initialState: state) {
+            AppFeature()
+        }
+        store.exhaustivity = .off
+
+        await store.send(.onboarding(.delegate(.firstUploadRequested))) {
+            $0.onboarding = nil
+        }
+
+        await store.receive(\.destination.tab.study.startFirstVideoUpload)
+    }
+
+    @Test
+    func 온보딩_본_세션에는_시작_공지_보류() {
+        var state = AppFeature.State()
+        state.currentUser = Self.mockUser
+        state.hasCheckedOnboarding = true
+        state.didShowOnboardingThisSession = true
+
+        #expect(state.startupAnnouncementUserID == nil)
+
+        state.didShowOnboardingThisSession = false
+        #expect(state.startupAnnouncementUserID == Self.mockUser.id)
+    }
+
     @Test
     func 약관_동의_완료_상태면_동의_화면_미표시() async {
         var state = AppFeature.State()

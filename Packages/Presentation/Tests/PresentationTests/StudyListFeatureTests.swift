@@ -101,6 +101,27 @@ struct StudyListFeatureTests {
     }
 
     @Test
+    func 첫_요청_전에만_첫_업로드_유도_모드() {
+        var state = StudyListFeature.State()
+
+        // 로딩 전에는 유도 모드 아님
+        #expect(state.awaitingFirstUploadPointBalance == nil)
+
+        // 요청 이력이 없으면 보유 포인트 반환
+        state.quickFeedback = .loaded(.mock)
+        #expect(state.awaitingFirstUploadPointBalance == 2)
+
+        // 요청 이력이 생기면 유도 모드 해제
+        state.quickFeedback = .loaded(QuickFeedbackDashboard(
+            pointBalance: 0,
+            latestRequest: .mock,
+            availableRequests: [],
+            receivedReviews: []
+        ))
+        #expect(state.awaitingFirstUploadPointBalance == nil)
+    }
+
+    @Test
     func 새로고침시_목록_다시_로딩() async {
         var state = StudyListFeature.State()
         state.studies = .loaded([Study.mock])
@@ -129,5 +150,24 @@ private extension QuickFeedbackDashboard {
         latestRequest: nil,
         availableRequests: [],
         receivedReviews: []
+    )
+}
+
+private extension QuickFeedbackRequest {
+    static let mock = QuickFeedbackRequest(
+        id: UUID(uuidString: "00000000-0000-0000-0000-000000000800")!,
+        uploaderID: UUID(uuidString: "00000000-0000-0000-0000-000000000801")!,
+        uploaderName: "김하늘",
+        uploaderProfileURL: nil,
+        title: "1분 자기소개 연습",
+        videoURL: nil,
+        durationSeconds: 50,
+        focusArea: .expression,
+        feedbackRequest: "시선과 미소가 자연스러운지 봐주세요.",
+        status: .open,
+        feedbackCount: 0,
+        targetFeedbackCount: 2,
+        expiresAt: Date(timeIntervalSince1970: 1_700_003_600),
+        createdAt: Date(timeIntervalSince1970: 1_700_000_000)
     )
 }

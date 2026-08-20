@@ -12,6 +12,7 @@ public struct QuickFeedbackHubFeature {
         public var error: AppError?
         public var showToast = false
         public var toastMessage = ""
+        @Presents public var closeRequestAlert: AlertState<Action.CloseRequestAlert>?
         @Presents public var review: QuickFeedbackReviewFeature.State?
         @Presents public var requestDetail: QuickFeedbackRequestDetailFeature.State?
 
@@ -25,6 +26,7 @@ public struct QuickFeedbackHubFeature {
         case startFeedbackTapped
         case claimResponse(Result<ClaimedQuickFeedback, AppError>)
         case closeRequestTapped(UUID)
+        case closeRequestAlert(PresentationAction<CloseRequestAlert>)
         case closeRequestResponse(Result<Void, AppError>)
         case requestHistoryTapped(UUID)
         case uploadTapped
@@ -32,6 +34,10 @@ public struct QuickFeedbackHubFeature {
         case dismissToast
         case review(PresentationAction<QuickFeedbackReviewFeature.Action>)
         case requestDetail(PresentationAction<QuickFeedbackRequestDetailFeature.Action>)
+
+        public enum CloseRequestAlert: Equatable {
+            case confirmClose(UUID)
+        }
     }
 
     @Dependency(\.quickFeedbackClient) private var quickFeedbackClient
@@ -86,6 +92,21 @@ public struct QuickFeedbackHubFeature {
                 return .send(.refresh)
 
             case .closeRequestTapped(let requestID):
+                state.closeRequestAlert = AlertState {
+                    TextState("요청을 종료할까요?")
+                } actions: {
+                    ButtonState(role: .destructive, action: .confirmClose(requestID)) {
+                        TextState("요청 종료")
+                    }
+                    ButtonState(role: .cancel) {
+                        TextState("취소")
+                    }
+                } message: {
+                    TextState("아직 받지 못한 피드백 수만큼 포인트를 돌려받아요. 종료한 요청은 다시 열 수 없어요.")
+                }
+                return .none
+
+            case .closeRequestAlert(.presented(.confirmClose(let requestID))):
                 let client = quickFeedbackClient
                 return .run { send in
                     do {
@@ -96,6 +117,9 @@ public struct QuickFeedbackHubFeature {
                         await send(.closeRequestResponse(.failure(appError)))
                     }
                 }
+
+            case .closeRequestAlert:
+                return .none
 
             case .closeRequestResponse(.success):
                 return .send(.refresh)
@@ -144,6 +168,7 @@ public struct QuickFeedbackHubFeature {
                 return .none
             }
         }
+        .ifLet(\.$closeRequestAlert, action: \.closeRequestAlert)
         .ifLet(\.$review, action: \.review) {
             QuickFeedbackReviewFeature()
         }

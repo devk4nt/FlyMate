@@ -1,7 +1,6 @@
 import SwiftUI
 
 public struct SplashView: View {
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isAnimated = false
 
@@ -9,11 +8,11 @@ public struct SplashView: View {
 
     public var body: some View {
         ZStack {
-            FMColors.launchBackground
+            FMColors.canvas
                 .ignoresSafeArea()
 
             Circle()
-                .fill(.white.opacity(colorScheme == .dark ? 0.16 : 0.1))
+                .fill(FMColors.supportSurface)
                 .frame(width: 280, height: 280)
                 .blur(radius: 10)
                 .offset(x: 160, y: -310)
@@ -28,12 +27,7 @@ public struct SplashView: View {
                 .scaleEffect(isAnimated ? 1 : 0.7)
                 .opacity(isAnimated ? 1 : 0)
 
-            Image("FlyMateAppIcon", bundle: .module)
-                .resizable()
-                .scaledToFill()
-                .frame(width: 176, height: 176)
-                .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.appIcon, style: .continuous))
-                .shadow(color: FMShadow.heroColor, radius: FMShadow.heroRadius, y: FMShadow.heroY)
+            FMAppIcon(size: 176, showsShadow: true)
                 .scaleEffect(isAnimated ? 1 : 0.86)
                 .opacity(isAnimated ? 1 : 0)
                 .offset(y: isAnimated ? -50 : 0)
@@ -41,11 +35,11 @@ public struct SplashView: View {
             VStack(spacing: FMSpacing.xs) {
                 Text("FlyMate")
                     .font(.system(size: 42, weight: .bold, design: .rounded))
-                    .foregroundStyle(contentColor)
+                    .foregroundStyle(FMColors.brandTitle)
 
                 Text("함께 연습하고, 더 자신 있게")
                     .font(.subheadline.weight(.medium))
-                    .foregroundStyle(contentColor.opacity(0.72))
+                    .foregroundStyle(FMColors.secondaryLabel)
             }
             .offset(y: isAnimated ? 100 : 110)
             .opacity(isAnimated ? 1 : 0)
@@ -68,9 +62,6 @@ public struct SplashView: View {
         }
     }
 
-    private var contentColor: Color {
-        colorScheme == .dark ? FMColors.mediaBadgeForeground : .white
-    }
 }
 
 #Preview {

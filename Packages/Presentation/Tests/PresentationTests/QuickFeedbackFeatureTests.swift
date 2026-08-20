@@ -84,6 +84,35 @@ struct QuickFeedbackFeatureTests {
     }
 
     @Test
+    func 요청_종료_탭시_확인창을_표시하고_즉시_종료하지_않는다() async {
+        let requestID = QuickFeedbackRequest.mock.id
+        let closedRequestID = LockIsolated<UUID?>(nil)
+        let store = TestStore(initialState: QuickFeedbackHubFeature.State()) {
+            QuickFeedbackHubFeature()
+        } withDependencies: {
+            $0.quickFeedbackClient.closeRequest = { id in
+                closedRequestID.setValue(id)
+            }
+        }
+
+        await store.send(.closeRequestTapped(requestID)) {
+            $0.closeRequestAlert = AlertState {
+                TextState("요청을 종료할까요?")
+            } actions: {
+                ButtonState(role: .destructive, action: .confirmClose(requestID)) {
+                    TextState("요청 종료")
+                }
+                ButtonState(role: .cancel) {
+                    TextState("취소")
+                }
+            } message: {
+                TextState("아직 받지 못한 피드백 수만큼 포인트를 돌려받아요. 종료한 요청은 다시 열 수 없어요.")
+            }
+        }
+        #expect(closedRequestID.value == nil)
+    }
+
+    @Test
     func 받은_빠른피드백의_리뷰어_프로필을_누르면_활동내역을_표시한다() async {
         let review = QuickFeedbackReview(
             id: UUID(912), requestID: QuickFeedbackRequest.mock.id,
