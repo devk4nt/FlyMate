@@ -9,6 +9,8 @@ public struct VideoUploadView: View {
     @Bindable var store: StoreOf<VideoUploadFeature>
     @State private var selectedItem: PhotosPickerItem?
     @State private var isProcessingVideo = false
+    @State private var trimSourceURL: URL?
+    @State private var isTrimmerPresented = false
 
     public init(store: StoreOf<VideoUploadFeature>) {
         self.store = store
@@ -100,7 +102,38 @@ public struct VideoUploadView: View {
             guard let newItem else { return }
             processSelectedVideo(newItem)
         }
+        .alert(
+            "영상이 \(maximumDurationText)을 넘어요",
+            isPresented: Binding(
+                get: { trimSourceURL != nil && !isTrimmerPresented },
+                set: { newValue in
+                    if !newValue, !isTrimmerPresented {
+                        discardTrimSource()
+                    }
+                }
+            )
+        ) {
+            Button("잘라서 올리기") { isTrimmerPresented = true }
+            Button("취소", role: .cancel) {}
+        } message: {
+            Text("원하는 구간을 \(maximumDurationText) 이내로 잘라서 올릴 수 있어요.")
+        }
+        .fullScreenCover(isPresented: $isTrimmerPresented) {
+            if let trimSourceURL {
+                VideoTrimmerView(
+                    videoURL: trimSourceURL,
+                    maximumDuration: store.maximumDuration,
+                    onComplete: handleTrimmedVideo,
+                    onCancel: discardTrimSource
+                )
+                .ignoresSafeArea()
+            }
+        }
         .disabled(isProcessingVideo)
+    }
+
+    private var maximumDurationText: String {
+        store.isQuickFeedback ? "1분" : "3분"
     }
 
     private var uploadHeader: some View {
@@ -138,7 +171,6 @@ public struct VideoUploadView: View {
     private var videoSelectionCard: some View {
         let hasSelectedVideo = store.selectedVideoData != nil
         let durationText = store.videoDuration.minuteSecondFormatted
-        let maximumDurationText = store.isQuickFeedback ? "1분" : "3분"
         let thumbnailImage = store.selectedThumbnailData
             .flatMap(UIImage.init(data:))
             .map { Image(uiImage: $0) }
@@ -147,6 +179,7 @@ public struct VideoUploadView: View {
             PhotosPicker(
                 selection: $selectedItem,
                 matching: .videos,
+                preferredItemEncoding: .current,
                 photoLibrary: .shared()
             ) {
                 ZStack {
@@ -387,48 +420,104 @@ public struct VideoUploadView: View {
 
     private func processSelectedVideo(_ item: PhotosPickerItem) {
         isProcessingVideo = true
+        let maximumDuration = store.maximumDuration
+        let videoTooLongError = AppError.business(
+            store.isQuickFeedback ? .quickFeedbackVideoTooLong : .videoTooLong
+        )
 
         Task {
+            let url: URL
             do {
                 guard let movie = try await item.loadTransferable(type: VideoTransferable.self) else {
-                    await MainActor.run {
-                        isProcessingVideo = false
-                        store.send(.videoProcessingFailed(.business(.invalidVideoFormat)))
-                    }
+                    await sendProcessingFailure(.business(.invalidVideoFormat))
                     return
                 }
+                url = movie.url
+            } catch {
+                await sendProcessingFailure(error as? AppError ?? .unexpected(error.localizedDescription))
+                return
+            }
 
-                let url = movie.url
-                defer { try? FileManager.default.removeItem(at: url) }
+            do {
                 let asset = AVURLAsset(url: url)
                 let duration = try await asset.load(.duration)
-                let durationSeconds = CMTimeGetSeconds(duration)
 
-                let compressedURL = try await compressVideo(asset: asset)
-                let videoData = try Data(contentsOf: compressedURL)
-                try? FileManager.default.removeItem(at: compressedURL)
-
-                if videoData.count > AppConstants.maxVideoFileSizeBytes {
-                    await MainActor.run {
-                        isProcessingVideo = false
-                        store.send(.videoProcessingFailed(.business(.videoTooLarge)))
+                if CMTimeGetSeconds(duration) > maximumDuration {
+                    if UIVideoEditorController.canEditVideo(atPath: url.path) {
+                        await MainActor.run {
+                            isProcessingVideo = false
+                            trimSourceURL = url
+                        }
+                    } else {
+                        try? FileManager.default.removeItem(at: url)
+                        await sendProcessingFailure(videoTooLongError)
                     }
                     return
                 }
-
-                let thumbnailData = await generateThumbnail(from: asset)
-
-                await MainActor.run {
-                    isProcessingVideo = false
-                    store.send(.videoSelected(videoData, thumbnailData: thumbnailData, duration: durationSeconds))
-                }
             } catch {
-                await MainActor.run {
-                    isProcessingVideo = false
-                    let appError = error as? AppError ?? .unexpected(error.localizedDescription)
-                    store.send(.videoProcessingFailed(appError))
-                }
+                try? FileManager.default.removeItem(at: url)
+                await sendProcessingFailure(error as? AppError ?? .unexpected(error.localizedDescription))
+                return
             }
+
+            await finishProcessing(url: url)
+            try? FileManager.default.removeItem(at: url)
+        }
+    }
+
+    private func handleTrimmedVideo(_ trimmedURL: URL) {
+        isTrimmerPresented = false
+        if let trimSourceURL {
+            try? FileManager.default.removeItem(at: trimSourceURL)
+        }
+        trimSourceURL = nil
+        isProcessingVideo = true
+
+        Task {
+            await finishProcessing(url: trimmedURL)
+            try? FileManager.default.removeItem(at: trimmedURL)
+        }
+    }
+
+    private func discardTrimSource() {
+        isTrimmerPresented = false
+        if let trimSourceURL {
+            try? FileManager.default.removeItem(at: trimSourceURL)
+        }
+        trimSourceURL = nil
+        selectedItem = nil
+    }
+
+    private func finishProcessing(url: URL) async {
+        do {
+            let asset = AVURLAsset(url: url)
+            let duration = try await asset.load(.duration)
+            let durationSeconds = CMTimeGetSeconds(duration)
+
+            let compressedURL = try await compressVideo(asset: asset)
+            let videoData = try Data(contentsOf: compressedURL)
+            try? FileManager.default.removeItem(at: compressedURL)
+
+            if videoData.count > AppConstants.maxVideoFileSizeBytes {
+                await sendProcessingFailure(.business(.videoTooLarge))
+                return
+            }
+
+            let thumbnailData = await generateThumbnail(from: asset)
+
+            await MainActor.run {
+                isProcessingVideo = false
+                store.send(.videoSelected(videoData, thumbnailData: thumbnailData, duration: durationSeconds))
+            }
+        } catch {
+            await sendProcessingFailure(error as? AppError ?? .unexpected(error.localizedDescription))
+        }
+    }
+
+    private func sendProcessingFailure(_ error: AppError) async {
+        await MainActor.run {
+            isProcessingVideo = false
+            store.send(.videoProcessingFailed(error))
         }
     }
 
@@ -483,6 +572,18 @@ public struct VideoUploadView: View {
         VideoUploadView(
             store: Store(
                 initialState: VideoUploadFeature.State(studyID: UUID())
+            ) {
+                VideoUploadFeature()
+            }
+        )
+    }
+}
+
+#Preview("빠른 피드백") {
+    NavigationStack {
+        VideoUploadView(
+            store: Store(
+                initialState: VideoUploadFeature.State(destination: .quickFeedback)
             ) {
                 VideoUploadFeature()
             }
