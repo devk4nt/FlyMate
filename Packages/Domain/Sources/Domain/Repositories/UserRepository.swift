@@ -17,8 +17,8 @@ public protocol UserRepository: Sendable {
     /// 프로필을 업데이트한다.
     func updateProfile(_ request: UpdateProfileRequest) async throws -> User
 
-    /// FCM 디바이스 토큰을 등록한다.
-    func registerDeviceToken(_ token: String) async throws
+    /// FCM 디바이스 토큰을 등록한다. 기기의 알림 권한 상태를 함께 보고한다.
+    func registerDeviceToken(_ token: String, notificationsEnabled: Bool) async throws
 
     /// FCM 디바이스 토큰을 삭제한다 (로그아웃 시).
     func removeDeviceToken(_ token: String) async throws

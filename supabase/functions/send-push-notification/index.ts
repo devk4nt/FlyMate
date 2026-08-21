@@ -130,7 +130,8 @@ serve(async (req) => {
     const { data: tokens, error: tokenError } = await supabaseAdmin
       .from("device_tokens")
       .select("fcm_token")
-      .eq("user_id", notification.recipient_id);
+      .eq("user_id", notification.recipient_id)
+      .eq("notifications_enabled", true);
 
     if (tokenError) {
       console.error("Failed to fetch device tokens:", tokenError.message);

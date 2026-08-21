@@ -5,7 +5,7 @@ import Domain
 public struct UserClient: Sendable {
     public var fetchUser: @Sendable (UUID) async throws -> User
     public var updateProfile: @Sendable (UpdateProfileRequest) async throws -> User
-    public var registerDeviceToken: @Sendable (String) async throws -> Void
+    public var registerDeviceToken: @Sendable (String, Bool) async throws -> Void
     public var removeDeviceToken: @Sendable (String) async throws -> Void
     public var updateNotificationSettings: @Sendable (Bool) async throws -> Void
     public var fetchMyActivityStats: @Sendable () async throws -> MyActivityStats
@@ -14,7 +14,7 @@ public struct UserClient: Sendable {
     public init(
         fetchUser: @escaping @Sendable (UUID) async throws -> User,
         updateProfile: @escaping @Sendable (UpdateProfileRequest) async throws -> User,
-        registerDeviceToken: @escaping @Sendable (String) async throws -> Void,
+        registerDeviceToken: @escaping @Sendable (String, Bool) async throws -> Void,
         removeDeviceToken: @escaping @Sendable (String) async throws -> Void,
         updateNotificationSettings: @escaping @Sendable (Bool) async throws -> Void,
         fetchMyActivityStats: @escaping @Sendable () async throws -> MyActivityStats,

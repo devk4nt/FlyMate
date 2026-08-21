@@ -128,7 +128,7 @@ struct FlyMateApp: App {
         dependencies.userClient = UserClient(
             fetchUser: { try await userRepo.fetchUser(id: $0) },
             updateProfile: { try await userRepo.updateProfile($0) },
-            registerDeviceToken: { try await userRepo.registerDeviceToken($0) },
+            registerDeviceToken: { try await userRepo.registerDeviceToken($0, notificationsEnabled: $1) },
             removeDeviceToken: { try await userRepo.removeDeviceToken($0) },
             updateNotificationSettings: { try await userRepo.updateNotificationSettings(enabled: $0) },
             fetchMyActivityStats: { try await userRepo.fetchMyActivityStats() },
@@ -1138,7 +1138,7 @@ struct FlyMateApp: App {
         dependencies.userClient = UserClient(
             fetchUser: { _ in me },
             updateProfile: { _ in me },
-            registerDeviceToken: { _ in },
+            registerDeviceToken: { _, _ in },
             removeDeviceToken: { _ in },
             updateNotificationSettings: { _ in },
             fetchMyActivityStats: {

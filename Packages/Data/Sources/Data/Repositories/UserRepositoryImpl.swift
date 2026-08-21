@@ -59,23 +59,25 @@ public struct UserRepositoryImpl: UserRepository {
         }
     }
 
-    public func registerDeviceToken(_ token: String) async throws {
+    public func registerDeviceToken(_ token: String, notificationsEnabled: Bool) async throws {
         let userID = try await client.auth.session.user.id
 
         struct DeviceToken: Codable {
             let userID: UUID
             let fcmToken: String
             let platform: String
+            let notificationsEnabled: Bool
             enum CodingKeys: String, CodingKey {
                 case userID = "user_id"
                 case fcmToken = "fcm_token"
                 case platform
+                case notificationsEnabled = "notifications_enabled"
             }
         }
 
         try await client.from(SupabaseConfig.Table.deviceTokens)
             .upsert(
-                DeviceToken(userID: userID, fcmToken: token, platform: "ios"),
+                DeviceToken(userID: userID, fcmToken: token, platform: "ios", notificationsEnabled: notificationsEnabled),
                 onConflict: "fcm_token"
             )
             .execute()

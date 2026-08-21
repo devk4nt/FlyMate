@@ -217,8 +217,9 @@ public struct AppFeature : Sendable {
                     await send(.pushPermissionResponse(false))
                 }
 
-            case .pushPermissionResponse(let granted):
-                guard granted else { return .none }
+            case .pushPermissionResponse:
+                // 권한 거부 상태에서도 토큰을 등록해 notifications_enabled=false를 서버에 보고한다.
+                // (APNs 등록은 사용자 권한 없이도 가능 — 배너만 표시되지 않음)
                 let pushClient = pushNotificationClient
                 return .run { send in
                     await pushClient.registerForRemoteNotifications()
@@ -231,8 +232,11 @@ public struct AppFeature : Sendable {
             case .fcmTokenReceived(let token):
                 state.fcmToken = token
                 let client = userClient
+                let pushClient = pushNotificationClient
                 return .run { _ in
-                    try await client.registerDeviceToken(token)
+                    let status = await pushClient.getAuthorizationStatus()
+                    let enabled = status == .authorized || status == .provisional || status == .ephemeral
+                    try await client.registerDeviceToken(token, enabled)
                 } catch: { error, _ in
                     print("🔴 [Push] Failed to register FCM token: \(error)")
                 }
