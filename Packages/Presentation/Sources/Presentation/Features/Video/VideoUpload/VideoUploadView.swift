@@ -1,5 +1,4 @@
 import SwiftUI
-import PhotosUI
 import AVFoundation
 import ComposableArchitecture
 import Core
@@ -7,10 +6,8 @@ import Domain
 
 public struct VideoUploadView: View {
     @Bindable var store: StoreOf<VideoUploadFeature>
-    @State private var selectedItem: PhotosPickerItem?
+    @State private var isVideoPickerPresented = false
     @State private var isProcessingVideo = false
-    @State private var trimSourceURL: URL?
-    @State private var isTrimmerPresented = false
 
     public init(store: StoreOf<VideoUploadFeature>) {
         self.store = store
@@ -98,36 +95,13 @@ public struct VideoUploadView: View {
                 Text(error.errorDescription ?? "오류가 발생했습니다.")
             }
         }
-        .onChange(of: selectedItem) { _, newItem in
-            guard let newItem else { return }
-            processSelectedVideo(newItem)
-        }
-        .alert(
-            "영상이 \(maximumDurationText)을 넘어요",
-            isPresented: Binding(
-                get: { trimSourceURL != nil && !isTrimmerPresented },
-                set: { newValue in
-                    if !newValue, !isTrimmerPresented {
-                        discardTrimSource()
-                    }
-                }
+        .fullScreenCover(isPresented: $isVideoPickerPresented) {
+            VideoPickerView(
+                maximumDuration: store.maximumDuration,
+                onPick: processPickedVideo,
+                onCancel: { isVideoPickerPresented = false }
             )
-        ) {
-            Button("잘라서 올리기") { isTrimmerPresented = true }
-            Button("취소", role: .cancel) {}
-        } message: {
-            Text("원하는 구간을 \(maximumDurationText) 이내로 잘라서 올릴 수 있어요.")
-        }
-        .fullScreenCover(isPresented: $isTrimmerPresented) {
-            if let trimSourceURL {
-                VideoTrimmerView(
-                    videoURL: trimSourceURL,
-                    maximumDuration: store.maximumDuration,
-                    onComplete: handleTrimmedVideo,
-                    onCancel: discardTrimSource
-                )
-                .ignoresSafeArea()
-            }
+            .ignoresSafeArea()
         }
         .disabled(isProcessingVideo)
     }
@@ -176,12 +150,9 @@ public struct VideoUploadView: View {
             .map { Image(uiImage: $0) }
 
         return uploadCard(title: "영상 선택", step: "01") {
-            PhotosPicker(
-                selection: $selectedItem,
-                matching: .videos,
-                preferredItemEncoding: .current,
-                photoLibrary: .shared()
-            ) {
+            Button {
+                isVideoPickerPresented = true
+            } label: {
                 ZStack {
                     if let thumbnailImage {
                         thumbnailImage
@@ -418,74 +389,14 @@ public struct VideoUploadView: View {
         }
     }
 
-    private func processSelectedVideo(_ item: PhotosPickerItem) {
+    private func processPickedVideo(_ url: URL) {
+        isVideoPickerPresented = false
         isProcessingVideo = true
-        let maximumDuration = store.maximumDuration
-        let videoTooLongError = AppError.business(
-            store.isQuickFeedback ? .quickFeedbackVideoTooLong : .videoTooLong
-        )
 
         Task {
-            let url: URL
-            do {
-                guard let movie = try await item.loadTransferable(type: VideoTransferable.self) else {
-                    await sendProcessingFailure(.business(.invalidVideoFormat))
-                    return
-                }
-                url = movie.url
-            } catch {
-                await sendProcessingFailure(error as? AppError ?? .unexpected(error.localizedDescription))
-                return
-            }
-
-            do {
-                let asset = AVURLAsset(url: url)
-                let duration = try await asset.load(.duration)
-
-                if CMTimeGetSeconds(duration) > maximumDuration {
-                    if UIVideoEditorController.canEditVideo(atPath: url.path) {
-                        await MainActor.run {
-                            isProcessingVideo = false
-                            trimSourceURL = url
-                        }
-                    } else {
-                        try? FileManager.default.removeItem(at: url)
-                        await sendProcessingFailure(videoTooLongError)
-                    }
-                    return
-                }
-            } catch {
-                try? FileManager.default.removeItem(at: url)
-                await sendProcessingFailure(error as? AppError ?? .unexpected(error.localizedDescription))
-                return
-            }
-
             await finishProcessing(url: url)
             try? FileManager.default.removeItem(at: url)
         }
-    }
-
-    private func handleTrimmedVideo(_ trimmedURL: URL) {
-        isTrimmerPresented = false
-        if let trimSourceURL {
-            try? FileManager.default.removeItem(at: trimSourceURL)
-        }
-        trimSourceURL = nil
-        isProcessingVideo = true
-
-        Task {
-            await finishProcessing(url: trimmedURL)
-            try? FileManager.default.removeItem(at: trimmedURL)
-        }
-    }
-
-    private func discardTrimSource() {
-        isTrimmerPresented = false
-        if let trimSourceURL {
-            try? FileManager.default.removeItem(at: trimSourceURL)
-        }
-        trimSourceURL = nil
-        selectedItem = nil
     }
 
     private func finishProcessing(url: URL) async {
@@ -588,23 +499,5 @@ public struct VideoUploadView: View {
                 VideoUploadFeature()
             }
         )
-    }
-}
-
-// MARK: - VideoTransferable
-
-private struct VideoTransferable: Transferable {
-    let url: URL
-
-    static var transferRepresentation: some TransferRepresentation {
-        FileRepresentation(contentType: .movie) { movie in
-            SentTransferredFile(movie.url)
-        } importing: { received in
-            let tempURL = FileManager.default.temporaryDirectory
-                .appendingPathComponent(UUID().uuidString)
-                .appendingPathExtension("mov")
-            try FileManager.default.copyItem(at: received.file, to: tempURL)
-            return Self(url: tempURL)
-        }
     }
 }
