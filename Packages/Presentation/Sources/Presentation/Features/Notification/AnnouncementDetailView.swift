@@ -17,6 +17,7 @@ public struct AnnouncementDetailView: View {
 
                     Text(store.notification.body)
                         .font(FMTypography.body)
+                        .lineSpacing(FMSpacing.xxs)
                         .foregroundStyle(FMColors.label)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .textSelection(.enabled)
