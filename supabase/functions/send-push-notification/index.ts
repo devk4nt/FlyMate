@@ -226,6 +226,12 @@ serve(async (req) => {
     const succeeded = results.filter((r) => r.status === "fulfilled").length;
     const failed = results.filter((r) => r.status === "rejected").length;
 
+    for (const result of results) {
+      if (result.status === "rejected") {
+        console.error("Push failed:", result.reason?.message ?? result.reason);
+      }
+    }
+
     console.log(`Push sent: ${succeeded} succeeded, ${failed} failed`);
 
     return new Response(
