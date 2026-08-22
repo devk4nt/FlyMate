@@ -9,9 +9,15 @@ final class FeedAutoplayUITests: XCTestCase {
         app.launch()
 
         // 피드백 탭 → 할 일 큐
+        // 앱 초기 로딩 직후에는 탭이 씹힐 수 있어 화면 전환을 확인하며 재시도
         let feedbackTab = app.tabBars.buttons["피드백"]
         XCTAssertTrue(feedbackTab.waitForExistence(timeout: 10))
-        feedbackTab.tap()
+        let feedbackNavBar = app.navigationBars["피드백"]
+        for _ in 0..<3 where !feedbackNavBar.exists {
+            feedbackTab.tap()
+            _ = feedbackNavBar.waitForExistence(timeout: 3)
+        }
+        XCTAssertTrue(feedbackNavBar.exists, "피드백 탭 진입 실패")
 
         // 첫 번째 영상 카드 탭 → 임머시브 플레이어 진입
         // (FMFeedCell 라벨은 "○○의 영상, 제목, ..." — 콤마까지 매칭해야
