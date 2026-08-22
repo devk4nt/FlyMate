@@ -50,7 +50,11 @@ public struct FMProfileImage: View {
                 .fill(FMColors.primary.opacity(0.12))
                 .overlay {
                     Text(String(initial))
-                        .font(.system(size: size.rawValue * 0.45, weight: .semibold))
+                        .font(FMTypography.font(
+                            size: size.rawValue * 0.45,
+                            relativeTo: .body,
+                            weight: .semibold
+                        ))
                         .foregroundStyle(FMColors.primary)
                 }
         } else {

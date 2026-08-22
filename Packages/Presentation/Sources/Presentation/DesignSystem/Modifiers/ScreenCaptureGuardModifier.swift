@@ -32,7 +32,7 @@ struct ScreenCaptureGuardModifier: ViewModifier {
                     .foregroundStyle(.secondary)
 
                 Text("화면 녹화 중에는\n영상을 볼 수 없습니다")
-                    .font(.headline)
+                    .font(FMTypography.headline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }

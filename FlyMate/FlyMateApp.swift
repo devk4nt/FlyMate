@@ -6,6 +6,7 @@ import Domain
 import Presentation
 import Data
 import Foundation
+import UIKit
 import UserNotifications
 import FirebaseMessaging
 
@@ -16,6 +17,7 @@ struct FlyMateApp: App {
     let store: StoreOf<AppFeature>
 
     init() {
+        Self.configureTypographyAppearance()
         self.store = Store(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
@@ -43,6 +45,44 @@ struct FlyMateApp: App {
             #endif
             Self.registerLiveDependencies(&$0)
         }
+    }
+
+    private static func configureTypographyAppearance() {
+        guard
+            let navigationTitleFont = FMTypography.uiFont(
+                size: 17,
+                relativeTo: .headline,
+                weight: .semibold
+            ),
+            let navigationLargeTitleFont = FMTypography.uiFont(
+                size: 34,
+                relativeTo: .largeTitle,
+                weight: .bold
+            ),
+            let barButtonFont = FMTypography.uiFont(
+                size: 17,
+                relativeTo: .body,
+                weight: .medium
+            ),
+            let tabBarFont = FMTypography.uiFont(
+                size: 10,
+                relativeTo: .caption2,
+                weight: .medium
+            )
+        else { return }
+
+        let navigationBar = UINavigationBar.appearance()
+        navigationBar.titleTextAttributes = [.font: navigationTitleFont]
+        navigationBar.largeTitleTextAttributes = [.font: navigationLargeTitleFont]
+
+        let barButtonItem = UIBarButtonItem.appearance()
+        barButtonItem.setTitleTextAttributes([.font: barButtonFont], for: .normal)
+        barButtonItem.setTitleTextAttributes([.font: barButtonFont], for: .highlighted)
+        barButtonItem.setTitleTextAttributes([.font: barButtonFont], for: .disabled)
+
+        let tabBarItem = UITabBarItem.appearance()
+        tabBarItem.setTitleTextAttributes([.font: tabBarFont], for: .normal)
+        tabBarItem.setTitleTextAttributes([.font: tabBarFont], for: .selected)
     }
 
     private static func registerLiveDependencies(_ dependencies: inout DependencyValues) {
@@ -1532,6 +1572,7 @@ struct FlyMateApp: App {
         WindowGroup {
             AppView(store: store)
                 .environment(\.locale, Locale(identifier: "ko_KR"))
+                .environment(\.font, FMTypography.body)
                 .onOpenURL { url in
                     if url.scheme == "flymate" {
                         if let deepLink = DeepLinkParser.parse(url: url) {

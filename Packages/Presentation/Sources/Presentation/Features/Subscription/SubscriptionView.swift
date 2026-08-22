@@ -60,7 +60,7 @@ public struct SubscriptionView: View {
                 Spacer(minLength: 0)
 
                 Text(store.isPremium ? "PREMIUM" : "FREE")
-                    .font(.system(size: 10, weight: .bold))
+                    .font(FMTypography.font(size: 10, relativeTo: .caption2, weight: .bold))
                     .tracking(0.8)
                     .foregroundStyle(.white)
                     .padding(.horizontal, FMSpacing.xs)

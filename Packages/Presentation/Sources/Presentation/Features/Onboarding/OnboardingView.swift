@@ -60,7 +60,7 @@ public struct OnboardingView: View {
             FMAppIcon(size: 40)
 
             Text("FlyMate")
-                .font(.system(size: 21, weight: .bold, design: .rounded))
+                .font(FMTypography.font(size: 21, relativeTo: .title3, weight: .bold))
                 .foregroundStyle(FMColors.brandTitle)
 
             Spacer()
@@ -105,7 +105,7 @@ public struct OnboardingView: View {
             Button(store.isLastPage ? "나중에 할게요" : "건너뛰기") {
                 store.send(store.isLastPage ? .startTapped : .skipTapped)
             }
-            .font(FMTypography.callout.weight(.semibold))
+            .font(FMTypography.font(size: 16, relativeTo: .callout, weight: .semibold))
             .foregroundStyle(FMColors.secondaryLabel)
             .frame(minHeight: 44)
             .accessibilityHint(
@@ -225,7 +225,7 @@ private struct OnboardingArtwork: View {
                 FMPracticeSymbol(size: 86, showsEncouragement: false)
 
                 Text("00:42")
-                    .font(FMTypography.caption1.weight(.bold))
+                    .font(FMTypography.font(size: 12, relativeTo: .caption, weight: .bold))
                     .foregroundStyle(FMColors.brandTitle)
                     .padding(.horizontal, FMSpacing.xs)
                     .padding(.vertical, FMSpacing.xxs)

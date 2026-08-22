@@ -45,7 +45,7 @@ public struct LoginView: View {
 
                     VStack(spacing: FMSpacing.xs) {
                         Text("FlyMate")
-                            .font(.system(size: 34, weight: .bold, design: .rounded))
+                            .font(FMTypography.font(size: 34, relativeTo: .largeTitle, weight: .bold))
                             .foregroundStyle(FMColors.label)
 
                         Text("함께 연습하고, 더 나은 나를 발견하세요")

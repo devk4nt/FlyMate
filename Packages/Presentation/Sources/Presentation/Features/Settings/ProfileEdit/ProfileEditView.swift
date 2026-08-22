@@ -126,7 +126,7 @@ public struct ProfileEditView: View {
             .fill(FMColors.brandGradient)
             .overlay {
                 Text(profileInitial)
-                    .font(.system(size: 34, weight: .bold))
+                    .font(FMTypography.font(size: 34, relativeTo: .largeTitle, weight: .bold))
                     .foregroundStyle(.white)
             }
     }

@@ -183,7 +183,7 @@ public struct RecruitDetailView: View {
 
     private var statusBadge: some View {
         Text(store.post.isRecruiting() ? "모집 중" : "모집 마감")
-            .font(FMTypography.caption1.weight(.semibold))
+            .font(FMTypography.font(size: 12, relativeTo: .caption, weight: .semibold))
             .foregroundStyle(store.post.isRecruiting() ? FMColors.onAccent : FMColors.secondaryLabel)
             .padding(.horizontal, FMSpacing.xs)
             .padding(.vertical, FMSpacing.xxs)

@@ -200,7 +200,7 @@ public struct FeedbackManagementView: View {
 
     private func sectionCountBadge(_ count: Int) -> some View {
         Text("\(count)")
-            .font(FMTypography.caption1.weight(.semibold))
+            .font(FMTypography.font(size: 12, relativeTo: .caption, weight: .semibold))
             .foregroundStyle(FMColors.actionForeground)
             .monospacedDigit()
             .padding(.horizontal, FMSpacing.xs)

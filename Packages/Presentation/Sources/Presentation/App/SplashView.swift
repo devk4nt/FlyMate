@@ -34,11 +34,11 @@ public struct SplashView: View {
 
             VStack(spacing: FMSpacing.xs) {
                 Text("FlyMate")
-                    .font(.system(size: 42, weight: .bold, design: .rounded))
+                    .font(FMTypography.font(size: 42, relativeTo: .largeTitle, weight: .bold))
                     .foregroundStyle(FMColors.brandTitle)
 
                 Text("함께 연습하고, 더 자신 있게")
-                    .font(.subheadline.weight(.medium))
+                    .font(FMTypography.font(size: 15, relativeTo: .subheadline, weight: .medium))
                     .foregroundStyle(FMColors.secondaryLabel)
             }
             .offset(y: isAnimated ? 100 : 110)
