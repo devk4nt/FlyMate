@@ -132,7 +132,7 @@ struct FlyMateApp: App {
         )
 
         // Quick Feedback
-        let quickFeedbackRepo = AppReviewQuickFeedbackRepository(client: supabaseClient)
+        let quickFeedbackRepo = QuickFeedbackRepositoryImpl(client: supabaseClient)
         dependencies.quickFeedbackClient = QuickFeedbackClient(
             fetchDashboard: { try await quickFeedbackRepo.fetchDashboard() },
             upload: { try await quickFeedbackRepo.upload($0, progress: $1) },
