@@ -538,6 +538,7 @@ public struct QuickFeedbackRequestDetailView: View {
                     FMUserProfileButton(
                         url: review.reviewerProfileURL,
                         name: review.reviewerName,
+                        userID: review.reviewerID,
                         imageSize: .lg
                     ) {
                         store.send(.reviewerProfileTapped(review))
@@ -609,6 +610,7 @@ public struct QuickFeedbackReviewView: View {
                     FMUserProfileButton(
                         url: store.claimed.request.uploaderProfileURL,
                         name: store.claimed.request.uploaderName,
+                        userID: store.claimed.request.uploaderID,
                         imageSize: .md
                     ) {
                         store.send(.uploaderProfileTapped)

@@ -5,6 +5,7 @@ import Kingfisher
 public struct FMFeedCell: View {
     private let authorName: String
     private let authorProfileURL: URL?
+    private let authorID: UUID?
     private let timeText: String
     private let thumbnailURL: URL?
     private let durationText: String
@@ -14,6 +15,7 @@ public struct FMFeedCell: View {
     public init(
         authorName: String,
         authorProfileURL: URL? = nil,
+        authorID: UUID? = nil,
         timeText: String,
         thumbnailURL: URL?,
         durationText: String,
@@ -22,6 +24,7 @@ public struct FMFeedCell: View {
     ) {
         self.authorName = authorName
         self.authorProfileURL = authorProfileURL
+        self.authorID = authorID
         self.timeText = timeText
         self.thumbnailURL = thumbnailURL
         self.durationText = durationText
@@ -60,9 +63,13 @@ public struct FMFeedCell: View {
             FMProfileImage(url: authorProfileURL, name: authorName, size: .sm)
 
             VStack(alignment: .leading, spacing: FMSpacing.xxxs) {
-                Text(authorName)
-                    .font(FMTypography.authorName)
-                    .foregroundStyle(FMColors.brandTitle)
+                HStack(spacing: FMSpacing.xxs) {
+                    Text(authorName)
+                        .font(FMTypography.authorName)
+                        .foregroundStyle(FMColors.brandTitle)
+
+                    FMVerifiedBadge(userID: authorID)
+                }
 
                 Text("최근 활동 · \(timeText)")
                     .font(FMTypography.feedMeta)

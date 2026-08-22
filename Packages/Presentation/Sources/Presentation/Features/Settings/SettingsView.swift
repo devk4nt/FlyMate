@@ -61,6 +61,21 @@ public struct SettingsView: View {
                 }
                 .settingsSectionStyle()
 
+                Section("현직자 인증") {
+                    Button {
+                        store.send(.verificationRequestTapped)
+                    } label: {
+                        SettingsActionLabel(
+                            systemImage: "checkmark.seal.fill",
+                            title: "현직자 인증하기",
+                            description: "재직·합격 증명으로 현직자 뱃지를 받아요",
+                            tint: FMColors.accent
+                        )
+                    }
+                    .accessibilityHint("메일 앱을 열어 현직자 인증 신청 메일을 작성합니다")
+                }
+                .settingsSectionStyle()
+
                 Section("알림") {
                     Toggle(isOn: $store.notificationsEnabled.sending(\.notificationToggled)) {
                         SettingsActionLabel(
@@ -233,9 +248,13 @@ public struct SettingsView: View {
                     )
 
                     VStack(alignment: .leading, spacing: FMSpacing.xxxs) {
-                        Text(store.currentUser.name)
-                            .font(FMTypography.headline)
-                            .foregroundStyle(FMColors.brandTitle)
+                        HStack(spacing: FMSpacing.xxs) {
+                            Text(store.currentUser.name)
+                                .font(FMTypography.headline)
+                                .foregroundStyle(FMColors.brandTitle)
+
+                            FMVerifiedBadge(userID: store.currentUser.id)
+                        }
 
                         Text(store.currentUser.displayEmail)
                             .font(FMTypography.caption1)

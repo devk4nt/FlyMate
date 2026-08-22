@@ -94,6 +94,8 @@ public struct FeedbackCommentListView: View {
                     .font(FMTypography.caption1)
                     .fontWeight(.semibold)
 
+                FMVerifiedBadge(userID: store.feedback.authorID)
+
                 Text(store.feedback.createdAt.relativeString)
                     .font(FMTypography.caption2)
                     .foregroundStyle(FMColors.secondaryLabel)
@@ -244,6 +246,8 @@ private struct CommentRow: View {
                 Text(comment.authorName)
                     .font(FMTypography.caption1)
                     .fontWeight(.semibold)
+
+                FMVerifiedBadge(userID: comment.authorID)
 
                 Text(comment.createdAt.relativeString)
                     .font(FMTypography.caption2)

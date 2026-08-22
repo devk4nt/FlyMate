@@ -61,6 +61,7 @@ public enum SupabaseConfig {
         public static let cancelQuickFeedbackAssignment = "cancel_quick_feedback_assignment"
         public static let submitQuickFeedbackReview = "submit_quick_feedback_review"
         public static let closeQuickFeedbackRequest = "close_quick_feedback_request"
+        public static let getVerifiedUserIDs = "get_verified_user_ids"
     }
 
     public enum EdgeFunction {

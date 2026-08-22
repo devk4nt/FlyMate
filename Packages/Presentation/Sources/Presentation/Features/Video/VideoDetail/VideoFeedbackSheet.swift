@@ -273,6 +273,7 @@ private struct FeedbackRow: View {
                         Text(feedback.authorName)
                             .font(FMTypography.caption1)
                             .fontWeight(.semibold)
+                        FMVerifiedBadge(userID: feedback.authorID)
                         Text(feedback.createdAt.relativeString)
                             .font(FMTypography.caption2)
                             .foregroundStyle(FMColors.secondaryLabel)
@@ -434,6 +435,8 @@ private struct InlineReplyRow: View {
                     Text(comment.authorName)
                         .font(FMTypography.caption2)
                         .fontWeight(.semibold)
+
+                    FMVerifiedBadge(userID: comment.authorID)
 
                     Text(comment.createdAt.relativeString)
                         .font(FMTypography.caption2)

@@ -31,4 +31,7 @@ public protocol UserRepository: Sendable {
 
     /// 지정한 사용자의 전체 활동 통계를 조회한다.
     func fetchActivityStats(userID: UUID) async throws -> MyActivityStats
+
+    /// 현직자 인증된 사용자 ID 집합을 조회한다 (작성자 이름 옆 인증 뱃지 표시용).
+    func fetchVerifiedUserIDs() async throws -> Set<UUID>
 }

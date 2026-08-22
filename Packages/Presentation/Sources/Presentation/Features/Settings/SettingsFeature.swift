@@ -41,6 +41,7 @@ public struct SettingsFeature {
         case subscriptionTapped
         case developerContactTapped
         case developerContactOpenResponse(Bool)
+        case verificationRequestTapped
         case notificationToggled(Bool)
         case signOutTapped
         case deleteAccountTapped
@@ -143,6 +144,15 @@ public struct SettingsFeature {
 
             case .developerContactTapped:
                 guard let url = Self.developerContactURL(for: state.currentUser) else {
+                    return .send(.developerContactOpenResponse(false))
+                }
+                let open = openURL
+                return .run { send in
+                    await send(.developerContactOpenResponse(await open(url)))
+                }
+
+            case .verificationRequestTapped:
+                guard let url = Self.verificationRequestURL(for: state.currentUser) else {
                     return .send(.developerContactOpenResponse(false))
                 }
                 let open = openURL
@@ -314,6 +324,34 @@ public struct SettingsFeature {
                 아래 정보는 문의 확인을 위해 자동으로 입력되었어요.
                 회원 ID: \(user.id.uuidString)
                 계정: \(user.displayEmail)
+                """
+            ),
+        ]
+        return components.url
+    }
+
+    private static func verificationRequestURL(for user: User) -> URL? {
+        var components = URLComponents()
+        components.scheme = "mailto"
+        components.path = AppConstants.supportEmail
+        components.queryItems = [
+            URLQueryItem(name: "subject", value: "[FlyMate 현직자 인증] 인증 신청"),
+            URLQueryItem(
+                name: "body",
+                value: """
+                안녕하세요. FlyMate 현직자 인증을 신청합니다.
+
+                ■ 아래 두 가지를 첨부해 주세요
+                1. 본인 아이디를 손으로 적은 종이와 함께 촬영한 신분증 사진
+                2. 재직증명서 또는 최종합격증명서
+
+                확인 후 프로필에 현직자 뱃지를 달아드려요.
+
+                --------------------
+                아래 정보는 인증 확인을 위해 자동으로 입력되었어요.
+                회원 ID: \(user.id.uuidString)
+                계정: \(user.displayEmail)
+                직군(승무원/아나운서 등):
                 """
             ),
         ]

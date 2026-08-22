@@ -147,6 +147,7 @@ public struct RecruitDetailView: View {
                 FMUserProfileButton(
                     url: store.post.authorProfileURL,
                     name: store.post.authorName,
+                    userID: store.post.authorID,
                     imageSize: .sm,
                     style: .compact
                 ) {
@@ -366,6 +367,8 @@ public struct RecruitDetailView: View {
                 Text(comment.authorName)
                     .font(FMTypography.feedMetaEmphasis)
                     .foregroundStyle(FMColors.label)
+
+                FMVerifiedBadge(userID: comment.authorID)
 
                 if comment.authorID == store.post.authorID {
                     Text("모집자")

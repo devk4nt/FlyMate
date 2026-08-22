@@ -10,6 +10,7 @@ public struct UserClient: Sendable {
     public var updateNotificationSettings: @Sendable (Bool) async throws -> Void
     public var fetchMyActivityStats: @Sendable () async throws -> MyActivityStats
     public var fetchActivityStats: @Sendable (UUID) async throws -> MyActivityStats
+    public var fetchVerifiedUserIDs: @Sendable () async throws -> Set<UUID>
 
     public init(
         fetchUser: @escaping @Sendable (UUID) async throws -> User,
@@ -18,7 +19,8 @@ public struct UserClient: Sendable {
         removeDeviceToken: @escaping @Sendable (String) async throws -> Void,
         updateNotificationSettings: @escaping @Sendable (Bool) async throws -> Void,
         fetchMyActivityStats: @escaping @Sendable () async throws -> MyActivityStats,
-        fetchActivityStats: @escaping @Sendable (UUID) async throws -> MyActivityStats
+        fetchActivityStats: @escaping @Sendable (UUID) async throws -> MyActivityStats,
+        fetchVerifiedUserIDs: @escaping @Sendable () async throws -> Set<UUID>
     ) {
         self.fetchUser = fetchUser
         self.updateProfile = updateProfile
@@ -27,6 +29,7 @@ public struct UserClient: Sendable {
         self.updateNotificationSettings = updateNotificationSettings
         self.fetchMyActivityStats = fetchMyActivityStats
         self.fetchActivityStats = fetchActivityStats
+        self.fetchVerifiedUserIDs = fetchVerifiedUserIDs
     }
 }
 
@@ -38,7 +41,8 @@ extension UserClient: TestDependencyKey {
         removeDeviceToken: unimplemented("\(Self.self).removeDeviceToken"),
         updateNotificationSettings: unimplemented("\(Self.self).updateNotificationSettings"),
         fetchMyActivityStats: unimplemented("\(Self.self).fetchMyActivityStats"),
-        fetchActivityStats: unimplemented("\(Self.self).fetchActivityStats")
+        fetchActivityStats: unimplemented("\(Self.self).fetchActivityStats"),
+        fetchVerifiedUserIDs: unimplemented("\(Self.self).fetchVerifiedUserIDs", placeholder: [])
     )
 }
 

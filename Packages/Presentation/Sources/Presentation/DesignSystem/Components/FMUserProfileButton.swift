@@ -10,6 +10,7 @@ public struct FMUserProfileButton: View {
 
     private let url: URL?
     private let name: String
+    private let userID: UUID?
     private let imageSize: FMProfileImage.Size
     private let style: Style
     private let action: () -> Void
@@ -17,12 +18,14 @@ public struct FMUserProfileButton: View {
     public init(
         url: URL?,
         name: String,
+        userID: UUID? = nil,
         imageSize: FMProfileImage.Size = .sm,
         style: Style = .standard,
         action: @escaping () -> Void
     ) {
         self.url = url
         self.name = name
+        self.userID = userID
         self.imageSize = imageSize
         self.style = style
         self.action = action
@@ -37,6 +40,8 @@ public struct FMUserProfileButton: View {
                     .font(style == .compact ? FMTypography.feedMetaEmphasis : FMTypography.authorName)
                     .foregroundStyle(FMColors.label)
                     .lineLimit(1)
+
+                FMVerifiedBadge(userID: userID)
             }
             .contentShape(Rectangle())
         }

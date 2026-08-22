@@ -134,6 +134,13 @@ public struct UserRepositoryImpl: UserRepository {
             feedbackGivenCount: response.feedbackGivenCount
         )
     }
+
+    public func fetchVerifiedUserIDs() async throws -> Set<UUID> {
+        let ids: [UUID] = try await client.rpc(SupabaseConfig.RPC.getVerifiedUserIDs)
+            .execute()
+            .value
+        return Set(ids)
+    }
 }
 
 private struct MyActivityStatsResponse: Codable, Sendable {

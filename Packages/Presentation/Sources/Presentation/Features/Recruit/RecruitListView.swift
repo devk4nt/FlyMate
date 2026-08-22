@@ -316,6 +316,7 @@ struct RecruitPostRow: View {
                     FMUserProfileButton(
                         url: post.authorProfileURL,
                         name: post.authorName,
+                        userID: post.authorID,
                         imageSize: .sm,
                         style: .compact,
                         action: onProfileTapped

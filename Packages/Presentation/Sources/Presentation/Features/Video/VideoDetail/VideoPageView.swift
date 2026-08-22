@@ -155,6 +155,8 @@ public struct VideoPageView: View {
                     .font(FMTypography.headline)
                     .foregroundStyle(.white)
 
+                FMVerifiedBadge(userID: store.video.uploaderID)
+
                 Text(store.video.createdAt.relativeString)
                     .font(FMTypography.caption1)
                     .foregroundStyle(.white.opacity(0.7))

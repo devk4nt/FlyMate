@@ -45,6 +45,8 @@ public struct AppView: View {
             AnnouncementDetailView(store: announcementStore)
                 .interactiveDismissDisabled()
         }
+        // 작성자 이름 옆 현직자 뱃지 노출 판단용 — 하위 트리 + 시트까지 전파된다
+        .environment(\.verifiedUserIDs, store.verifiedUserIDs)
     }
 
     private var appContent: some View {

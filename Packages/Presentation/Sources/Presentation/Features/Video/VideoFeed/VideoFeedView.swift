@@ -118,6 +118,7 @@ public struct VideoFeedView<Header: View>: View {
                     } label: {
                         FMFeedCell(
                             authorName: video.uploaderName,
+                            authorID: video.uploaderID,
                             timeText: video.createdAt.relativeString,
                             thumbnailURL: video.thumbnailURL,
                             durationText: video.durationSeconds.minuteSecondFormatted,

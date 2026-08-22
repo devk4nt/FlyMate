@@ -56,6 +56,8 @@ public struct MemberManagementView: View {
                                 .font(FMTypography.headline)
                                 .foregroundStyle(FMColors.label)
 
+                            FMVerifiedBadge(userID: member.userID)
+
                             if member.role == .owner {
                                 Text("방장")
                                     .font(FMTypography.caption2)

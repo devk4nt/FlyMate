@@ -201,6 +201,7 @@ struct FeedbackManagementRow: View {
                         FMUserProfileButton(
                             url: feedback.authorProfileURL,
                             name: feedback.authorName,
+                            userID: feedback.authorID,
                             imageSize: .lg
                         ) {
                             onProfileTapped?()

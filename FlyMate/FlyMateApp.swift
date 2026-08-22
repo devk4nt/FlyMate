@@ -172,7 +172,8 @@ struct FlyMateApp: App {
             removeDeviceToken: { try await userRepo.removeDeviceToken($0) },
             updateNotificationSettings: { try await userRepo.updateNotificationSettings(enabled: $0) },
             fetchMyActivityStats: { try await userRepo.fetchMyActivityStats() },
-            fetchActivityStats: { try await userRepo.fetchActivityStats(userID: $0) }
+            fetchActivityStats: { try await userRepo.fetchActivityStats(userID: $0) },
+            fetchVerifiedUserIDs: { try await userRepo.fetchVerifiedUserIDs() }
         )
 
         // Push Notification
@@ -1198,7 +1199,10 @@ struct FlyMateApp: App {
                     feedbackReceivedCount: 12,
                     feedbackGivenCount: 9
                 )
-            }
+            },
+            // 목(시각 QA용): me·김하늘·박서연만 인증 → 이민준·최지우는 미인증으로 두어
+            // "인증 유저엔 뱃지, 미인증엔 없음"까지 눈으로 확인 가능하게 한다
+            fetchVerifiedUserIDs: { [meID, haneulID, seoyeonID] }
         )
 
         // Push Notification

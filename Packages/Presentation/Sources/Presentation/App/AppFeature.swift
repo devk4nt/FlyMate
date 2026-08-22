@@ -13,6 +13,8 @@ public struct AppFeature : Sendable {
     @ObservableState
     public struct State: Equatable {
         public var currentUser: User?
+        /// 현직자 인증된 사용자 ID 집합 — 작성자 이름 옆 인증 뱃지 표시용 (Environment로 전파)
+        public var verifiedUserIDs: Set<UUID> = []
         public var destination: Destination
         public var toast: ToastState?
         public var pendingDeepLink: DeepLink?
@@ -44,6 +46,7 @@ public struct AppFeature : Sendable {
     public enum Action {
         case onAppear
         case authStateChanged(User?)
+        case verifiedUserIDsLoaded(Set<UUID>)
         case destination(Destination)
         case deepLink(DeepLink)
         case toastDismissed
@@ -183,6 +186,13 @@ public struct AppFeature : Sendable {
                         ]
                         // 온보딩은 로그인 후에 노출 — 웰컴 포인트/첫 업로드 안내는 계정이 생긴 뒤에 의미가 있다
                         effects.append(.send(.checkOnboarding))
+                        // 현직자 인증 집합 로드 (실패해도 뱃지만 안 뜨므로 조용히 무시)
+                        let verificationClient = userClient
+                        effects.append(.run { send in
+                            if let ids = try? await verificationClient.fetchVerifiedUserIDs() {
+                                await send(.verifiedUserIDsLoaded(ids))
+                            }
+                        })
                         if let pendingDeepLink = state.pendingDeepLink {
                             state.pendingDeepLink = nil
                             effects.append(.send(.deepLink(pendingDeepLink)))
@@ -206,6 +216,10 @@ public struct AppFeature : Sendable {
                         } ?? .none
                     )
                 }
+                return .none
+
+            case .verifiedUserIDsLoaded(let ids):
+                state.verifiedUserIDs = ids
                 return .none
 
             case .requestPushPermission:

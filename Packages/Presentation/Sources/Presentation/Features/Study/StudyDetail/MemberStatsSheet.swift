@@ -68,6 +68,8 @@ struct MemberStatsSheet: View {
                     .font(FMTypography.headline)
                     .foregroundStyle(FMColors.label)
 
+                FMVerifiedBadge(userID: store.member.userID)
+
                 if store.member.role == .owner {
                     Text("방장")
                         .font(FMTypography.caption2)

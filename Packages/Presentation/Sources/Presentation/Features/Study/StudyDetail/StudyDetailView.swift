@@ -481,6 +481,7 @@ public struct StudyDetailView: View {
     private func feedCell(_ video: Domain.Video) -> some View {
         FMFeedCell(
             authorName: video.uploaderName,
+            authorID: video.uploaderID,
             timeText: video.createdAt.relativeString,
             thumbnailURL: video.thumbnailURL,
             durationText: video.durationSeconds.minuteSecondFormatted,

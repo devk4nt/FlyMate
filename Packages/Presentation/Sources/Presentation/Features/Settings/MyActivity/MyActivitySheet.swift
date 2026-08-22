@@ -68,9 +68,13 @@ struct MyActivitySheet: View {
                 size: .xl
             )
 
-            Text(store.userName)
-                .font(FMTypography.headline)
-                .foregroundStyle(FMColors.label)
+            HStack(spacing: FMSpacing.xxs) {
+                Text(store.userName)
+                    .font(FMTypography.headline)
+                    .foregroundStyle(FMColors.label)
+
+                FMVerifiedBadge(userID: store.userID)
+            }
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(store.userName)
