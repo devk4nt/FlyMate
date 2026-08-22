@@ -154,13 +154,18 @@ public struct StudyRepositoryImpl: StudyRepository {
     public func leaveStudy(id: UUID) async throws {
         let userID = try await client.auth.session.user.id
 
-        try await removeMemberContent(studyID: id, userID: userID)
+        do {
+            try await removeMemberContent(studyID: id, userID: userID)
 
-        try await client.from(SupabaseConfig.Table.studyMembers)
-            .delete()
-            .eq("study_id", value: id)
-            .eq("user_id", value: userID)
-            .execute()
+            // 방장 탈퇴는 서버 트리거가 판정: 혼자면 스터디 삭제, 멤버가 있으면 OWNER_MUST_TRANSFER_BEFORE_LEAVE 거부
+            try await client.from(SupabaseConfig.Table.studyMembers)
+                .delete()
+                .eq("study_id", value: id)
+                .eq("user_id", value: userID)
+                .execute()
+        } catch {
+            throw mapRPCError(error)
+        }
     }
 
     public func deleteStudy(id: UUID) async throws {
@@ -294,6 +299,8 @@ public struct StudyRepositoryImpl: StudyRepository {
             return AppError.business(.maxOwnedStudiesReached)
         } else if message.contains("MAX_JOINED_STUDIES_REACHED") {
             return AppError.business(.maxJoinedStudiesReached)
+        } else if message.contains("OWNER_MUST_TRANSFER_BEFORE_LEAVE") {
+            return AppError.business(.ownerMustTransferBeforeLeave)
         } else if message.contains("UNAUTHORIZED") {
             return AppError.business(.unauthorized)
         }

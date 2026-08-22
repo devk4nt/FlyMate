@@ -13,7 +13,7 @@ public struct SettingsFeature {
         public var notificationsEnabled = true
         public var pushAuthorizationStatus: UNAuthorizationStatus = .notDetermined
         // 재진입 시 목록이 즉시 보이도록 자식 상태를 상주시킨다 (탭 루트 리스트와 동일한 전략)
-        public var studyManagement = StudyManagementFeature.State()
+        public var studyManagement: StudyManagementFeature.State
         public var blockedUsers = BlockedUsersFeature.State()
         public var isStudyManagementActive = false
         public var isBlockedUsersActive = false
@@ -23,6 +23,7 @@ public struct SettingsFeature {
 
         public init(currentUser: User) {
             self.currentUser = currentUser
+            self.studyManagement = StudyManagementFeature.State(currentUserID: currentUser.id)
         }
     }
 
