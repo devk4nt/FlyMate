@@ -56,7 +56,12 @@ public struct StudyManagementView: View {
                 managementSummary(count: studies.count)
 
                 ForEach(studies) { study in
-                    StudyManagementCard(study: study) {
+                    StudyManagementCard(
+                        study: study,
+                        isSoloOwner: store.currentUserID != nil
+                            && study.ownerID == store.currentUserID
+                            && study.memberCount == 1
+                    ) {
                         store.send(.leaveStudyTapped(study.id))
                     }
                 }
@@ -112,6 +117,8 @@ public struct StudyManagementView: View {
 
 private struct StudyManagementCard: View {
     let study: Study
+    /// 팀장이 혼자 남은 스터디 — 탈퇴가 곧 스터디 삭제이므로 버튼 라벨을 실제 동작에 맞춘다
+    let isSoloOwner: Bool
     let onLeave: () -> Void
 
     var body: some View {
@@ -144,15 +151,18 @@ private struct StudyManagementCard: View {
             Divider()
 
             Button(role: .destructive, action: onLeave) {
-                Label("스터디 탈퇴", systemImage: "rectangle.portrait.and.arrow.right")
-                    .font(FMTypography.authorName)
-                    .foregroundStyle(FMColors.destructive)
-                    .frame(maxWidth: .infinity)
-                    .frame(minHeight: 42)
-                    .background(FMColors.destructiveSurface, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous))
+                Label(
+                    isSoloOwner ? "스터디 삭제" : "스터디 탈퇴",
+                    systemImage: isSoloOwner ? "trash" : "rectangle.portrait.and.arrow.right"
+                )
+                .font(FMTypography.authorName)
+                .foregroundStyle(FMColors.destructive)
+                .frame(maxWidth: .infinity)
+                .frame(minHeight: 42)
+                .background(FMColors.destructiveSurface, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous))
             }
             .buttonStyle(.plain)
-            .accessibilityHint("탈퇴 확인 창을 엽니다")
+            .accessibilityHint(isSoloOwner ? "삭제 확인 창을 엽니다" : "탈퇴 확인 창을 엽니다")
         }
         .padding(FMSpacing.lg)
         .background(FMColors.background, in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.xl, style: .continuous))
