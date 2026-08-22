@@ -497,11 +497,11 @@ struct FlyMateApp: App {
             // 유나(나)가 아직 피드백하지 않은 영상 — 피드백 대기 큐 시나리오용
             Video(
                 id: uuid(106), studyID: studyA.id, uploaderID: seoyeonID, uploaderName: "박서연",
-                title: "한국어 기내방송 — 이륙 안내",
+                title: "항공사 지원동기 답변",
                 videoURL: mockVideoURL("flight-attendant-study-cafe", fallback: sintelTrailer), thumbnailURL: sampleThumbnailURL(106),
                 durationSeconds: 48, feedbackCount: 1,
-                focusPoints: "톤 안정성, 속도",
-                feedbackRequest: "이륙 안내 파트 속도가 적당한지 봐주세요",
+                focusPoints: "지원 동기, 답변 전달력",
+                feedbackRequest: "제 경험이 객실승무원 지원 동기로 자연스럽게 연결되는지 봐주세요",
                 createdAt: now.addingTimeInterval(-8 * hour)
             ),
             Video(
@@ -656,10 +656,10 @@ struct FlyMateApp: App {
                 content: "상황·행동은 명확해요! 고민하신 결과 파트는 \"내리시면서 감사 인사를 하셨다\" 같은 구체적인 장면 하나만 붙이면 살 것 같아요.",
                 timestampSeconds: 20, createdAt: now.addingTimeInterval(-2 * hour)
             ),
-            // 영상 106 — 이륙 안내 (박서연 영상, 요청: 속도가 적당한지 — 내 피드백 없음, 대기 큐 유지)
+            // 영상 106 — 지원 동기 답변 (박서연 영상, 요청: 경험과 지원 동기의 연결성 — 내 피드백 없음, 대기 큐 유지)
             Feedback(
                 id: uuid(212), videoID: uuid(106), studyID: studyA.id, authorID: minjunID, authorName: "이민준",
-                content: "물어보신 속도는 딱 좋아요. 오히려 후반부가 살짝 느려지는데, 처음 페이스를 끝까지 유지하면 완벽!",
+                content: "서비스 경험을 지원 동기로 연결한 점은 좋아요. 다만 이 부분에서 왜 객실승무원인지 한 문장 더 구체적으로 말하면 답변이 훨씬 선명해질 것 같아요.",
                 timestampSeconds: 15, createdAt: now.addingTimeInterval(-6 * hour)
             ),
             // 영상 107 — 지연 승객 안내 (최지우 영상, 요청: 지연 안내 표현 — 내 피드백 없음, 대기 큐 유지)
