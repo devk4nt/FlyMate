@@ -6,8 +6,13 @@ import Domain
 @Reducer
 public struct AppFeature : Sendable {
     #if DEBUG
-    /// 디버그 기본값은 목 데이터 자동 진입. LIVE_AUTH=1이면 실제 로그인 플로우 (FlyMate-Live 스킴)
+    /// 디버그 기본값은 목 데이터 자동 진입 — 시뮬레이터 한정. LIVE_AUTH=1이면 실제 로그인 플로우 (FlyMate-Live 스킴).
+    /// 실기기는 홈 화면 실행 시 환경변수가 없어 mock에 갇히므로 항상 실제 플로우로 진입한다.
+    #if targetEnvironment(simulator)
     public static let skipAuth = ProcessInfo.processInfo.environment["LIVE_AUTH"] != "1"
+    #else
+    public static let skipAuth = false
+    #endif
     #endif
 
     @ObservableState
