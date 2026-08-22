@@ -233,7 +233,7 @@ public struct QuickFeedbackHubView: View {
                                     in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm, style: .continuous)
                                 )
 
-                            Text("시작하면 영상 하나가 30분 동안 임시 배정돼요.")
+                            Text("시작하면 영상 하나가 배정돼요. 여유롭게 작성해도 괜찮아요.")
                                 .font(FMTypography.caption1)
                                 .foregroundStyle(FMColors.secondaryLabel)
 
@@ -249,7 +249,7 @@ public struct QuickFeedbackHubView: View {
                 .buttonStyle(.plain)
                 .disabled(store.isClaiming)
                 .accessibilityLabel("대기 중인 영상 하나 배정받기")
-                .accessibilityHint("30분 동안 영상 하나를 임시 배정받고 피드백을 작성합니다")
+                .accessibilityHint("영상 하나를 배정받고 피드백을 작성합니다")
             }
         }
     }

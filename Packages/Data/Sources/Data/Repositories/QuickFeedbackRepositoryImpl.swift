@@ -42,10 +42,12 @@ public struct QuickFeedbackRepositoryImpl: QuickFeedbackRepository {
             let requestID: UUID
             enum CodingKeys: String, CodingKey { case requestID = "request_id" }
         }
+        // 방치(expired)한 배정은 재노출 대상이므로 제외 목록에서 뺀다
         let assignments: [AssignmentRequestID] = try await client
             .from(SupabaseConfig.Table.quickFeedbackAssignments)
             .select("request_id")
             .eq("reviewer_id", value: userID)
+            .neq("status", value: "expired")
             .execute()
             .value
         let assignedRequestIDs = Set(assignments.map(\.requestID))
