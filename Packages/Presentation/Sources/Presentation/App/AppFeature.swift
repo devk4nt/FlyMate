@@ -6,7 +6,7 @@ import Domain
 @Reducer
 public struct AppFeature : Sendable {
     #if DEBUG
-    /// 디버그 기본값은 목 데이터 자동 진입 — 시뮬레이터 한정. LIVE_AUTH=1이면 실제 로그인 플로우 (FlyMate-Live 스킴).
+    /// 디버그 기본값은 목 데이터 자동 진입 — 시뮬레이터 한정. LIVE_AUTH=1이면 실제 로그인 플로우 (FlyMate 스킴 환경변수 토글).
     /// 실기기는 홈 화면 실행 시 환경변수가 없어 mock에 갇히므로 항상 실제 플로우로 진입한다.
     #if targetEnvironment(simulator)
     public static let skipAuth = ProcessInfo.processInfo.environment["LIVE_AUTH"] != "1"
@@ -189,7 +189,7 @@ public struct AppFeature : Sendable {
                             // }
                             // .cancellable(id: CancelID.transactionUpdates)
                         ]
-                        // 온보딩은 로그인 후에 노출 — 웰컴 포인트/첫 업로드 안내는 계정이 생긴 뒤에 의미가 있다
+                        // 온보딩은 로그인 후에 노출 — 첫 업로드 안내는 계정이 생긴 뒤에 의미가 있다
                         effects.append(.send(.checkOnboarding))
                         // 현직자 인증 집합 로드 (실패해도 뱃지만 안 뜨므로 조용히 무시)
                         let verificationClient = userClient
@@ -264,6 +264,9 @@ public struct AppFeature : Sendable {
                 return .none
 
             case .pushNotificationTapped(let payload):
+                if payload["recruitPostId"] != nil || payload["type"] == "recruit_post" {
+                    return .send(.deepLink(.recruit))
+                }
                 guard let videoIDString = payload["videoId"],
                       let videoID = UUID(uuidString: videoIDString) else {
                     return .none
@@ -282,6 +285,12 @@ public struct AppFeature : Sendable {
                 case .videoDetail(_, let videoID, let feedbackID):
                     if case .tab = state.destination {
                         return .send(.destination(.tab(.navigateToVideoByID(videoID, feedbackID: feedbackID))))
+                    } else {
+                        state.pendingDeepLink = deepLink
+                    }
+                case .recruit:
+                    if case .tab = state.destination {
+                        return .send(.destination(.tab(.showRecruit)))
                     } else {
                         state.pendingDeepLink = deepLink
                     }
@@ -414,6 +423,7 @@ extension AppFeature.State {
 public enum DeepLink: Equatable {
     case inviteCode(String)
     case videoDetail(studyID: UUID, videoID: UUID, feedbackID: UUID? = nil)
+    case recruit
 }
 
 public enum DeepLinkParser {

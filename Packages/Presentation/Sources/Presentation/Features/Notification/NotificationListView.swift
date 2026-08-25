@@ -153,6 +153,8 @@ private struct NotificationRow: View {
             return "bell.badge.fill"
         case .quickFeedbackReceived:
             return "heart.text.square.fill"
+        case .recruitPost:
+            return "person.2.badge.plus.fill"
         }
     }
 
