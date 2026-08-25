@@ -283,3 +283,11 @@ extension VideoFeedView where Header == EmptyView {
         self.init(store: store) { EmptyView() }
     }
 }
+
+#Preview("피드백 대기열 없음") {
+    var state = VideoFeedFeature.State(scope: .pendingFeedback)
+    state.loadingState = .loaded([])
+    return NavigationStack {
+        VideoFeedView(store: Store(initialState: state) { VideoFeedFeature() })
+    }
+}

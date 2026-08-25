@@ -200,3 +200,11 @@ private struct StudyManagementCard: View {
         .accessibilityHidden(true)
     }
 }
+
+#Preview("개설한 스터디 없음") {
+    var state = StudyManagementFeature.State()
+    state.studies = .loaded([])
+    return NavigationStack {
+        StudyManagementView(store: Store(initialState: state) { StudyManagementFeature() })
+    }
+}

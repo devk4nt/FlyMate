@@ -359,3 +359,9 @@ struct RecruitPostRow: View {
             )
     }
 }
+
+#Preview("모집 글 없음") {
+    var state = RecruitListFeature.State(currentUserID: UUID())
+    state.loadingState = .loaded([])
+    return RecruitListView(store: Store(initialState: state) { RecruitListFeature() })
+}

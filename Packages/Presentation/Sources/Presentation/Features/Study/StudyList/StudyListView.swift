@@ -433,3 +433,14 @@ private struct StudyRow: View {
         .accessibilityHidden(true)
     }
 }
+
+#Preview("스터디 없음 (신규 유저)") {
+    var state = StudyListFeature.State()
+    state.studies = .loaded([])
+    state.quickFeedback = .loaded(
+        QuickFeedbackDashboard(myRequests: [], availableRequests: [], receivedReviews: [])
+    )
+    return NavigationStack {
+        StudyListView(store: Store(initialState: state) { StudyListFeature() })
+    }
+}

@@ -160,3 +160,11 @@ private struct NotificationRow: View {
         FMColors.supportAccent
     }
 }
+
+#Preview("알림 없음") {
+    var state = NotificationListFeature.State(userID: UUID())
+    state.loadingState = .loaded([])
+    return NavigationStack {
+        NotificationListView(store: Store(initialState: state) { NotificationListFeature() })
+    }
+}

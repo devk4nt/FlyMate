@@ -101,3 +101,11 @@ private struct BlockedUserRow: View {
         .padding(.vertical, FMSpacing.xxs)
     }
 }
+
+#Preview("차단한 사용자 없음") {
+    var state = BlockedUsersFeature.State()
+    state.blockedUsers = .loaded([])
+    return NavigationStack {
+        BlockedUsersView(store: Store(initialState: state) { BlockedUsersFeature() })
+    }
+}
