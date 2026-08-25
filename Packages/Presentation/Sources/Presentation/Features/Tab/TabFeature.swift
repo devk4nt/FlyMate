@@ -48,7 +48,6 @@ public struct TabFeature {
         case navigateToVideoByID(UUID, feedbackID: UUID? = nil)
         case navigationFailed
         case showInviteCode(String)
-        case showRecruit
         case newNotificationReceived(AppNotification)
         case unreadCountResponse(Int)
         case refreshUnreadCount
@@ -161,13 +160,6 @@ public struct TabFeature {
                 state.isNotificationSheetPresented = false
                 state.selectedTab = .study
                 return .send(.study(.showQuickFeedback))
-
-            case .notificationList(.delegate(.navigateToRecruit)), .showRecruit:
-                // ponytail: 모집 탭 목록으로만 이동(최신 글이 최상단). 특정 글 상세
-                // 딥링크는 fetchPost + detail presentation 배선이 필요해 후속으로.
-                state.isNotificationSheetPresented = false
-                state.selectedTab = .recruit
-                return .none
 
             case .notificationList(.markAllAsReadResponse(.failure)):
                 let client = notificationClient

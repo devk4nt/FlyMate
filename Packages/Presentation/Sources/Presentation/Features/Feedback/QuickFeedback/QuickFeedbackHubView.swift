@@ -1,12 +1,13 @@
 import AVKit
 import SwiftUI
 import ComposableArchitecture
+import Kingfisher
 import Core
 import Domain
 
 public struct QuickFeedbackHubView: View {
     private enum Constants {
-        static let historyPreviewCount = 1
+        static let historyPreviewCount = 3
     }
 
     @Bindable var store: StoreOf<QuickFeedbackHubFeature>
@@ -25,9 +26,12 @@ public struct QuickFeedbackHubView: View {
                     FMErrorView(error: error) { store.send(.refresh) }
                 case .loaded(let dashboard):
                     availableSection(dashboard.availableRequests)
-                    pointCard(dashboard)
+                    uploadCard(dashboard)
                     activeRequestSection(dashboard)
                     requestHistorySection(dashboard)
+                    if dashboard.myRequests.isEmpty {
+                        howItWorksSection
+                    }
                 }
             }
             .frame(maxWidth: FMSizing.ContentWidth.regular)
@@ -72,37 +76,33 @@ public struct QuickFeedbackHubView: View {
         )
     }
 
-    private func pointCard(_ dashboard: QuickFeedbackDashboard) -> some View {
+    private func uploadCard(_ dashboard: QuickFeedbackDashboard) -> some View {
         FMCard(style: .feed) {
             HStack(spacing: FMSpacing.sm) {
-                Image(systemName: "ticket.fill")
+                Image(systemName: "video.badge.plus")
                     .font(.system(size: FMSizing.IconSize.md, weight: .semibold))
-                    .foregroundStyle(FMColors.blushCoral)
+                    .foregroundStyle(FMColors.coral)
                     .frame(width: FMSizing.IconContainer.sm, height: FMSizing.IconContainer.sm)
-                    .background(FMColors.blushCoral.opacity(0.1), in: Circle())
+                    .background(FMColors.coral.opacity(0.1), in: Circle())
 
                 VStack(alignment: .leading, spacing: FMSpacing.xxs) {
-                    Text("내 포인트 \(dashboard.pointBalance)개")
+                    Text("내 영상 피드백 받기")
                         .font(FMTypography.authorName)
                         .foregroundStyle(FMColors.brandTitle)
-                        .monospacedDigit()
 
-                    Text("2개로 내 영상 피드백을 요청할 수 있어요")
+                    Text("영상을 올리면 다른 사람들이 피드백을 남겨줘요")
                         .font(FMTypography.caption1)
                         .foregroundStyle(FMColors.secondaryLabel)
                 }
 
                 Spacer()
 
-                Button("내 영상 요청") { store.send(.uploadTapped) }
+                Button("내 영상 올리기") { store.send(.uploadTapped) }
                     .font(FMTypography.feedMetaEmphasis)
                     .buttonStyle(.bordered)
                     .tint(FMColors.primaryAction)
-                    .disabled(
-                        dashboard.pointBalance < AppConstants.quickFeedbackRequestPointCost
-                            || dashboard.myRequests.contains { $0.status == .open }
-                    )
-                    .accessibilityHint("포인트 2개를 사용해 빠른 피드백을 요청합니다")
+                    .disabled(dashboard.myRequests.contains { $0.status == .open })
+                    .accessibilityHint("내 영상을 올려 빠른 피드백을 요청합니다")
             }
         }
     }
@@ -203,85 +203,177 @@ public struct QuickFeedbackHubView: View {
                     layout: .card
                 )
             } else {
-                Button { store.send(.startFeedbackTapped) } label: {
-                    FMCard(style: .hero, background: FMColors.supportSurface) {
-                        VStack(alignment: .leading, spacing: FMSpacing.sm) {
-                            HStack(spacing: FMSpacing.sm) {
-                                waitingProfileStack(requests)
+                Text("마음에 드는 영상을 골라 피드백을 남겨보세요")
+                    .font(FMTypography.caption1)
+                    .foregroundStyle(FMColors.secondaryLabel)
 
-                                VStack(alignment: .leading, spacing: FMSpacing.xxxs) {
-                                    Text("\(waitingPeopleCount(requests))명이 피드백을 기다리고 있어요")
-                                        .font(FMTypography.cardTitle)
-                                        .foregroundStyle(FMColors.brandTitle)
-                                        .monospacedDigit()
+                ForEach(requests) { request in
+                    QuickFeedbackAvailableCard(
+                        request: request,
+                        isClaiming: store.claimingRequestID == request.id,
+                        isDisabled: store.claimingRequestID != nil,
+                        onTapped: { store.send(.feedbackTapped(request.id)) }
+                    )
+                }
+            }
+        }
+    }
 
-                                    Text("한 사람을 도우면 포인트 1개를 받아요")
-                                        .font(FMTypography.caption1)
-                                        .foregroundStyle(FMColors.secondaryLabel)
-                                }
+    // MARK: - How it works (요청 기록이 없는 신규 사용자용 안내)
 
-                                Spacer(minLength: 0)
-                            }
+    private var howItWorksSection: some View {
+        VStack(alignment: .leading, spacing: FMSpacing.sm) {
+            Text("이렇게 이용해요")
+                .font(FMTypography.sectionTitle)
+                .foregroundStyle(FMColors.brandTitle)
 
-                            Label("영상 받아서 도와주기", systemImage: "play.circle.fill")
-                                .font(FMTypography.authorName)
-                                .foregroundStyle(FMColors.onAccent)
-                                .frame(maxWidth: .infinity)
-                                .frame(minHeight: 44)
-                                .background(
-                                    FMColors.primaryAction,
-                                    in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm, style: .continuous)
-                                )
+            FMCard(style: .feed) {
+                VStack(alignment: .leading, spacing: FMSpacing.md) {
+                    howItWorksRow(
+                        step: 1,
+                        icon: "video.badge.plus",
+                        title: "내 영상 올리기",
+                        detail: "1분 이내 영상을 올리면 두 명이 피드백해줘요."
+                    )
+                    howItWorksRow(
+                        step: 2,
+                        icon: "bubble.left.and.text.bubble.right.fill",
+                        title: "다른 사람 도와주기",
+                        detail: "대기 중인 영상에 피드백을 남기며 서로 도와요."
+                    )
+                    howItWorksRow(
+                        step: 3,
+                        icon: "text.magnifyingglass",
+                        title: "피드백 확인하기",
+                        detail: "서로 다른 두 명의 시선으로 약점을 콕 짚어줘요."
+                    )
+                }
+            }
+        }
+    }
 
-                            Text("시작하면 영상 하나가 배정돼요. 여유롭게 작성해도 괜찮아요.")
+    private func howItWorksRow(step: Int, icon: String, title: String, detail: String) -> some View {
+        HStack(alignment: .top, spacing: FMSpacing.sm) {
+            Image(systemName: icon)
+                .font(.system(size: FMSizing.IconSize.md, weight: .semibold))
+                .foregroundStyle(FMColors.supportAccent)
+                .frame(width: FMSizing.IconContainer.sm, height: FMSizing.IconContainer.sm)
+                .background(FMColors.supportAccent.opacity(0.1), in: Circle())
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: FMSpacing.xxxs) {
+                Text(title)
+                    .font(FMTypography.authorName)
+                    .foregroundStyle(FMColors.brandTitle)
+                Text(detail)
+                    .font(FMTypography.caption1)
+                    .foregroundStyle(FMColors.secondaryLabel)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(step)단계, \(title). \(detail)")
+    }
+
+}
+
+private struct QuickFeedbackAvailableCard: View {
+    let request: QuickFeedbackRequest
+    let isClaiming: Bool
+    let isDisabled: Bool
+    let onTapped: () -> Void
+
+    private var durationText: String {
+        let total = Int(request.durationSeconds.rounded())
+        return String(format: "%d:%02d", total / 60, total % 60)
+    }
+
+    var body: some View {
+        Button(action: onTapped) {
+            FMCard {
+                HStack(alignment: .top, spacing: FMSpacing.sm) {
+                    thumbnail
+
+                    VStack(alignment: .leading, spacing: FMSpacing.xs) {
+                        Text(request.title)
+                            .font(FMTypography.headline)
+                            .foregroundStyle(FMColors.brandTitle)
+                            .multilineTextAlignment(.leading)
+                            .lineLimit(2)
+
+                        Label(request.focusArea.title, systemImage: "scope")
+                            .font(FMTypography.caption1)
+                            .foregroundStyle(FMColors.secondaryLabel)
+
+                        HStack(spacing: FMSpacing.xxs) {
+                            FMProfileImage(
+                                url: request.uploaderProfileURL,
+                                name: request.uploaderName,
+                                size: .sm
+                            )
+                            Text(request.uploaderName)
                                 .font(FMTypography.caption1)
                                 .foregroundStyle(FMColors.secondaryLabel)
-
-                            if store.isClaiming {
-                                ProgressView()
-                                    .frame(maxWidth: .infinity)
-                            }
+                                .lineLimit(1)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .buttonStyle(.plain)
-                .disabled(store.isClaiming)
-                .accessibilityLabel("대기 중인 영상 하나 배정받기")
-                .accessibilityHint("영상 하나를 배정받고 피드백을 작성합니다")
-            }
-        }
-    }
 
-    private func waitingProfileStack(_ requests: [QuickFeedbackRequest]) -> some View {
-        HStack(spacing: -FMSpacing.xs) {
-            ForEach(Array(requests.prefix(3))) { request in
-                FMProfileImage(
-                    url: request.uploaderProfileURL,
-                    name: request.uploaderName,
-                    size: .md
-                )
-                .overlay {
-                    Circle()
-                        .stroke(FMColors.supportSurface, lineWidth: 2)
+                    Spacer(minLength: 0)
                 }
             }
-
-            if requests.count > 3 {
-                Text("+\(requests.count - 3)")
-                    .font(FMTypography.eyebrow)
-                    .foregroundStyle(FMColors.brandTitle)
-                    .frame(width: 32, height: 32)
-                    .background(FMColors.background, in: Circle())
+        }
+        .buttonStyle(.plain)
+        .disabled(isDisabled)
+        .opacity(isDisabled && !isClaiming ? 0.5 : 1)
+        .overlay {
+            if isClaiming {
+                ProgressView()
+                    .padding(FMSpacing.sm)
+                    .background(.ultraThinMaterial, in: Circle())
             }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(request.uploaderName)님의 \(request.title) 영상")
+        .accessibilityHint("탭하면 이 영상을 배정받아 피드백을 작성합니다")
     }
 
-    private func waitingPeopleCount(_ requests: [QuickFeedbackRequest]) -> Int {
-        Set(requests.map(\.uploaderID)).count
+    private var thumbnail: some View {
+        Group {
+            if let thumbnailURL = request.thumbnailURL {
+                KFImage(thumbnailURL)
+                    .resizable()
+                    .placeholder { thumbnailPlaceholder }
+                    .fade(duration: 0.2)
+                    .aspectRatio(contentMode: .fill)
+            } else {
+                thumbnailPlaceholder
+            }
+        }
+        .aspectRatio(16.0 / 9.0, contentMode: .fit)
+        .frame(width: 112)
+        .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm, style: .continuous))
+        .overlay(alignment: .bottomTrailing) {
+                Text(durationText)
+                    .font(FMTypography.caption2)
+                    .foregroundStyle(FMColors.onAccent)
+                    .monospacedDigit()
+                    .padding(.horizontal, FMSpacing.xxs)
+                    .padding(.vertical, FMSpacing.xxxs)
+                    .background(Color.black.opacity(0.6), in: Capsule())
+                    .padding(FMSpacing.xxs)
+            }
     }
 
+    private var thumbnailPlaceholder: some View {
+        FMColors.softCanvas
+            .overlay {
+                Image(systemName: "play.circle.fill")
+                    .font(.system(size: FMSizing.IconSize.lg))
+                    .foregroundStyle(FMColors.supportAccent)
+            }
+    }
 }
 
 private struct QuickFeedbackRequestHistoryListView: View {
@@ -448,7 +540,7 @@ private struct QuickFeedbackRequestHistoryRow: View {
     }
 
     private var statusColor: Color {
-        request.status == .completed ? FMColors.blushCoral : FMColors.supportAccent
+        request.status == .completed ? FMColors.coral : FMColors.supportAccent
     }
 }
 
@@ -625,7 +717,7 @@ public struct QuickFeedbackReviewView: View {
                 focusPicker
                 editor(title: "좋았던 점", text: $store.positiveText.sending(\.positiveTextChanged))
                 editor(title: "개선하면 좋을 점", text: $store.improvementText.sending(\.improvementTextChanged))
-                Text("각 항목을 20자 이상 작성하면 피드백 포인트 1개를 받아요.")
+                Text("각 항목을 20자 이상 작성하면 상대에게 큰 도움이 돼요.")
                     .font(FMTypography.caption1)
                     .foregroundStyle(FMColors.secondaryLabel)
             }
@@ -706,5 +798,18 @@ public struct QuickFeedbackReviewView: View {
                 .padding(FMSpacing.xs)
                 .fmInputSurface()
         }
+    }
+}
+
+#Preview("신규 유저 (요청 없음)") {
+    var state = QuickFeedbackHubFeature.State()
+    // 요청·대기 영상이 모두 없는 신규 유저 → "이렇게 이용해요" 안내가 하단을 채움.
+    state.dashboard = .loaded(
+        QuickFeedbackDashboard(myRequests: [], availableRequests: [], receivedReviews: [])
+    )
+    return NavigationStack {
+        QuickFeedbackHubView(
+            store: Store(initialState: state) { QuickFeedbackHubFeature() }
+        )
     }
 }

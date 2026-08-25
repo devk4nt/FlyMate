@@ -521,6 +521,7 @@ struct FlyMateApp: App {
             QuickFeedbackRequest(
                 id: uuid(601), uploaderID: haneulID, uploaderName: "김하늘",
                 title: "항공사 지원동기 1분 답변", videoURL: sampleVideoURL(sintelTrailer),
+                thumbnailURL: sampleThumbnailURL(601),
                 durationSeconds: 52, focusArea: .answer,
                 feedbackRequest: "지원 동기가 구체적으로 들리는지 봐주세요.",
                 status: .open, feedbackCount: 0, targetFeedbackCount: 2,
@@ -529,10 +530,29 @@ struct FlyMateApp: App {
             QuickFeedbackRequest(
                 id: uuid(602), uploaderID: seoyeonID, uploaderName: "박서연",
                 title: "영상면접 첫인사 연습", videoURL: sampleVideoURL(sintelTrailer720),
+                thumbnailURL: sampleThumbnailURL(602),
                 durationSeconds: 38, focusArea: .expression,
                 feedbackRequest: "시선과 미소가 자연스러운지 알려주세요.",
                 status: .open, feedbackCount: 1, targetFeedbackCount: 2,
                 expiresAt: now.addingTimeInterval(18 * hour), createdAt: now.addingTimeInterval(-4 * hour)
+            ),
+            QuickFeedbackRequest(
+                id: uuid(604), uploaderID: minjunID, uploaderName: "이민준",
+                title: "기내 방송문 낭독 연습", videoURL: sampleVideoURL(sintelTrailer),
+                thumbnailURL: sampleThumbnailURL(604),
+                durationSeconds: 61, focusArea: .voice,
+                feedbackRequest: "발음과 속도, 안정감이 느껴지는지 봐주세요.",
+                status: .open, feedbackCount: 0, targetFeedbackCount: 2,
+                expiresAt: now.addingTimeInterval(24 * hour), createdAt: now.addingTimeInterval(-1 * hour)
+            ),
+            QuickFeedbackRequest(
+                id: uuid(605), uploaderID: jiwooID, uploaderName: "최지우",
+                title: "상황 대처 질문 답변", videoURL: sampleVideoURL(sintelTrailer720),
+                thumbnailURL: sampleThumbnailURL(605),
+                durationSeconds: 47, focusArea: .answer,
+                feedbackRequest: "답변 구조가 논리적으로 들리는지 알려주세요.",
+                status: .open, feedbackCount: 1, targetFeedbackCount: 2,
+                expiresAt: now.addingTimeInterval(12 * hour), createdAt: now.addingTimeInterval(-30 * 60)
             ),
             // 내 요청에 상대방 피드백이 도착한 상태 — 빠른 피드백 수신 UI 확인용
             QuickFeedbackRequest(
@@ -584,7 +604,6 @@ struct FlyMateApp: App {
             ),
         ])
         let quickFeedbackAssignmentStore = LockIsolated<[UUID: QuickFeedbackRequest]>([:])
-        let quickFeedbackPointStore = LockIsolated(2)
 
         // MARK: Feedbacks
         // 상황별 다양화: 업로더 요청에 직접 응답 / 칭찬 / 개선 지적 / 질문·제안 / 멘션
@@ -1028,7 +1047,6 @@ struct FlyMateApp: App {
                     .filter { $0.uploaderID == meID }
                     .sorted { $0.createdAt > $1.createdAt }
                 return QuickFeedbackDashboard(
-                    pointBalance: quickFeedbackPointStore.value,
                     myRequests: myRequests,
                     availableRequests: requests.filter { $0.uploaderID != meID && $0.status == .open },
                     receivedReviews: quickFeedbackReviewStore.value.filter { review in
@@ -1037,9 +1055,6 @@ struct FlyMateApp: App {
                 )
             },
             upload: { request, progress in
-                guard quickFeedbackPointStore.value >= AppConstants.quickFeedbackRequestPointCost else {
-                    throw AppError.business(.insufficientFeedbackPoints)
-                }
                 guard !quickFeedbackRequestStore.value.contains(where: { $0.uploaderID == meID && $0.status == .open }) else {
                     throw AppError.business(.activeQuickFeedbackExists)
                 }
@@ -1050,12 +1065,12 @@ struct FlyMateApp: App {
                 let result = QuickFeedbackRequest(
                     id: UUID(), uploaderID: meID, uploaderName: me.name,
                     title: request.title, videoURL: uploadedVideoURL,
+                    thumbnailURL: uploadedThumbnailURL,
                     durationSeconds: request.durationSeconds, focusArea: request.focusArea,
                     feedbackRequest: request.feedbackRequest, status: .open,
                     feedbackCount: 0, targetFeedbackCount: AppConstants.quickFeedbackTargetCount,
                     expiresAt: Date().addingTimeInterval(48 * hour), createdAt: Date()
                 )
-                quickFeedbackPointStore.withValue { $0 -= AppConstants.quickFeedbackRequestPointCost }
                 quickFeedbackRequestStore.withValue { $0.append(result) }
                 return result
             },
@@ -1082,15 +1097,10 @@ struct FlyMateApp: App {
                 quickFeedbackReviewStore.withValue { $0.append(review) }
                 quickFeedbackAssignmentStore.withValue { $0[request.assignmentID] = nil }
                 quickFeedbackRequestStore.withValue { $0.removeAll { $0.id == target.id } }
-                quickFeedbackPointStore.withValue { $0 += 1 }
                 return review
             },
             closeRequest: { requestID in
-                guard let request = quickFeedbackRequestStore.value.first(where: { $0.id == requestID }) else { return }
                 quickFeedbackRequestStore.withValue { $0.removeAll { $0.id == requestID } }
-                quickFeedbackPointStore.withValue {
-                    $0 += request.targetFeedbackCount - request.feedbackCount
-                }
             }
         )
 

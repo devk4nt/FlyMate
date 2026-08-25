@@ -16,14 +16,6 @@ public struct QuickFeedbackRepositoryImpl: QuickFeedbackRepository {
         try await client.rpc(SupabaseConfig.RPC.reconcileQuickFeedbackRequests).execute()
         let userID = try await client.auth.session.user.id
 
-        struct WalletDTO: Decodable { let balance: Int }
-        let wallet: WalletDTO = try await client.from(SupabaseConfig.Table.quickFeedbackWallets)
-            .select("balance")
-            .eq("user_id", value: userID)
-            .single()
-            .execute()
-            .value
-
         let myRequestDTOs: [QuickFeedbackRequestDTO] = try await client
             .from(SupabaseConfig.Table.quickFeedbackRequests)
             .select()
@@ -76,7 +68,6 @@ public struct QuickFeedbackRepositoryImpl: QuickFeedbackRepository {
         }
 
         return QuickFeedbackDashboard(
-            pointBalance: wallet.balance,
             myRequests: myRequests,
             availableRequests: availableDTOs
                 .filter { !assignedRequestIDs.contains($0.id) }
@@ -97,12 +88,21 @@ public struct QuickFeedbackRepositoryImpl: QuickFeedbackRepository {
             userID: userID,
             requestID: requestID
         )
+        var thumbnailURL: URL?
+        if let thumbnailData = request.thumbnailData {
+            thumbnailURL = try? await storageService.uploadQuickFeedbackThumbnail(
+                data: thumbnailData,
+                userID: userID,
+                requestID: requestID
+            )
+        }
         progress(0.8)
 
         struct Params: Encodable {
             let p_id: UUID
             let p_title: String
             let p_video_path: String
+            let p_thumbnail_url: String?
             let p_duration_seconds: Double
             let p_focus_area: String
             let p_feedback_request: String?
@@ -115,6 +115,7 @@ public struct QuickFeedbackRepositoryImpl: QuickFeedbackRepository {
                     p_id: requestID,
                     p_title: request.title,
                     p_video_path: videoPath,
+                    p_thumbnail_url: thumbnailURL?.absoluteString,
                     p_duration_seconds: request.durationSeconds,
                     p_focus_area: request.focusArea.rawValue,
                     p_feedback_request: request.feedbackRequest
@@ -127,6 +128,7 @@ public struct QuickFeedbackRepositoryImpl: QuickFeedbackRepository {
             return DTOMapper.toDomain(dto)
         } catch {
             await storageService.deleteQuickFeedbackVideo(path: videoPath)
+            await storageService.deleteQuickFeedbackThumbnail(userID: userID, requestID: requestID)
             throw mapError(error)
         }
     }
@@ -205,7 +207,6 @@ public struct QuickFeedbackRepositoryImpl: QuickFeedbackRepository {
 
     private func mapError(_ error: Error) -> AppError {
         let message = error.localizedDescription.lowercased()
-        if message.contains("insufficient_feedback_points") { return .business(.insufficientFeedbackPoints) }
         if message.contains("active_quick_feedback_exists") { return .business(.activeQuickFeedbackExists) }
         if message.contains("quick_feedback_expired") { return .business(.quickFeedbackExpired) }
         if message.contains("quick_feedback_unavailable") { return .business(.quickFeedbackUnavailable) }

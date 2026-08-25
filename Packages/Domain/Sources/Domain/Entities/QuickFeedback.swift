@@ -30,6 +30,7 @@ public struct QuickFeedbackRequest: Equatable, Identifiable, Sendable, Hashable 
     public let uploaderProfileURL: URL?
     public let title: String
     public let videoURL: URL?
+    public let thumbnailURL: URL?
     public let durationSeconds: TimeInterval
     public let focusArea: QuickFeedbackFocusArea
     public let feedbackRequest: String?
@@ -46,6 +47,7 @@ public struct QuickFeedbackRequest: Equatable, Identifiable, Sendable, Hashable 
         uploaderProfileURL: URL? = nil,
         title: String,
         videoURL: URL? = nil,
+        thumbnailURL: URL? = nil,
         durationSeconds: TimeInterval,
         focusArea: QuickFeedbackFocusArea,
         feedbackRequest: String? = nil,
@@ -61,6 +63,7 @@ public struct QuickFeedbackRequest: Equatable, Identifiable, Sendable, Hashable 
         self.uploaderProfileURL = uploaderProfileURL
         self.title = title
         self.videoURL = videoURL
+        self.thumbnailURL = thumbnailURL
         self.durationSeconds = durationSeconds
         self.focusArea = focusArea
         self.feedbackRequest = feedbackRequest
@@ -107,7 +110,6 @@ public struct QuickFeedbackReview: Equatable, Identifiable, Sendable, Hashable {
 }
 
 public struct QuickFeedbackDashboard: Equatable, Sendable {
-    public let pointBalance: Int
     public let myRequests: [QuickFeedbackRequest]
     public let availableRequests: [QuickFeedbackRequest]
     public let receivedReviews: [QuickFeedbackReview]
@@ -121,24 +123,20 @@ public struct QuickFeedbackDashboard: Equatable, Sendable {
     }
 
     public init(
-        pointBalance: Int,
         myRequests: [QuickFeedbackRequest],
         availableRequests: [QuickFeedbackRequest],
         receivedReviews: [QuickFeedbackReview]
     ) {
-        self.pointBalance = pointBalance
         self.myRequests = myRequests
         self.availableRequests = availableRequests
         self.receivedReviews = receivedReviews
     }
 
     public init(
-        pointBalance: Int,
         latestRequest: QuickFeedbackRequest?,
         availableRequests: [QuickFeedbackRequest],
         receivedReviews: [QuickFeedbackReview]
     ) {
-        self.pointBalance = pointBalance
         self.myRequests = latestRequest.map { [$0] } ?? []
         self.availableRequests = availableRequests
         self.receivedReviews = receivedReviews

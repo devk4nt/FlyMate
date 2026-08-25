@@ -182,8 +182,8 @@ private struct OnboardingArtwork: View {
             )
         case 3:
             ArtworkConfiguration(
-                detailSymbol: "star.circle.fill",
-                caption: "웰컴 포인트 2"
+                detailSymbol: "video.badge.plus",
+                caption: "첫 영상 올리기"
             )
         default:
             ArtworkConfiguration(

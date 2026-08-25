@@ -46,8 +46,8 @@ public struct OnboardingFeature: Sendable {
                 ),
                 OnboardingPage(
                     id: 3,
-                    title: "웰컴 포인트 2개가 준비됐어요",
-                    description: "첫 영상을 올려 피드백을 받고, 다른 사람을 도우며 포인트를 다시 쌓아보세요."
+                    title: "첫 영상을 올려보세요",
+                    description: "짧은 연습 영상을 올리면 다른 사람들이 피드백을 남겨줘요."
                 ),
             ]
         }

@@ -11,7 +11,6 @@ struct QuickFeedbackFeatureTests {
     @Test
     func 허브_진입시_포인트와_요청목록을_로드한다() async {
         let dashboard = QuickFeedbackDashboard(
-            pointBalance: 2,
             latestRequest: nil,
             availableRequests: [.mock],
             receivedReviews: []
@@ -35,7 +34,6 @@ struct QuickFeedbackFeatureTests {
         let claimed = ClaimedQuickFeedback(assignmentID: UUID(900), request: .mock)
         var state = QuickFeedbackHubFeature.State()
         state.dashboard = .loaded(QuickFeedbackDashboard(
-            pointBalance: 2,
             latestRequest: nil,
             availableRequests: [.mock],
             receivedReviews: []
@@ -46,11 +44,11 @@ struct QuickFeedbackFeatureTests {
             $0.quickFeedbackClient.claim = { _ in claimed }
         }
 
-        await store.send(.startFeedbackTapped) {
-            $0.isClaiming = true
+        await store.send(.feedbackTapped(QuickFeedbackRequest.mock.id)) {
+            $0.claimingRequestID = QuickFeedbackRequest.mock.id
         }
         await store.receive(\.claimResponse.success) {
-            $0.isClaiming = false
+            $0.claimingRequestID = nil
             $0.review = QuickFeedbackReviewFeature.State(claimed: claimed)
         }
     }
@@ -66,7 +64,6 @@ struct QuickFeedbackFeatureTests {
         )
         var state = QuickFeedbackHubFeature.State()
         state.dashboard = .loaded(QuickFeedbackDashboard(
-            pointBalance: 2,
             myRequests: [.mock],
             availableRequests: [],
             receivedReviews: [review]
@@ -106,7 +103,7 @@ struct QuickFeedbackFeatureTests {
                     TextState("취소")
                 }
             } message: {
-                TextState("아직 받지 못한 피드백 수만큼 포인트를 돌려받아요. 종료한 요청은 다시 열 수 없어요.")
+                TextState("종료한 요청은 다시 열 수 없어요.")
             }
         }
         #expect(closedRequestID.value == nil)

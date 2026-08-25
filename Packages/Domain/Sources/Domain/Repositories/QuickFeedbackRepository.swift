@@ -3,6 +3,7 @@ import Foundation
 public struct UploadQuickFeedbackRequest: Equatable, Sendable {
     public let title: String
     public let videoData: Data
+    public let thumbnailData: Data?
     public let durationSeconds: TimeInterval
     public let focusArea: QuickFeedbackFocusArea
     public let feedbackRequest: String?
@@ -10,12 +11,14 @@ public struct UploadQuickFeedbackRequest: Equatable, Sendable {
     public init(
         title: String,
         videoData: Data,
+        thumbnailData: Data? = nil,
         durationSeconds: TimeInterval,
         focusArea: QuickFeedbackFocusArea,
         feedbackRequest: String? = nil
     ) {
         self.title = title
         self.videoData = videoData
+        self.thumbnailData = thumbnailData
         self.durationSeconds = durationSeconds
         self.focusArea = focusArea
         self.feedbackRequest = feedbackRequest

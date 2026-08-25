@@ -26,7 +26,6 @@ struct FeedbackManagementFeatureTests {
     @Test
     func 세그먼트_전환() async {
         let dashboard = QuickFeedbackDashboard(
-            pointBalance: 2,
             myRequests: [.managementMock],
             availableRequests: [],
             receivedReviews: []
