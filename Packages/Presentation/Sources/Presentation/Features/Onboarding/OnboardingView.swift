@@ -236,14 +236,14 @@ private struct OnboardingArtwork: View {
             HStack(spacing: -10) {
                 memberAvatar(initial: "서", color: FMColors.supportAccent)
                 memberAvatar(initial: "민", color: FMColors.primaryAction)
-                memberAvatar(initial: "나", color: FMColors.blushCoral)
+                memberAvatar(initial: "나", color: FMColors.coral)
             }
             .overlay(alignment: .bottomTrailing) {
                 Image(systemName: "checkmark")
                     .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(.white)
                     .frame(width: 28, height: 28)
-                    .background(FMColors.blushCoral, in: Circle())
+                    .background(FMColors.coral, in: Circle())
                     .offset(x: 8, y: 8)
             }
         case 3:
@@ -254,7 +254,7 @@ private struct OnboardingArtwork: View {
                 cycleStep(symbol: "bubble.left.fill", tint: FMColors.supportAccent)
                 Image(systemName: "arrow.right")
                     .foregroundStyle(FMColors.secondaryLabel)
-                cycleStep(symbol: "star.fill", tint: FMColors.blushCoral)
+                cycleStep(symbol: "star.fill", tint: FMColors.coral)
             }
         default:
             FMPracticeSymbol(size: 92)

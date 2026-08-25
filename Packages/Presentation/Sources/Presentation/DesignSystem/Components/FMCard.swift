@@ -157,7 +157,7 @@ public struct FMPracticeSymbol: View {
                     .font(.system(size: size * 0.15, weight: .bold))
                     .foregroundStyle(.white)
                     .frame(width: size * 0.3, height: size * 0.3)
-                    .background(FMColors.blushCoral, in: Circle())
+                    .background(FMColors.coral, in: Circle())
                     .offset(x: size * 0.31, y: -size * 0.28)
             }
         }
