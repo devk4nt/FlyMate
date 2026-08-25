@@ -418,7 +418,7 @@ struct FlyMateApp: App {
             notice: "영어 답변 영상 위주로 올려주세요."
         )
 
-        // FlyMate-OwnerDelete 스킴: 방장 회원 탈퇴 시나리오.
+        // MOCK_OWNER_DELETE=1 (FlyMate 스킴 환경변수 토글): 방장 회원 탈퇴 시나리오.
         // 혼자 방장인 스터디를 추가해 탈퇴 시 두 케이스를 모두 확인한다:
         // studyA → 가장 오래된 멤버(김하늘)에게 방장 승계, 혼자 연습방 → 삭제
         let soloStudy = Study(
