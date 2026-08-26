@@ -119,3 +119,11 @@ public struct JoinRequestManagementView: View {
         FMProfileImage(url: request.profileImageURL, name: request.userName, size: .lg)
     }
 }
+
+#Preview("참여 요청 없음") {
+    var state = JoinRequestManagementFeature.State(studyID: UUID())
+    state.requests = .loaded([])
+    return NavigationStack {
+        JoinRequestManagementView(store: Store(initialState: state) { JoinRequestManagementFeature() })
+    }
+}

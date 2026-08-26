@@ -143,7 +143,7 @@ public struct FMFeedCell: View {
                 feedbackCount > 0 ? "피드백 \(feedbackCount)" : "첫 피드백 남기기",
                 systemImage: feedbackCount > 0 ? "heart.fill" : "bubble.left"
             )
-            .foregroundStyle(feedbackCount > 0 ? FMColors.blushCoral : FMColors.supportAccent)
+            .foregroundStyle(feedbackCount > 0 ? FMColors.coral : FMColors.supportAccent)
 
             Label("함께 보기", systemImage: "person.2")
                 .foregroundStyle(FMColors.supportAccent)

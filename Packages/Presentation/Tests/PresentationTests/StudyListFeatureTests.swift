@@ -105,20 +105,19 @@ struct StudyListFeatureTests {
         var state = StudyListFeature.State()
 
         // 로딩 전에는 유도 모드 아님
-        #expect(state.awaitingFirstUploadPointBalance == nil)
+        #expect(state.awaitingFirstUpload == false)
 
-        // 요청 이력이 없으면 보유 포인트 반환
+        // 요청 이력이 없으면 유도 모드
         state.quickFeedback = .loaded(.mock)
-        #expect(state.awaitingFirstUploadPointBalance == 2)
+        #expect(state.awaitingFirstUpload == true)
 
         // 요청 이력이 생기면 유도 모드 해제
         state.quickFeedback = .loaded(QuickFeedbackDashboard(
-            pointBalance: 0,
             latestRequest: .mock,
             availableRequests: [],
             receivedReviews: []
         ))
-        #expect(state.awaitingFirstUploadPointBalance == nil)
+        #expect(state.awaitingFirstUpload == false)
     }
 
     @Test
@@ -146,7 +145,6 @@ struct StudyListFeatureTests {
 
 private extension QuickFeedbackDashboard {
     static let mock = QuickFeedbackDashboard(
-        pointBalance: 2,
         latestRequest: nil,
         availableRequests: [],
         receivedReviews: []

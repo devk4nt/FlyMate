@@ -35,6 +35,19 @@ public struct StorageService: Sendable {
         _ = try? await client.storage.from(SupabaseConfig.Bucket.videos).remove(paths: [path])
     }
 
+    /// 빠른 피드백 썸네일을 업로드하고 공개 URL을 반환한다.
+    func uploadQuickFeedbackThumbnail(data: Data, userID: UUID, requestID: UUID) async throws -> URL {
+        let path = "quick/\(userID.uuidString.lowercased())/\(requestID).jpg"
+        try await client.storage.from(SupabaseConfig.Bucket.thumbnails)
+            .upload(path, data: data, options: .init(contentType: "image/jpeg"))
+        return try client.storage.from(SupabaseConfig.Bucket.thumbnails).getPublicURL(path: path)
+    }
+
+    func deleteQuickFeedbackThumbnail(userID: UUID, requestID: UUID) async {
+        let path = "quick/\(userID.uuidString.lowercased())/\(requestID).jpg"
+        _ = try? await client.storage.from(SupabaseConfig.Bucket.thumbnails).remove(paths: [path])
+    }
+
     /// 영상 파일을 업로드하고 스토리지 경로를 반환한다.
     func uploadVideo(
         data: Data,

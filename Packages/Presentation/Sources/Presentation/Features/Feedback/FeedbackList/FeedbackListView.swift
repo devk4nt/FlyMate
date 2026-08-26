@@ -291,3 +291,13 @@ struct FeedbackManagementRow: View {
         .accessibilityHint("영상의 해당 시점에서 피드백을 확인하려면 이중 탭하세요")
     }
 }
+
+#Preview("받은 피드백 없음") {
+    var state = FeedbackListFeature.State(userID: UUID(), listType: .received)
+    state.loadingState = .loaded([])
+    return NavigationStack {
+        FeedbackListView(store: Store(initialState: state) { FeedbackListFeature() }) {
+            EmptyView()
+        }
+    }
+}

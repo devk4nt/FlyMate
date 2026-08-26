@@ -69,7 +69,6 @@ public enum BusinessError: Equatable, Sendable {
     case purchaseFailed(String)
     case receiptVerificationFailed
     case nameAlreadyTaken
-    case insufficientFeedbackPoints
     case activeQuickFeedbackExists
     case quickFeedbackUnavailable
     case quickFeedbackExpired
@@ -119,8 +118,6 @@ public enum BusinessError: Equatable, Sendable {
             return "영수증 검증에 실패했습니다. 잠시 후 다시 시도해주세요."
         case .nameAlreadyTaken:
             return "이미 사용 중인 이름입니다. 다른 이름을 입력해주세요."
-        case .insufficientFeedbackPoints:
-            return "빠른 피드백을 요청하려면 포인트 2개가 필요합니다. 다른 영상에 피드백을 남겨보세요."
         case .activeQuickFeedbackExists:
             return "진행 중인 빠른 피드백 요청을 먼저 완료해주세요."
         case .quickFeedbackUnavailable:

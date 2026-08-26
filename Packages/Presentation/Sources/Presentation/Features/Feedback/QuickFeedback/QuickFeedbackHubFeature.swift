@@ -8,8 +8,10 @@ public struct QuickFeedbackHubFeature {
     @ObservableState
     public struct State: Equatable {
         public var dashboard: LoadingState<QuickFeedbackDashboard> = .idle
-        public var isClaiming = false
+        public var claimingRequestID: UUID?
         public var error: AppError?
+
+        public var isClaiming: Bool { claimingRequestID != nil }
         public var showToast = false
         public var toastMessage = ""
         @Presents public var closeRequestAlert: AlertState<Action.CloseRequestAlert>?
@@ -23,7 +25,7 @@ public struct QuickFeedbackHubFeature {
         case onAppear
         case refresh
         case dashboardResponse(Result<QuickFeedbackDashboard, AppError>)
-        case startFeedbackTapped
+        case feedbackTapped(UUID)
         case claimResponse(Result<ClaimedQuickFeedback, AppError>)
         case closeRequestTapped(UUID)
         case closeRequestAlert(PresentationAction<CloseRequestAlert>)
@@ -63,13 +65,13 @@ public struct QuickFeedbackHubFeature {
                 state.dashboard = .failed(error)
                 return .none
 
-            case .startFeedbackTapped:
+            case .feedbackTapped(let requestID):
                 guard
-                    !state.isClaiming,
+                    state.claimingRequestID == nil,
                     case .loaded(let dashboard) = state.dashboard,
-                    let requestID = dashboard.availableRequests.first?.id
+                    dashboard.availableRequests.contains(where: { $0.id == requestID })
                 else { return .none }
-                state.isClaiming = true
+                state.claimingRequestID = requestID
                 state.error = nil
                 let client = quickFeedbackClient
                 return .run { send in
@@ -82,12 +84,12 @@ public struct QuickFeedbackHubFeature {
                 }
 
             case .claimResponse(.success(let claimed)):
-                state.isClaiming = false
+                state.claimingRequestID = nil
                 state.review = QuickFeedbackReviewFeature.State(claimed: claimed)
                 return .none
 
             case .claimResponse(.failure(let error)):
-                state.isClaiming = false
+                state.claimingRequestID = nil
                 state.error = error
                 return .send(.refresh)
 
@@ -102,7 +104,7 @@ public struct QuickFeedbackHubFeature {
                         TextState("취소")
                     }
                 } message: {
-                    TextState("아직 받지 못한 피드백 수만큼 포인트를 돌려받아요. 종료한 요청은 다시 열 수 없어요.")
+                    TextState("종료한 요청은 다시 열 수 없어요.")
                 }
                 return .none
 

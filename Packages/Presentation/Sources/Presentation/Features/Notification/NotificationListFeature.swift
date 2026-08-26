@@ -38,6 +38,7 @@ public struct NotificationListFeature {
         public enum Delegate: Equatable {
             case navigateToVideo(videoID: UUID, feedbackID: UUID?)
             case navigateToQuickFeedback
+            case navigateToRecruit
         }
     }
 
@@ -189,6 +190,9 @@ public struct NotificationListFeature {
     private func navigationEffect(for notification: AppNotification) -> Effect<Action> {
         if notification.referenceQuickFeedbackRequestID != nil {
             return .send(.delegate(.navigateToQuickFeedback))
+        }
+        if notification.type == .recruitPost {
+            return .send(.delegate(.navigateToRecruit))
         }
         if let videoID = notification.referenceVideoID {
             return .send(.delegate(.navigateToVideo(

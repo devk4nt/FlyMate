@@ -40,7 +40,7 @@ public enum FMOpacity {
 }
 
 public enum FMShadow {
-    public static let cardColor = FMColors.deepIndigo.opacity(0.055)
+    public static let cardColor = FMColors.navy.opacity(0.055)
     public static let cardRadius: CGFloat = 8
     public static let cardY: CGFloat = 3
 
@@ -48,7 +48,7 @@ public enum FMShadow {
     public static let heroRadius: CGFloat = 12
     public static let heroY: CGFloat = 4
 
-    public static let sectionColor = FMColors.deepIndigo.opacity(0.045)
+    public static let sectionColor = FMColors.navy.opacity(0.045)
     public static let sectionRadius: CGFloat = 7
     public static let sectionY: CGFloat = 3
 

@@ -110,6 +110,7 @@ enum DTOMapper {
             uploaderProfileURL: dto.uploaderProfileURL.flatMap(URL.init(string:)),
             title: dto.title,
             videoURL: videoURL,
+            thumbnailURL: dto.thumbnailURL.flatMap(URL.init(string:)),
             durationSeconds: dto.durationSeconds,
             focusArea: QuickFeedbackFocusArea(rawValue: dto.focusArea) ?? .overall,
             feedbackRequest: dto.feedbackRequest,
@@ -252,6 +253,7 @@ enum DTOMapper {
             referenceFeedbackID: dto.referenceFeedbackID,
             referenceAnnouncementID: dto.referenceAnnouncementID,
             referenceQuickFeedbackRequestID: dto.referenceQuickFeedbackRequestID,
+            referenceRecruitPostID: dto.referenceRecruitPostID,
             isRead: dto.isRead,
             createdAt: parseDate(dto.createdAt)
         )

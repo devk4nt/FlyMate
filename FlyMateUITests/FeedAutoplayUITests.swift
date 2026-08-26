@@ -8,14 +8,24 @@ final class FeedAutoplayUITests: XCTestCase {
         let app = XCUIApplication()
         app.launch()
 
+        // 첫 실행(fresh 시뮬레이터 = CI)에는 온보딩 → 가이드라인 동의가 탭바를 가린다
+        let onboardingSkip = app.buttons["건너뛰기"]
+        if onboardingSkip.waitForExistence(timeout: 5) {
+            onboardingSkip.tap()
+        }
+        let consentAgree = app.buttons["이용약관에 동의하고 시작하기"]
+        if consentAgree.waitForExistence(timeout: 5) {
+            consentAgree.tap()
+        }
+
         // 피드백 탭 → 할 일 큐
         // 앱 초기 로딩 직후에는 탭이 씹힐 수 있어 화면 전환을 확인하며 재시도
         let feedbackTab = app.tabBars.buttons["피드백"]
-        XCTAssertTrue(feedbackTab.waitForExistence(timeout: 10))
+        XCTAssertTrue(feedbackTab.waitForExistence(timeout: 20))
         let feedbackNavBar = app.navigationBars["피드백"]
-        for _ in 0..<3 where !feedbackNavBar.exists {
+        for _ in 0..<6 where !feedbackNavBar.exists {
             feedbackTab.tap()
-            _ = feedbackNavBar.waitForExistence(timeout: 3)
+            _ = feedbackNavBar.waitForExistence(timeout: 5)
         }
         XCTAssertTrue(feedbackNavBar.exists, "피드백 탭 진입 실패")
 

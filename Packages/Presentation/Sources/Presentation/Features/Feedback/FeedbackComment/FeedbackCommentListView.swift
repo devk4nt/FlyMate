@@ -284,3 +284,33 @@ private struct CommentRow: View {
         FMProfileImage(url: comment.authorProfileURL, name: comment.authorName, size: .xs)
     }
 }
+
+#Preview("댓글 없음") {
+    let feedback = Feedback(
+        id: UUID(),
+        videoID: UUID(),
+        studyID: UUID(),
+        authorID: UUID(),
+        authorName: "김하늘",
+        content: "첫 문장에서 미소가 좋았어요.",
+        timestampSeconds: 15,
+        createdAt: Date()
+    )
+    var state = FeedbackCommentListFeature.State(feedback: feedback, studyID: UUID())
+    state.comments = .loaded([])
+    return NavigationStack {
+        FeedbackCommentListView(
+            store: Store(initialState: state) {
+                FeedbackCommentListFeature()
+            } withDependencies: {
+                $0.studyClient.fetchStudy = { _ in
+                    Study(
+                        id: UUID(), name: "스터디", description: "",
+                        ownerID: UUID(), inviteCode: "AAA123", maxMembers: 8,
+                        members: [], createdAt: Date()
+                    )
+                }
+            }
+        )
+    }
+}

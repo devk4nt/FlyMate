@@ -126,6 +126,7 @@ public struct VideoUploadFeature {
                     let request = UploadQuickFeedbackRequest(
                         title: state.title,
                         videoData: videoData,
+                        thumbnailData: state.selectedThumbnailData,
                         durationSeconds: state.videoDuration,
                         focusArea: state.quickFeedbackFocusArea,
                         feedbackRequest: state.feedbackRequest.isBlank ? nil : state.feedbackRequest

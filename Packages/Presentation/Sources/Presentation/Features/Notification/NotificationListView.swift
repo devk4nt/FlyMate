@@ -153,10 +153,20 @@ private struct NotificationRow: View {
             return "bell.badge.fill"
         case .quickFeedbackReceived:
             return "heart.text.square.fill"
+        case .recruitPost:
+            return "person.2.badge.plus.fill"
         }
     }
 
     private var iconColor: Color {
         FMColors.supportAccent
+    }
+}
+
+#Preview("알림 없음") {
+    var state = NotificationListFeature.State(userID: UUID())
+    state.loadingState = .loaded([])
+    return NavigationStack {
+        NotificationListView(store: Store(initialState: state) { NotificationListFeature() })
     }
 }

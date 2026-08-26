@@ -63,7 +63,6 @@ public struct StudyNavigationFeature {
 
             case .studyList(.quickFeedbackPrimaryTapped):
                 if case .loaded(let dashboard) = state.studyList.quickFeedback,
-                   dashboard.pointBalance >= AppConstants.quickFeedbackRequestPointCost,
                    dashboard.latestRequest?.status != .open {
                     state.path.append(.videoUpload(VideoUploadFeature.State(destination: .quickFeedback)))
                 } else {

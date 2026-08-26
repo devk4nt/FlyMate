@@ -96,6 +96,9 @@ struct AppFeatureDeepLinkTests {
             $0.subscriptionClient.fetchEntitlements = { _ in .free }
             $0.subscriptionClient.observeTransactionUpdates = { .finished }
             $0.pushNotificationClient.requestAuthorization = { false }
+            $0.pushNotificationClient.registerForRemoteNotifications = {}
+            $0.pushNotificationClient.observeFCMToken = { .finished }
+            $0.userClient.fetchVerifiedUserIDs = { [] }
             $0.userDefaultsClient.boolForKey = { _ in true }
         }
         store.exhaustivity = .off
@@ -122,6 +125,9 @@ struct AppFeatureDeepLinkTests {
             $0.subscriptionClient.fetchEntitlements = { _ in .free }
             $0.subscriptionClient.observeTransactionUpdates = { .finished }
             $0.pushNotificationClient.requestAuthorization = { false }
+            $0.pushNotificationClient.registerForRemoteNotifications = {}
+            $0.pushNotificationClient.observeFCMToken = { .finished }
+            $0.userClient.fetchVerifiedUserIDs = { [] }
             $0.userDefaultsClient.boolForKey = { _ in true }
         }
         store.exhaustivity = .off
@@ -177,6 +183,9 @@ struct AppFeatureDeepLinkTests {
             AppFeature()
         } withDependencies: {
             $0.pushNotificationClient.requestAuthorization = { false }
+            $0.pushNotificationClient.registerForRemoteNotifications = {}
+            $0.pushNotificationClient.observeFCMToken = { .finished }
+            $0.userClient.fetchVerifiedUserIDs = { [] }
             $0.userDefaultsClient.boolForKey = { _ in false }
         }
         store.exhaustivity = .off
@@ -200,6 +209,9 @@ struct AppFeatureDeepLinkTests {
         let store = TestStore(initialState: state) {
             AppFeature()
         } withDependencies: {
+            $0.pushNotificationClient.registerForRemoteNotifications = {}
+            $0.pushNotificationClient.observeFCMToken = { .finished }
+            $0.userClient.fetchVerifiedUserIDs = { [] }
             $0.userDefaultsClient.boolForKey = { _ in false }
         }
         store.exhaustivity = .off
@@ -257,6 +269,9 @@ struct AppFeatureDeepLinkTests {
             AppFeature()
         } withDependencies: {
             $0.pushNotificationClient.requestAuthorization = { false }
+            $0.pushNotificationClient.registerForRemoteNotifications = {}
+            $0.pushNotificationClient.observeFCMToken = { .finished }
+            $0.userClient.fetchVerifiedUserIDs = { [] }
             $0.userDefaultsClient.boolForKey = { _ in true }
         }
         store.exhaustivity = .off

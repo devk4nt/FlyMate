@@ -490,3 +490,21 @@ public struct StudyDetailView: View {
         )
     }
 }
+
+#Preview("영상 없음") {
+    let study = Study(
+        id: UUID(),
+        name: "승무원 영상면접 스터디",
+        description: "국내·외항사 승무원 영상면접을 함께 준비해요",
+        ownerID: UUID(),
+        inviteCode: "ABC123",
+        maxMembers: 8,
+        members: [],
+        createdAt: Date()
+    )
+    var state = StudyDetailFeature.State(study: study)
+    state.videos = .loaded([])
+    return NavigationStack {
+        StudyDetailView(store: Store(initialState: state) { StudyDetailFeature() })
+    }
+}

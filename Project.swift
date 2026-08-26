@@ -57,6 +57,7 @@ func testAccountScheme(_ role: String, email: String) -> Scheme {
 let project = Project(
     name: "FlyMate",
     options: .options(
+        automaticSchemesOptions: .disabled, // 타겟별 자동 스킴 생성 끔 — 아래 커스텀 스킴만 사용
         defaultKnownRegions: ["ko"],
         developmentRegion: "ko"
     ),
@@ -125,7 +126,7 @@ let project = Project(
             ],
             settings: .settings(
                 base: baseSettings.merging([
-                    "MARKETING_VERSION": "1.3",
+                    "MARKETING_VERSION": "1.4",
                     "CURRENT_PROJECT_VERSION": "1",
                     "SWIFT_EMIT_LOC_STRINGS": true,
                     "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
@@ -190,7 +191,19 @@ let project = Project(
                 ["FlyMateTests", "PresentationTests", "FlyMateUITests"],
                 configuration: .debug
             ),
-            runAction: .runAction(configuration: .debug, executable: "FlyMate"),
+            runAction: .runAction(
+                configuration: .debug,
+                executable: "FlyMate",
+                // 디버그 토글 — Xcode 스킴 편집기에서 체크해 사용 (tuist generate 시 비활성으로 초기화)
+                arguments: .arguments(environmentVariables: [
+                    // 실기기에서 실제 로그인 플로우(Apple/카카오) 진입
+                    "LIVE_AUTH": .environmentVariable(value: "1", isEnabled: false),
+                    // 방장 회원 탈퇴 시나리오 목 — 방장 승계(스터디 A→김하늘)·혼자 방장 스터디 삭제 확인
+                    "MOCK_OWNER_DELETE": .environmentVariable(value: "1", isEnabled: false),
+                    // 앱 전역 Skeleton/Shimmer 시각 검수 — 목 API 응답 5초 지연
+                    "MOCK_LOADING_DELAY_MS": .environmentVariable(value: "5000", isEnabled: false),
+                ])
+            ),
             archiveAction: .archiveAction(configuration: .release),
             profileAction: .profileAction(configuration: .release, executable: "FlyMate"),
             analyzeAction: .analyzeAction(configuration: .debug)
@@ -202,45 +215,5 @@ let project = Project(
         testAccountScheme("Member", email: Environment.testEmailMember.getString(default: "")),
         // Applicant: 가입 신청자 계정 (가입 승인 플로우 확인용으로 추가)
         testAccountScheme("Applicant", email: Environment.testEmailApplicant.getString(default: "")),
-        // 방장 회원 탈퇴 시나리오 목 스킴 — 탈퇴 시 방장 승계(스터디 A→김하늘),
-        // 혼자 방장인 스터디 삭제를 확인. 탈퇴 후 재로그인하면 결과 조회 가능
-        .scheme(
-            name: "FlyMate-OwnerDelete",
-            shared: true,
-            buildAction: .buildAction(targets: ["FlyMate"]),
-            runAction: .runAction(
-                configuration: .debug,
-                executable: "FlyMate",
-                arguments: .arguments(environmentVariables: [
-                    "MOCK_OWNER_DELETE": .environmentVariable(value: "1", isEnabled: true),
-                ])
-            )
-        ),
-        // 앱 전역 Skeleton/Shimmer 시각 검수용 — 목 API 응답을 5초 지연한다.
-        .scheme(
-            name: "FlyMate-Loading",
-            shared: true,
-            buildAction: .buildAction(targets: ["FlyMate"]),
-            runAction: .runAction(
-                configuration: .debug,
-                executable: "FlyMate",
-                arguments: .arguments(environmentVariables: [
-                    "MOCK_LOADING_DELAY_MS": .environmentVariable(value: "5000", isEnabled: true),
-                ])
-            )
-        ),
-        // 실기기에서 실제 로그인 플로우(Apple/카카오)로 진입하는 디버그 스킴
-        .scheme(
-            name: "FlyMate-Live",
-            shared: true,
-            buildAction: .buildAction(targets: ["FlyMate"]),
-            runAction: .runAction(
-                configuration: .debug,
-                executable: "FlyMate",
-                arguments: .arguments(environmentVariables: [
-                    "LIVE_AUTH": .environmentVariable(value: "1", isEnabled: true),
-                ])
-            )
-        ),
     ]
 )

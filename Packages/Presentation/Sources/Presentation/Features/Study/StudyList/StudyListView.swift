@@ -139,14 +139,14 @@ public struct StudyListView: View {
                     FMPracticeSymbol(size: 48)
 
                     VStack(alignment: .leading, spacing: FMSpacing.xxs) {
-                        Text(store.awaitingFirstUploadPointBalance == nil ? heroPhrase : "웰컴 포인트로 첫 피드백을 받아보세요")
+                        Text(store.awaitingFirstUpload ? "첫 영상을 올려 피드백을 받아보세요" : heroPhrase)
                             .font(FMTypography.headline)
                             .foregroundStyle(FMColors.brandTitle)
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
 
-                        if let balance = store.awaitingFirstUploadPointBalance {
-                            Text("포인트 \(balance)개 보유 · \(Int(AppConstants.maxQuickFeedbackVideoDurationSeconds))초 영상이면 충분해요")
+                        if store.awaitingFirstUpload {
+                            Text("\(Int(AppConstants.maxQuickFeedbackVideoDurationSeconds))초 영상이면 충분해요")
                                 .font(FMTypography.caption1)
                                 .monospacedDigit()
                                 .foregroundStyle(FMColors.secondaryLabel)
@@ -187,7 +187,7 @@ public struct StudyListView: View {
 
     private var quickFeedbackHeroAction: some View {
         heroActionButton(
-            title: store.awaitingFirstUploadPointBalance == nil ? "연습 시작" : "첫 영상 올리기",
+            title: store.awaitingFirstUpload ? "첫 영상 올리기" : "연습 시작",
             systemImage: "video.badge.plus",
             isPrimary: true
         ) {
@@ -265,9 +265,9 @@ public struct StudyListView: View {
                                 .font(FMTypography.sectionTitle)
                                 .foregroundStyle(FMColors.brandTitle)
                             Spacer()
-                            Label("\(dashboard.pointBalance)", systemImage: "ticket.fill")
-                                .font(FMTypography.authorName)
-                                .foregroundStyle(FMColors.blushCoral)
+                            Image(systemName: "chevron.right")
+                                .font(FMTypography.feedMetaEmphasis)
+                                .foregroundStyle(FMColors.secondaryLabel)
                         }
 
                         if let request = dashboard.latestRequest, request.status == .open {
@@ -289,7 +289,7 @@ public struct StudyListView: View {
                                 .tint(FMColors.primary)
                             }
                         } else {
-                            Text("다른 사람의 영상을 도우면 포인트를 받고, 내 영상도 피드백 받을 수 있어요.")
+                            Text("다른 사람의 영상에 피드백을 남기고, 내 영상도 피드백 받아보세요.")
                                 .font(FMTypography.callout)
                                 .foregroundStyle(FMColors.secondaryLabel)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -431,5 +431,16 @@ private struct StudyRow: View {
             }
         }
         .accessibilityHidden(true)
+    }
+}
+
+#Preview("스터디 없음 (신규 유저)") {
+    var state = StudyListFeature.State()
+    state.studies = .loaded([])
+    state.quickFeedback = .loaded(
+        QuickFeedbackDashboard(myRequests: [], availableRequests: [], receivedReviews: [])
+    )
+    return NavigationStack {
+        StudyListView(store: Store(initialState: state) { StudyListFeature() })
     }
 }

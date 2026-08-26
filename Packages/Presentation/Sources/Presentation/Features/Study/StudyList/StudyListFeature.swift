@@ -13,12 +13,11 @@ public struct StudyListFeature {
         @Presents public var createStudy: StudyCreateFeature.State?
         @Presents public var joinStudy: JoinStudyFeature.State?
 
-        /// 첫 빠른 피드백 요청 전이면 보유 포인트 반환 — 홈 Hero를 첫 업로드 유도 모드로 전환
+        /// 첫 빠른 피드백 요청 전이면 true — 홈 Hero를 첫 업로드 유도 모드로 전환
         // ponytail: 스터디 영상 업로드 여부는 안 본다 — 빠른 피드백 첫 요청 기준으로 충분
-        public var awaitingFirstUploadPointBalance: Int? {
-            guard case .loaded(let dashboard) = quickFeedback,
-                  dashboard.myRequests.isEmpty else { return nil }
-            return dashboard.pointBalance
+        public var awaitingFirstUpload: Bool {
+            guard case .loaded(let dashboard) = quickFeedback else { return false }
+            return dashboard.myRequests.isEmpty
         }
 
         public init() {}

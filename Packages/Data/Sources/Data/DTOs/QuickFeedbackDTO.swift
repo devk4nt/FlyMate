@@ -7,6 +7,7 @@ struct QuickFeedbackRequestDTO: Codable, Sendable {
     let uploaderProfileURL: String?
     let title: String
     let videoPath: String
+    let thumbnailURL: String?
     let durationSeconds: Double
     let focusArea: String
     let feedbackRequest: String?
@@ -22,6 +23,7 @@ struct QuickFeedbackRequestDTO: Codable, Sendable {
         case uploaderName = "uploader_name"
         case uploaderProfileURL = "uploader_profile_url"
         case videoPath = "video_path"
+        case thumbnailURL = "thumbnail_url"
         case durationSeconds = "duration_seconds"
         case focusArea = "focus_area"
         case feedbackRequest = "feedback_request"
@@ -40,6 +42,7 @@ struct ClaimedQuickFeedbackDTO: Codable, Sendable {
     let uploaderProfileURL: String?
     let title: String
     let videoPath: String
+    let thumbnailURL: String?
     let durationSeconds: Double
     let focusArea: String
     let feedbackRequest: String?
@@ -56,6 +59,7 @@ struct ClaimedQuickFeedbackDTO: Codable, Sendable {
         case uploaderName = "uploader_name"
         case uploaderProfileURL = "uploader_profile_url"
         case videoPath = "video_path"
+        case thumbnailURL = "thumbnail_url"
         case durationSeconds = "duration_seconds"
         case focusArea = "focus_area"
         case feedbackRequest = "feedback_request"
@@ -73,6 +77,7 @@ struct ClaimedQuickFeedbackDTO: Codable, Sendable {
             uploaderProfileURL: uploaderProfileURL ?? self.uploaderProfileURL,
             title: title,
             videoPath: videoPath,
+            thumbnailURL: thumbnailURL,
             durationSeconds: durationSeconds,
             focusArea: focusArea,
             feedbackRequest: feedbackRequest,
