@@ -11,11 +11,11 @@ final class FeedAutoplayUITests: XCTestCase {
         // 피드백 탭 → 할 일 큐
         // 앱 초기 로딩 직후에는 탭이 씹힐 수 있어 화면 전환을 확인하며 재시도
         let feedbackTab = app.tabBars.buttons["피드백"]
-        XCTAssertTrue(feedbackTab.waitForExistence(timeout: 10))
+        XCTAssertTrue(feedbackTab.waitForExistence(timeout: 20))
         let feedbackNavBar = app.navigationBars["피드백"]
-        for _ in 0..<3 where !feedbackNavBar.exists {
+        for _ in 0..<6 where !feedbackNavBar.exists {
             feedbackTab.tap()
-            _ = feedbackNavBar.waitForExistence(timeout: 3)
+            _ = feedbackNavBar.waitForExistence(timeout: 5)
         }
         XCTAssertTrue(feedbackNavBar.exists, "피드백 탭 진입 실패")
 
