@@ -30,28 +30,10 @@ public struct QuickFeedbackRepositoryImpl: QuickFeedbackRepository {
             DTOMapper.toDomain($0, videoURL: signedURLs[$0.videoPath])
         }
 
-        struct AssignmentRequestID: Decodable {
-            let requestID: UUID
-            enum CodingKeys: String, CodingKey { case requestID = "request_id" }
-        }
-        // 방치(expired)한 배정은 재노출 대상이므로 제외 목록에서 뺀다
-        let assignments: [AssignmentRequestID] = try await client
-            .from(SupabaseConfig.Table.quickFeedbackAssignments)
-            .select("request_id")
-            .eq("reviewer_id", value: userID)
-            .neq("status", value: "expired")
-            .execute()
-            .value
-        let assignedRequestIDs = Set(assignments.map(\.requestID))
-
-        let availableDTOs: [QuickFeedbackRequestDTO] = try await client
-            .from(SupabaseConfig.Table.quickFeedbackRequests)
-            .select()
-            .eq("status", value: QuickFeedbackRequestStatus.open.rawValue)
-            .neq("uploader_id", value: userID)
-            .gt("expires_at", value: ISO8601DateFormatter().string(from: Date()))
-            .order("created_at", ascending: true)
-            .limit(AppConstants.defaultPageSize)
+        // 풀 목록은 프라이버시 강화 RPC로 조회 — 신원·영상·썸네일·요청상세 제외,
+        // viewer_count<1(=미claim)만 반환하므로 배정 제외 필터도 서버에서 처리됨.
+        let availableDTOs: [AvailableQuickFeedbackRequestDTO] = try await client
+            .rpc(SupabaseConfig.RPC.listAvailableQuickFeedbackRequests)
             .execute()
             .value
 
@@ -69,9 +51,7 @@ public struct QuickFeedbackRepositoryImpl: QuickFeedbackRepository {
 
         return QuickFeedbackDashboard(
             myRequests: myRequests,
-            availableRequests: availableDTOs
-                .filter { !assignedRequestIDs.contains($0.id) }
-                .map { DTOMapper.toDomain($0) },
+            availableRequests: availableDTOs.map(DTOMapper.toDomain),
             receivedReviews: reviewDTOs.map(DTOMapper.toDomain)
         )
     }

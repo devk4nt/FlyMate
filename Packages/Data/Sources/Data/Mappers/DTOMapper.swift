@@ -122,6 +122,27 @@ enum DTOMapper {
         )
     }
 
+    /// ponytail: 풀 항목은 신원·영상·썸네일 미노출(서버 RPC가 반환 안 함). uploaderID/uploaderName은
+    /// 카드 표시에 쓰이지 않는 sentinel — 실제 신원은 claim 후 claim RPC 반환값으로만 채워진다.
+    static func toDomain(_ dto: AvailableQuickFeedbackRequestDTO) -> QuickFeedbackRequest {
+        QuickFeedbackRequest(
+            id: dto.id,
+            uploaderID: anonymousPoolUploaderID,
+            uploaderName: "",
+            title: dto.title,
+            durationSeconds: dto.durationSeconds,
+            focusArea: QuickFeedbackFocusArea(rawValue: dto.focusArea) ?? .overall,
+            status: .open,
+            feedbackCount: dto.feedbackCount,
+            targetFeedbackCount: dto.targetFeedbackCount,
+            expiresAt: parseDate(dto.expiresAt),
+            createdAt: parseDate(dto.createdAt)
+        )
+    }
+
+    private static let anonymousPoolUploaderID =
+        UUID(uuidString: "00000000-0000-0000-0000-000000000000") ?? UUID()
+
     static func toDomain(_ dto: QuickFeedbackReviewDTO) -> QuickFeedbackReview {
         QuickFeedbackReview(
             id: dto.id,

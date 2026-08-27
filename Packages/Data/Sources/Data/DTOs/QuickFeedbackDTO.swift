@@ -34,6 +34,29 @@ struct QuickFeedbackRequestDTO: Codable, Sendable {
     }
 }
 
+/// 풀 목록 전용 — list_available_quick_feedback_requests RPC 결과.
+/// 프라이버시: 요청자 신원(uploader_*)·영상(video_path)·썸네일·요청상세는 서버에서 제외.
+struct AvailableQuickFeedbackRequestDTO: Decodable, Sendable {
+    let id: UUID
+    let title: String
+    let focusArea: String
+    let durationSeconds: Double
+    let feedbackCount: Int
+    let targetFeedbackCount: Int
+    let expiresAt: String
+    let createdAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id, title
+        case focusArea = "focus_area"
+        case durationSeconds = "duration_seconds"
+        case feedbackCount = "feedback_count"
+        case targetFeedbackCount = "target_feedback_count"
+        case expiresAt = "expires_at"
+        case createdAt = "created_at"
+    }
+}
+
 struct ClaimedQuickFeedbackDTO: Codable, Sendable {
     let assignmentID: UUID
     let id: UUID

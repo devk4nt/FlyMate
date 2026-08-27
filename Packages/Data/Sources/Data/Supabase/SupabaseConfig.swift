@@ -56,6 +56,7 @@ public enum SupabaseConfig {
         public static let checkFeatureLimit = "check_feature_limit"
         public static let syncStartupAnnouncement = "sync_startup_announcement"
         public static let reconcileQuickFeedbackRequests = "reconcile_quick_feedback_requests"
+        public static let listAvailableQuickFeedbackRequests = "list_available_quick_feedback_requests"
         public static let createQuickFeedbackRequest = "create_quick_feedback_request"
         public static let claimQuickFeedbackRequest = "claim_quick_feedback_request"
         public static let cancelQuickFeedbackAssignment = "cancel_quick_feedback_assignment"
@@ -66,5 +67,6 @@ public enum SupabaseConfig {
 
     public enum EdgeFunction {
         public static let verifyReceipt = "verify-receipt"
+        public static let interviewInsight = "interview-insight"
     }
 }
