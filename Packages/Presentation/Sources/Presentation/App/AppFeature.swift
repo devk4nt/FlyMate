@@ -28,6 +28,8 @@ public struct AppFeature : Sendable {
         public var onboarding: OnboardingFeature.State?
         public var termsConsent: TermsConsentFeature.State?
         public var hasCheckedOnboarding = false
+        /// 첫 인증 확인(currentUser) 완료 여부 — 확인 전엔 스플래시를 유지해 로그인 화면이 비치지 않게 한다
+        public var hasResolvedAuth = false
         /// 온보딩을 본 첫 세션에는 공지 팝업을 보류한다 (첫 실행 팝업 연타 방지)
         public var didShowOnboardingThisSession = false
         @Presents public var announcement: AnnouncementDetailFeature.State?
@@ -164,6 +166,7 @@ public struct AppFeature : Sendable {
 
             case .authStateChanged(let user):
                 state.currentUser = user
+                state.hasResolvedAuth = true
                 if let user {
                     if case .login = state.destination {
                         state.destination = .tab(TabFeature.State(currentUser: user))
