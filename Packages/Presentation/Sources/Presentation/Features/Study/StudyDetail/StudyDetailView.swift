@@ -57,12 +57,14 @@ public struct StudyDetailView: View {
 
     private var loadingView: some View {
         ScrollView {
-            LazyVStack(spacing: FMSpacing.md) {
-                ForEach(0..<4, id: \.self) { _ in
-                    FMSkeletonView(height: 200)
+            LazyVStack(spacing: 0) {
+                FMSkeletonView.card
+                    .padding(FMSpacing.md)
+
+                ForEach(0..<3, id: \.self) { _ in
+                    FMSkeletonView.feedCell
                 }
             }
-            .padding(FMSpacing.md)
         }
         .background(FMColors.canvas)
     }

@@ -101,7 +101,7 @@ public struct StudyListView: View {
             VStack(alignment: .leading, spacing: FMSpacing.md) {
                 sectionHeader(count: nil)
                 ForEach(0..<2, id: \.self) { _ in
-                    FMSkeletonView(height: 168)
+                    FMSkeletonView.card
                 }
             }
 
@@ -242,7 +242,7 @@ public struct StudyListView: View {
     private var quickFeedbackOverview: some View {
         switch store.quickFeedback {
         case .idle, .loading:
-            FMSkeletonView(height: 128)
+            FMSkeletonView.card
         case .failed:
             Button { store.send(.quickFeedbackHubTapped) } label: {
                 FMCard {

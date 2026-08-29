@@ -69,7 +69,7 @@ public struct RecruitListView: View {
                     recruitmentHero
                     filterBar
                     ForEach(0..<3, id: \.self) { _ in
-                        FMSkeletonView(height: 150)
+                        FMSkeletonView.card
                     }
                 }
                 .frame(maxWidth: FMSizing.ContentWidth.regular)
