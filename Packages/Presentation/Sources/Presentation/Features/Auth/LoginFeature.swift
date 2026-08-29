@@ -7,6 +7,39 @@ import Domain
 public struct LoginFeature {
     /// 이메일 로그인 시트를 여는 히든 제스처의 로고 탭 횟수 (App Store 심사용)
     public static let hiddenLoginTapThreshold = 5
+    /// Staging 테스트 계정 피커를 여는 로고 탭 횟수 — staging 빌드에서만 동작
+    public static let stagingLoginTapThreshold = 2
+
+    /// Secrets.staging.xcconfig → Info.plist로 주입되는 테스트 계정 비밀번호.
+    /// prod 빌드(Secrets.xcconfig)에는 값이 없어 nil이 되고, 테스트 계정 로그인이 비활성화된다.
+    public static var stagingTestPassword: String? {
+        guard let password = Bundle.main.infoDictionary?["STAGING_TEST_PASSWORD"] as? String,
+              !password.isEmpty else { return nil }
+        return password
+    }
+
+    /// seed-staging.mjs가 만드는 스테이징 테스트 계정 (스킴 FlyMate-Owner/Member/Applicant와 동일)
+    public enum StagingAccount: String, CaseIterable, Equatable, Sendable {
+        case owner
+        case member
+        case applicant
+
+        public var email: String {
+            switch self {
+            case .owner: "test@flymate.app"
+            case .member: "test2@flymate.app"
+            case .applicant: "test3@flymate.app"
+            }
+        }
+
+        public var title: String {
+            switch self {
+            case .owner: "방장 (김하늘)"
+            case .member: "멤버 (이수민)"
+            case .applicant: "신청자 (박지원)"
+            }
+        }
+    }
 
     @ObservableState
     public struct State: Equatable {
@@ -16,8 +49,13 @@ public struct LoginFeature {
         public var showsEmailLogin = false
         public var email = ""
         public var password = ""
+        public var showsStagingAccountPicker = false
+        /// nil이면 테스트 계정 로그인 비활성 — 테스트에서 주입 가능하도록 State에 둔다
+        public let stagingTestPassword: String?
 
-        public init() {}
+        public init(stagingTestPassword: String? = LoginFeature.stagingTestPassword) {
+            self.stagingTestPassword = stagingTestPassword
+        }
     }
 
     public enum Action: Equatable {
@@ -30,6 +68,8 @@ public struct LoginFeature {
         case passwordChanged(String)
         case emailLoginTapped
         case emailLoginDismissed
+        case stagingAccountSelected(StagingAccount)
+        case stagingAccountPickerDismissed
         case loginResponse(Result<User, AppError>)
         case errorDismissed
     }
@@ -111,9 +151,37 @@ public struct LoginFeature {
 
             case .logoTapped:
                 state.logoTapCount += 1
+                // staging 빌드: 2탭에서 테스트 계정 피커가 먼저 열리므로 5탭 이메일 시트는 도달 불가 (필요 없음)
+                if state.stagingTestPassword != nil,
+                   state.logoTapCount >= Self.stagingLoginTapThreshold {
+                    state.logoTapCount = 0
+                    state.showsStagingAccountPicker = true
+                    return .none
+                }
                 guard state.logoTapCount >= Self.hiddenLoginTapThreshold else { return .none }
                 state.logoTapCount = 0
                 state.showsEmailLogin = true
+                return .none
+
+            case .stagingAccountSelected(let account):
+                guard let password = state.stagingTestPassword else { return .none }
+                state.showsStagingAccountPicker = false
+                state.isLoading = true
+                state.error = nil
+                let client = authClient
+                let email = account.email
+                return .run { send in
+                    do {
+                        let user = try await client.signInWithEmail(email, password)
+                        await send(.loginResponse(.success(user)))
+                    } catch {
+                        let appError = error as? AppError ?? .unexpected(error.localizedDescription)
+                        await send(.loginResponse(.failure(appError)))
+                    }
+                }
+
+            case .stagingAccountPickerDismissed:
+                state.showsStagingAccountPicker = false
                 return .none
 
             case .emailChanged(let email):

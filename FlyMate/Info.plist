@@ -55,6 +55,8 @@
 	<string>$(SUPABASE_ANON_KEY)</string>
 	<key>SUPABASE_URL</key>
 	<string>$(SUPABASE_URL)</string>
+	<key>STAGING_TEST_PASSWORD</key>
+	<string>$(STAGING_TEST_PASSWORD)</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIAppFonts</key>

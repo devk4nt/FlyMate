@@ -82,6 +82,67 @@ struct LoginFeatureTests {
     }
 
     @Test
+    func 스테이징_빌드에서_로고_2회_탭하면_테스트_계정_피커가_열린다() async {
+        let store = TestStore(initialState: LoginFeature.State(stagingTestPassword: "test-password")) {
+            LoginFeature()
+        }
+
+        await store.send(.logoTapped) {
+            $0.logoTapCount = 1
+        }
+
+        await store.send(.logoTapped) {
+            $0.logoTapCount = 0
+            $0.showsStagingAccountPicker = true
+        }
+    }
+
+    @Test
+    func 스테이징_테스트_계정_선택시_해당_이메일로_로그인한다() async {
+        let mockUser = User.mock
+        let receivedEmail = LockIsolated("")
+
+        var state = LoginFeature.State(stagingTestPassword: "test-password")
+        state.showsStagingAccountPicker = true
+
+        let store = TestStore(initialState: state) {
+            LoginFeature()
+        } withDependencies: {
+            $0.authClient.signInWithEmail = { email, _ in
+                receivedEmail.setValue(email)
+                return mockUser
+            }
+        }
+
+        await store.send(.stagingAccountSelected(.owner)) {
+            $0.showsStagingAccountPicker = false
+            $0.isLoading = true
+            $0.error = nil
+        }
+
+        await store.receive(\.loginResponse.success) {
+            $0.isLoading = false
+        }
+
+        receivedEmail.withValue { #expect($0 == LoginFeature.StagingAccount.owner.email) }
+    }
+
+    @Test
+    func 스테이징_비밀번호가_없으면_로고_2회_탭해도_피커가_열리지_않는다() async {
+        let store = TestStore(initialState: LoginFeature.State(stagingTestPassword: nil)) {
+            LoginFeature()
+        }
+
+        await store.send(.logoTapped) {
+            $0.logoTapCount = 1
+        }
+
+        await store.send(.logoTapped) {
+            $0.logoTapCount = 2
+        }
+    }
+
+    @Test
     func 이메일_로그인_성공시_시트가_닫히고_입력이_초기화된다() async {
         let mockUser = User.mock
 

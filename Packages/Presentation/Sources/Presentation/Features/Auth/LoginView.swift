@@ -110,6 +110,23 @@ public struct LoginView: View {
         ) {
             emailLoginSheet
         }
+        .confirmationDialog(
+            "테스트 계정 로그인",
+            isPresented: .init(
+                get: { store.showsStagingAccountPicker },
+                set: { if !$0 { store.send(.stagingAccountPickerDismissed) } }
+            ),
+            titleVisibility: .visible
+        ) {
+            ForEach(LoginFeature.StagingAccount.allCases, id: \.self) { account in
+                Button(account.title) {
+                    store.send(.stagingAccountSelected(account))
+                }
+            }
+            Button("취소", role: .cancel) {}
+        } message: {
+            Text("Staging 전용 — 선택한 역할의 계정으로 로그인합니다.")
+        }
         .alert(
             "로그인 실패",
             isPresented: .init(
