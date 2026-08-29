@@ -47,6 +47,7 @@ public struct TabFeature {
         case navigateToVideo(Study, Video, feedbackID: UUID? = nil)
         case navigateToVideoByID(UUID, feedbackID: UUID? = nil)
         case navigateToStudyByID(UUID)
+        case navigateToJoinRequestsByID(UUID)
         case navigationFailed
         case showInviteCode(String)
         case showRecruit
@@ -170,6 +171,18 @@ public struct TabFeature {
                     await send(.navigationFailed)
                 }
 
+            case .notificationList(.delegate(.navigateToJoinRequests(let studyID))):
+                state.isNotificationSheetPresented = false
+                state.selectedTab = .study
+                let studyClient = studyClient
+                return .run { send in
+                    try await Task.sleep(for: .milliseconds(350))
+                    let study = try await studyClient.fetchStudy(studyID)
+                    await send(.study(.navigateToJoinRequests(study)))
+                } catch: { _, send in
+                    await send(.navigationFailed)
+                }
+
             case .notificationList(.delegate(.navigateToQuickFeedback)):
                 state.isNotificationSheetPresented = false
                 state.selectedTab = .study
@@ -217,6 +230,16 @@ public struct TabFeature {
                 return .run { send in
                     let study = try await studyClient.fetchStudy(studyID)
                     await send(.study(.navigateToStudy(study)))
+                } catch: { _, send in
+                    await send(.navigationFailed)
+                }
+
+            case .navigateToJoinRequestsByID(let studyID):
+                state.selectedTab = .study
+                let studyClient = studyClient
+                return .run { send in
+                    let study = try await studyClient.fetchStudy(studyID)
+                    await send(.study(.navigateToJoinRequests(study)))
                 } catch: { _, send in
                     await send(.navigationFailed)
                 }

@@ -308,7 +308,7 @@ struct NotificationListFeatureTests {
     }
 
     @Test
-    func 가입신청_알림_탭시_스터디로_이동한다() async {
+    func 가입신청_알림_탭시_가입_요청_관리로_이동한다() async {
         let notification = AppNotification.notificationMock(
             id: .notificationID1,
             type: .joinRequest,
@@ -325,7 +325,7 @@ struct NotificationListFeatureTests {
         }
 
         await store.send(.notificationTapped(notification))
-        await store.receive(\.delegate.navigateToStudy)
+        await store.receive(\.delegate.navigateToJoinRequests)
     }
 
     @Test

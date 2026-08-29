@@ -267,6 +267,10 @@ public struct AppFeature : Sendable {
                     return .send(.deepLink(.recruit))
                 }
                 if let studyID = payload["studyId"].flatMap(UUID.init(uuidString:)) {
+                    // 가입 신청(방장 수신)은 승인/거절 화면으로 직행
+                    if payload["type"] == "join_request" {
+                        return .send(.deepLink(.joinRequests(studyID: studyID)))
+                    }
                     return .send(.deepLink(.studyDetail(studyID: studyID)))
                 }
                 guard let videoIDString = payload["videoId"],
@@ -299,6 +303,12 @@ public struct AppFeature : Sendable {
                 case .studyDetail(let studyID):
                     if case .tab = state.destination {
                         return .send(.destination(.tab(.navigateToStudyByID(studyID))))
+                    } else {
+                        state.pendingDeepLink = deepLink
+                    }
+                case .joinRequests(let studyID):
+                    if case .tab = state.destination {
+                        return .send(.destination(.tab(.navigateToJoinRequestsByID(studyID))))
                     } else {
                         state.pendingDeepLink = deepLink
                     }
@@ -417,6 +427,7 @@ public enum DeepLink: Equatable {
     case videoDetail(studyID: UUID, videoID: UUID, feedbackID: UUID? = nil)
     case recruit
     case studyDetail(studyID: UUID)
+    case joinRequests(studyID: UUID)
 }
 
 public enum DeepLinkParser {

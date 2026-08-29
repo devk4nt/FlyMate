@@ -40,6 +40,7 @@ public struct NotificationListFeature {
             case navigateToQuickFeedback
             case navigateToRecruit
             case navigateToStudy(studyID: UUID)
+            case navigateToJoinRequests(studyID: UUID)
         }
     }
 
@@ -195,7 +196,11 @@ public struct NotificationListFeature {
         if notification.type == .recruitPost {
             return .send(.delegate(.navigateToRecruit))
         }
-        // 가입 신청(방장 수신)·가입 승인(신청자 수신) — 거절 알림은 참조가 없어 무동작
+        // 가입 신청(방장 수신)은 승인/거절을 바로 할 수 있게 가입 요청 관리 화면으로 직행
+        if notification.type == .joinRequest, let studyID = notification.referenceStudyID {
+            return .send(.delegate(.navigateToJoinRequests(studyID: studyID)))
+        }
+        // 가입 승인(신청자 수신) 등 — 거절 알림은 참조가 없어 무동작
         if let studyID = notification.referenceStudyID {
             return .send(.delegate(.navigateToStudy(studyID: studyID)))
         }
