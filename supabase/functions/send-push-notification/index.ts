@@ -13,6 +13,7 @@ interface WebhookPayload {
     reference_video_id: string | null;
     reference_feedback_id: string | null;
     reference_recruit_post_id: string | null;
+    reference_study_id: string | null;
     is_read: boolean;
     created_at: string;
   };
@@ -172,6 +173,9 @@ serve(async (req) => {
     }
     if (notification.reference_recruit_post_id) {
       pushData.recruitPostId = notification.reference_recruit_post_id;
+    }
+    if (notification.reference_study_id) {
+      pushData.studyId = notification.reference_study_id;
     }
 
     // Send push to each device token

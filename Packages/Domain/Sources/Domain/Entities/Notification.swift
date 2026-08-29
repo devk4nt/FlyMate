@@ -11,6 +11,7 @@ public struct AppNotification: Equatable, Identifiable, Sendable, Hashable {
     public let referenceAnnouncementID: UUID?
     public let referenceQuickFeedbackRequestID: UUID?
     public let referenceRecruitPostID: UUID?
+    public let referenceStudyID: UUID?
     public var isRead: Bool
     public let createdAt: Date
 
@@ -25,6 +26,7 @@ public struct AppNotification: Equatable, Identifiable, Sendable, Hashable {
         referenceAnnouncementID: UUID? = nil,
         referenceQuickFeedbackRequestID: UUID? = nil,
         referenceRecruitPostID: UUID? = nil,
+        referenceStudyID: UUID? = nil,
         isRead: Bool = false,
         createdAt: Date
     ) {
@@ -38,6 +40,7 @@ public struct AppNotification: Equatable, Identifiable, Sendable, Hashable {
         self.referenceAnnouncementID = referenceAnnouncementID
         self.referenceQuickFeedbackRequestID = referenceQuickFeedbackRequestID
         self.referenceRecruitPostID = referenceRecruitPostID
+        self.referenceStudyID = referenceStudyID
         self.isRead = isRead
         self.createdAt = createdAt
     }
@@ -51,4 +54,7 @@ public enum NotificationType: String, Equatable, Sendable, Hashable {
     case announcement
     case quickFeedbackReceived = "quick_feedback_received"
     case recruitPost = "recruit_post"
+    case joinRequest = "join_request"
+    case joinRequestApproved = "join_request_approved"
+    case joinRequestRejected = "join_request_rejected"
 }

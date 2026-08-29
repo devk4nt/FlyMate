@@ -39,6 +39,7 @@ public struct NotificationListFeature {
             case navigateToVideo(videoID: UUID, feedbackID: UUID?)
             case navigateToQuickFeedback
             case navigateToRecruit
+            case navigateToStudy(studyID: UUID)
         }
     }
 
@@ -193,6 +194,10 @@ public struct NotificationListFeature {
         }
         if notification.type == .recruitPost {
             return .send(.delegate(.navigateToRecruit))
+        }
+        // 가입 신청(방장 수신)·가입 승인(신청자 수신) — 거절 알림은 참조가 없어 무동작
+        if let studyID = notification.referenceStudyID {
+            return .send(.delegate(.navigateToStudy(studyID: studyID)))
         }
         if let videoID = notification.referenceVideoID {
             return .send(.delegate(.navigateToVideo(

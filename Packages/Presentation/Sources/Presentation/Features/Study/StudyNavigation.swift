@@ -20,6 +20,7 @@ public struct StudyNavigationFeature {
         case studyList(StudyListFeature.Action)
         case path(StackActionOf<Path>)
         case navigateToVideo(Study, Video, feedbackID: UUID? = nil)
+        case navigateToStudy(Study)
         case showInviteCode(String)
         case showQuickFeedback
         case startFirstVideoUpload
@@ -158,6 +159,11 @@ public struct StudyNavigationFeature {
                     return .send(.path(.element(id: lastID, action: .quickFeedbackHub(.refresh))))
                 }
                 return .send(.studyList(.refreshQuickFeedback))
+
+            case .navigateToStudy(let study):
+                state.path.removeAll()
+                state.path.append(.studyDetail(StudyDetailFeature.State(study: study, currentUserID: state.currentUserID)))
+                return .none
 
             case .navigateToVideo(let study, let video, let feedbackID):
                 state.path.removeAll()

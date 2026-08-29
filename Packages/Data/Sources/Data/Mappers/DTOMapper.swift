@@ -275,6 +275,7 @@ enum DTOMapper {
             referenceAnnouncementID: dto.referenceAnnouncementID,
             referenceQuickFeedbackRequestID: dto.referenceQuickFeedbackRequestID,
             referenceRecruitPostID: dto.referenceRecruitPostID,
+            referenceStudyID: dto.referenceStudyID,
             isRead: dto.isRead,
             createdAt: parseDate(dto.createdAt)
         )

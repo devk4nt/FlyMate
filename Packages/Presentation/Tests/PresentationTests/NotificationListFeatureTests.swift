@@ -307,6 +307,56 @@ struct NotificationListFeatureTests {
         await store.receive(\.delegate.navigateToQuickFeedback)
     }
 
+    @Test
+    func 가입신청_알림_탭시_스터디로_이동한다() async {
+        let notification = AppNotification.notificationMock(
+            id: .notificationID1,
+            type: .joinRequest,
+            isRead: true,
+            videoID: nil,
+            studyID: .studyMock
+        )
+        var state = NotificationListFeature.State(userID: .userMock)
+        state.notifications.items = [notification]
+        state.loadingState = .loaded([notification])
+
+        let store = TestStore(initialState: state) {
+            NotificationListFeature()
+        }
+
+        await store.send(.notificationTapped(notification))
+        await store.receive(\.delegate.navigateToStudy)
+    }
+
+    @Test
+    func 가입승인_알림_탭시_스터디로_이동하고_거절_알림은_무동작() async {
+        let approved = AppNotification.notificationMock(
+            id: .notificationID1,
+            type: .joinRequestApproved,
+            isRead: true,
+            videoID: nil,
+            studyID: .studyMock
+        )
+        let rejected = AppNotification.notificationMock(
+            id: .notificationID2,
+            type: .joinRequestRejected,
+            isRead: true,
+            videoID: nil
+        )
+        var state = NotificationListFeature.State(userID: .userMock)
+        state.notifications.items = [approved, rejected]
+        state.loadingState = .loaded([approved, rejected])
+
+        let store = TestStore(initialState: state) {
+            NotificationListFeature()
+        }
+
+        await store.send(.notificationTapped(approved))
+        await store.receive(\.delegate.navigateToStudy)
+
+        await store.send(.notificationTapped(rejected))
+    }
+
     // MARK: - 전체 읽음 처리
 
     @Test
@@ -381,6 +431,7 @@ private extension UUID {
     static let notificationID1 = UUID(uuidString: "00000000-0000-0000-0000-000000000601")!
     static let notificationID2 = UUID(uuidString: "00000000-0000-0000-0000-000000000602")!
     static let quickFeedbackRequestMock = UUID(uuidString: "00000000-0000-0000-0000-000000000701")!
+    static let studyMock = UUID(uuidString: "00000000-0000-0000-0000-000000000801")!
 }
 
 private extension AppNotification {
@@ -391,6 +442,7 @@ private extension AppNotification {
         videoID: UUID? = .videoMock,
         feedbackID: UUID? = nil,
         quickFeedbackRequestID: UUID? = nil,
+        studyID: UUID? = nil,
         createdAt: Date = Date(timeIntervalSince1970: 1_700_000_000)
     ) -> AppNotification {
         AppNotification(
@@ -402,6 +454,7 @@ private extension AppNotification {
             referenceVideoID: videoID,
             referenceFeedbackID: feedbackID,
             referenceQuickFeedbackRequestID: quickFeedbackRequestID,
+            referenceStudyID: studyID,
             isRead: isRead,
             createdAt: createdAt
         )
