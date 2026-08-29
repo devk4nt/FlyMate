@@ -17,17 +17,13 @@ public struct AuthRepositoryImpl: AuthRepository {
         guard let session = client.auth.currentSession else {
             return nil
         }
-        do {
-            return try await fetchUser(id: session.user.id)
-        } catch {
-            // 세션은 있는데 프로필 조회만 실패(오프라인 등) → 마지막 프로필로 진입, 각 화면이 재시도한다.
-            // 단, 서버가 세션 무효(refresh_token_not_found 등)를 알려 SDK가 세션을 지웠다면 로그아웃 처리
-            if client.auth.currentSession != nil,
-               let cached = Self.cachedUser(), cached.id == session.user.id {
-                return cached
-            }
-            throw error
+        // 캐시된 프로필이 있으면 네트워크를 기다리지 않고 즉시 진입 — 오프라인이면 SDK 토큰 리프레시 재시도가
+        // 스플래시 최대 대기(6초)를 넘겨 로그인 화면이 노출됐다. 최신 프로필은 observeAuthState의
+        // .initialSession 이벤트가 조회 성공 시 뒤따라 전달하고, 세션 무효는 .signedOut으로 로그아웃 처리된다.
+        if let cached = Self.cachedUser(), cached.id == session.user.id {
+            return cached
         }
+        return try await fetchUser(id: session.user.id)
     }
 
     /// users 행 조회 + 오프라인 진입용 캐시 갱신
@@ -121,8 +117,9 @@ public struct AuthRepositoryImpl: AuthRepository {
             let task = Task {
                 for await (event, session) in client.auth.authStateChanges {
                     switch event {
+                    // .initialSession: currentUser()가 캐시로 먼저 진입한 뒤 최신 프로필로 갱신
                     // .tokenRefreshed: 오프라인으로 로그인 화면에 머물던 유저가 재연결 시 자동 복구되는 유일한 신호
-                    case .signedIn, .tokenRefreshed:
+                    case .initialSession, .signedIn, .tokenRefreshed:
                         // 조회 실패 시 nil을 yield하면 로그인 성공이 로그아웃(FCM 토큰 삭제까지)으로 뒤집힌다 — 성공 시에만 전달
                         if let userID = session?.user.id,
                            let user = try? await fetchUser(id: userID) {

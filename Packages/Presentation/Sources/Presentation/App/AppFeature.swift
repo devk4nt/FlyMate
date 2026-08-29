@@ -168,6 +168,9 @@ public struct AppFeature : Sendable {
                 state.currentUser = user
                 state.hasResolvedAuth = true
                 if let user {
+                    // 캐시 프로필로 먼저 진입한 뒤 최신 프로필(.initialSession/.tokenRefreshed)이 오면 Tab·설정에도 반영
+                    state.tabState?.currentUser = user
+                    state.tabState?.settings.currentUser = user
                     if case .login = state.destination {
                         state.destination = .tab(TabFeature.State(currentUser: user))
                         // UGC 이용 전 커뮤니티 가이드라인 동의 필수 (Guideline 1.2)
