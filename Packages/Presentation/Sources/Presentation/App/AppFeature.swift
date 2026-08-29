@@ -24,7 +24,6 @@ public struct AppFeature : Sendable {
         public var toast: ToastState?
         public var pendingDeepLink: DeepLink?
         public var fcmToken: String?
-        public var entitlement: Entitlement?
         public var onboarding: OnboardingFeature.State?
         public var termsConsent: TermsConsentFeature.State?
         public var hasCheckedOnboarding = false
@@ -65,8 +64,6 @@ public struct AppFeature : Sendable {
         case checkOnboarding
         case onboarding(OnboardingFeature.Action)
         case termsConsent(TermsConsentFeature.Action)
-        case entitlementLoaded(Entitlement)
-        case transactionUpdated
         case startupAnnouncementRequested
         case startupAnnouncementResponse(Result<AppNotification?, AppError>)
         case startupAnnouncementMarkedAsRead
@@ -82,13 +79,11 @@ public struct AppFeature : Sendable {
     private enum CancelID {
         case fcmTokenObserver
         case pushNotificationObserver
-        case transactionUpdates
     }
 
     @Dependency(\.authClient) private var authClient
     @Dependency(\.userClient) private var userClient
     @Dependency(\.pushNotificationClient) private var pushNotificationClient
-    @Dependency(\.subscriptionClient) private var subscriptionClient
     @Dependency(\.userDefaultsClient) private var userDefaultsClient
     @Dependency(\.notificationClient) private var notificationClient
 
@@ -193,20 +188,6 @@ public struct AppFeature : Sendable {
                             // 동의 시트가 떠 있으면 시스템 팝업 중첩 방지 — 동의 완료 후 요청
                             state.termsConsent == nil && !willShowOnboarding
                                 ? .send(.requestPushPermission) : .none,
-                            // ponytail: 구독 미출시 — entitlement 조회 + Transaction.updates 구독 비활성.
-                            // verify-receipt/app-store-webhook 배포 후 아래 주석 복원 (SettingsView 구독 버튼과 함께)
-                            // .run { [subClient = subscriptionClient, userID = user.id] send in
-                            //     let entitlement = try? await subClient.fetchEntitlements(userID)
-                            //     if let entitlement {
-                            //         await send(.entitlementLoaded(entitlement))
-                            //     }
-                            // },
-                            // .run { [subClient = subscriptionClient] send in
-                            //     for await _ in subClient.observeTransactionUpdates() {
-                            //         await send(.transactionUpdated)
-                            //     }
-                            // }
-                            // .cancellable(id: CancelID.transactionUpdates)
                         ]
                         // 온보딩은 로그인 후에 노출 — 첫 업로드 안내는 계정이 생긴 뒤에 의미가 있다
                         effects.append(.send(.checkOnboarding))
@@ -224,14 +205,12 @@ public struct AppFeature : Sendable {
                         return .merge(effects)
                     }
                 } else {
-                    // 로그아웃 시 FCM 토큰 제거 + 구독 상태 초기화
+                    // 로그아웃 시 FCM 토큰 제거
                     let fcmToken = state.fcmToken
                     state.fcmToken = nil
-                    state.entitlement = nil
                     state.destination = .login(LoginFeature.State())
                     return .merge(
                         .cancel(id: CancelID.fcmTokenObserver),
-                        .cancel(id: CancelID.transactionUpdates),
                         fcmToken.map { token in
                             let client = userClient
                             return Effect<Action>.run { _ in
@@ -330,20 +309,6 @@ public struct AppFeature : Sendable {
                 state.toast = nil
                 return .none
 
-            case .entitlementLoaded(let entitlement):
-                state.entitlement = entitlement
-                return .none
-
-            case .transactionUpdated:
-                guard let userID = state.currentUser?.id else { return .none }
-                let subClient = subscriptionClient
-                return .run { send in
-                    let entitlement = try? await subClient.fetchEntitlements(userID)
-                    if let entitlement {
-                        await send(.entitlementLoaded(entitlement))
-                    }
-                }
-
             case .startupAnnouncementRequested:
                 guard state.startupAnnouncementUserID != nil,
                       state.announcement == nil else { return .none }
@@ -388,11 +353,9 @@ public struct AppFeature : Sendable {
                 let fcmToken = state.fcmToken
                 state.currentUser = nil
                 state.fcmToken = nil
-                state.entitlement = nil
                 state.destination = .login(LoginFeature.State())
                 return .merge(
                     .cancel(id: CancelID.fcmTokenObserver),
-                    .cancel(id: CancelID.transactionUpdates),
                     fcmToken.map { token in
                         let client = userClient
                         return Effect<Action>.run { _ in

@@ -76,24 +76,6 @@ public enum AppConstants {
     /// 모집 글 댓글 최대 글자 수
     public static let maxRecruitCommentLength = 300
 
-    // MARK: - Subscription
-
-    public enum SubscriptionProductID {
-        public static let premiumMonthly = "com.flymate.premium.monthly"
-        public static let premiumYearly = "com.flymate.premium.yearly"
-
-        public static var all: [String] {
-            [premiumMonthly, premiumYearly]
-        }
-    }
-
-    public enum FreePlanDefaults {
-        public static let maxOwnedStudies = 1
-        public static let maxJoinedStudies = 1
-        public static let maxVideoDurationSeconds = 60
-        public static let maxStudyMembers = 3
-    }
-
     // MARK: - Service URLs
 
     public enum ServiceURL {

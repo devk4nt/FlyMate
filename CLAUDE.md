@@ -3,11 +3,10 @@
 ## 프로젝트 개요
 
 - **앱**: 승무원, 아나운서 등 영상면접 준비자를 위한 스터디 피드백 iOS 앱 (v1.0 App Store 심사 제출 완료)
-- **스택**: Swift 6, SwiftUI, TCA 1.x, Supabase, Firebase(Analytics/Messaging/Crashlytics), Kakao Login, StoreKit 2
+- **스택**: Swift 6, SwiftUI, TCA 1.x, Supabase, Firebase(Analytics/Messaging/Crashlytics), Kakao Login
 - **타겟**: iOS 17+
 - **모듈**: Tuist 프레임워크 타겟 4개 (Core, Domain, Data, Presentation) — `Project.swift`에서 정의, 소스는 `Packages/{모듈}/Sources/{모듈}/`
-- **핵심 정책**: 피드백 요청 영상은 최대 3분(180초, 무료 플랜은 60초)
-- **수익 모델**: 프리미엄 구독 (월간/연간, StoreKit 2) — 무료 플랜은 스터디 개설 1개/가입 1개/멤버 3명 제한
+- **핵심 정책**: 피드백 요청 영상은 최대 3분(180초). 스터디 개설 3개 / 총 참여 5개 / 멤버 8명 고정 한도 (플랜 개념 없음)
 
 ---
 
@@ -27,13 +26,13 @@ Core → (없음)
 |--------|------|----------|
 | **Core** | 공통 유틸리티 | Extensions, AppConstants, Logger, Debouncer, RetryHelper, Protocols (Analytics/CrashReport 포함), Models (LoadingState, PaginatedState, AppError) |
 | **Domain** | 비즈니스 모델 | Entities, Repository 프로토콜 |
-| **Data** | 데이터 소스 | DTOs, Mappers, Repository 구현체, Services (RealtimeService, StorageService, StoreKitService) |
+| **Data** | 데이터 소스 | DTOs, Mappers, Repository 구현체, Services (RealtimeService, StorageService) |
 | **Presentation** | UI 레이어 | TCA Features, DesignSystem, Dependencies (TCA Client) |
 
-### Feature 목록 (13개)
+### Feature 목록 (12개)
 
 `Packages/Presentation/Sources/Presentation/Features/`:
-Auth, BugReport, Feedback, Notification, Onboarding, Recruit, Report, Settings, Study, Subscription, Tab, TermsConsent, Video
+Auth, BugReport, Feedback, Notification, Onboarding, Recruit, Report, Settings, Study, Tab, TermsConsent, Video
 
 - 차단(Block)은 Settings 하위 `Settings/BlockedUsers/`
 - Analytics/Crashlytics는 Core의 `AnalyticsProtocol`/`CrashReportProtocol` 추상화 + Firebase 구현, Presentation의 Dependencies에서 TCA Client로 주입
@@ -568,22 +567,10 @@ public enum AppConstants {
     public static let maxJoinedStudies = 5
     public static let defaultPageSize = 20
     public static let maxFeedbackLength = 500
-
-    // 중첩 enum으로 도메인별 그룹화
-    public enum SubscriptionProductID {
-        public static let premiumMonthly = "com.flymate.premium.monthly"
-        public static let premiumYearly = "com.flymate.premium.yearly"
-    }
-    public enum FreePlanDefaults {   // 무료 플랜 제한
-        public static let maxOwnedStudies = 1
-        public static let maxJoinedStudies = 1
-        public static let maxVideoDurationSeconds = 60
-        public static let maxStudyMembers = 3
-    }
 }
 ```
 
-- `enum` 사용 (인스턴스화 방지), 도메인별 상수는 중첩 enum으로 그룹화
+- `enum` 사용 (인스턴스화 방지), 도메인별 상수는 중첩 enum으로 그룹화 (예: `AppConstants.QuickFeedback`)
 - Doc comment로 각 상수 설명
 - 바이트 크기는 `* 1_024` 형태로 가독성 확보
 

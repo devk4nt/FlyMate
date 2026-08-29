@@ -38,7 +38,6 @@ public struct SettingsFeature {
         case blockedUsersActiveChanged(Bool)
         case studyManagement(StudyManagementFeature.Action)
         case blockedUsers(BlockedUsersFeature.Action)
-        case subscriptionTapped
         case developerContactTapped
         case developerContactOpenResponse(Bool)
         case verificationRequestTapped
@@ -65,7 +64,6 @@ public struct SettingsFeature {
     public enum Destination {
         case profileEdit(ProfileEditFeature)
         case myActivity(MyActivityFeature)
-        case subscription(SubscriptionFeature)
     }
 
     @Dependency(\.authClient) private var authClient
@@ -134,12 +132,6 @@ public struct SettingsFeature {
                 return .none
 
             case .studyManagement, .blockedUsers:
-                return .none
-
-            case .subscriptionTapped:
-                state.destination = .subscription(
-                    SubscriptionFeature.State(currentUserID: state.currentUser.id)
-                )
                 return .none
 
             case .developerContactTapped:

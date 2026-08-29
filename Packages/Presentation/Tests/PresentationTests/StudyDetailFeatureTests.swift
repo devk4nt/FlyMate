@@ -100,12 +100,11 @@ struct StudyDetailFeatureTests {
     // MARK: - Refresh
 
     @Test
-    func 새로고침시_영상_다시_로드_및_초대코드_정보_초기화() async {
+    func 새로고침시_영상_다시_로드() async {
         let videos = [Video.detailMock(index: 0)]
 
         var state = StudyDetailFeature.State(study: .detailMock, currentUserID: Self.memberID)
         state.videos = .loaded(videos)
-        state.inviteCodeInfo = .loaded(.detailMock)
 
         let store = TestStore(initialState: state) {
             StudyDetailFeature()
@@ -114,9 +113,7 @@ struct StudyDetailFeatureTests {
         }
 
         // 로드된 영상 목록은 유지 — 스켈레톤으로 돌아가지 않는다
-        await store.send(.refresh) {
-            $0.inviteCodeInfo = .idle
-        }
+        await store.send(.refresh)
 
         await store.receive(\.videosResponse.success) {
             $0.videos = .loaded(videos)
@@ -343,66 +340,6 @@ struct StudyDetailFeatureTests {
         }
     }
 
-    // MARK: - Invite Code Info
-
-    @Test
-    func 초대코드_정보_조회_성공() async {
-        let store = TestStore(
-            initialState: StudyDetailFeature.State(study: .detailMock, currentUserID: Self.ownerID)
-        ) {
-            StudyDetailFeature()
-        } withDependencies: {
-            $0.studyClient.fetchInviteCodeInfo = { _ in .detailMock }
-        }
-
-        await store.send(.inviteCodeInfoTapped) {
-            $0.isInviteCodePopoverPresented = true
-            $0.inviteCodeInfo = .loading
-        }
-
-        await store.receive(\.inviteCodeInfoResponse.success) {
-            $0.inviteCodeInfo = .loaded(.detailMock)
-        }
-
-        await store.send(.dismissInviteCodePopover) {
-            $0.isInviteCodePopoverPresented = false
-        }
-    }
-
-    @Test
-    func 초대코드_정보_로드됨_상태면_재조회_안함() async {
-        var state = StudyDetailFeature.State(study: .detailMock, currentUserID: Self.ownerID)
-        state.inviteCodeInfo = .loaded(.detailMock)
-
-        let store = TestStore(initialState: state) {
-            StudyDetailFeature()
-        }
-
-        await store.send(.inviteCodeInfoTapped) {
-            $0.isInviteCodePopoverPresented = true
-        }
-    }
-
-    @Test
-    func 초대코드_정보_조회_실패() async {
-        let store = TestStore(
-            initialState: StudyDetailFeature.State(study: .detailMock, currentUserID: Self.ownerID)
-        ) {
-            StudyDetailFeature()
-        } withDependencies: {
-            $0.studyClient.fetchInviteCodeInfo = { _ in throw AppError.network(.serverError(statusCode: 500)) }
-        }
-
-        await store.send(.inviteCodeInfoTapped) {
-            $0.isInviteCodePopoverPresented = true
-            $0.inviteCodeInfo = .loading
-        }
-
-        await store.receive(\.inviteCodeInfoResponse.failure) {
-            $0.inviteCodeInfo = .failed(.network(.serverError(statusCode: 500)))
-        }
-    }
-
     // MARK: - 부모 위임 액션
 
     @Test
@@ -450,17 +387,6 @@ private extension Video {
             createdAt: Date(timeIntervalSince1970: 1_700_000_000 - TimeInterval(index * 60))
         )
     }
-}
-
-private extension InviteCode {
-    static let detailMock = InviteCode(
-        code: "FLY123",
-        studyID: Study.detailMock.id,
-        studyName: "승무원 면접 스터디",
-        createdAt: Date(timeIntervalSince1970: 1_700_000_000),
-        expiresAt: Date(timeIntervalSince1970: 4_100_000_000),
-        isActive: true
-    )
 }
 
 private extension JoinRequest {

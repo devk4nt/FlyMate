@@ -206,61 +206,6 @@ enum DTOMapper {
         )
     }
 
-    // MARK: - Subscription
-
-    static func toDomain(_ dto: SubscriptionDTO) -> Subscription {
-        Subscription(
-            id: dto.id,
-            userID: dto.userID,
-            planID: dto.planID,
-            status: SubscriptionStatus(rawValue: dto.status) ?? .active,
-            originalTransactionID: dto.originalTransactionID,
-            latestTransactionID: dto.latestTransactionID,
-            productID: dto.productID,
-            environment: SubscriptionEnvironment(rawValue: dto.environment ?? "production") ?? .production,
-            purchaseDate: dto.purchaseDate.map(parseDate),
-            expiresDate: dto.expiresDate.map(parseDate),
-            isInBillingRetry: dto.isInBillingRetry,
-            autoRenewStatus: dto.autoRenewStatus,
-            createdAt: parseDate(dto.createdAt),
-            updatedAt: parseDate(dto.updatedAt)
-        )
-    }
-
-    static func toDomain(_ dto: SubscriptionPlanDTO) -> SubscriptionPlan {
-        SubscriptionPlan(
-            id: dto.id,
-            name: dto.name,
-            maxOwnedStudies: dto.maxOwnedStudies,
-            maxJoinedStudies: dto.maxJoinedStudies,
-            maxVideoDurationSeconds: dto.maxVideoDurationSeconds,
-            maxStudyMembers: dto.maxStudyMembers
-        )
-    }
-
-    static func toDomain(_ dto: EntitlementDTO) -> Entitlement {
-        Entitlement(
-            planID: dto.planID,
-            status: dto.status,
-            expiresDate: dto.expiresDate.map(parseDate),
-            maxOwnedStudies: dto.maxOwnedStudies,
-            maxJoinedStudies: dto.maxJoinedStudies,
-            maxVideoDurationSeconds: dto.maxVideoDurationSeconds,
-            maxStudyMembers: dto.maxStudyMembers,
-            currentOwnedStudies: dto.currentOwnedStudies,
-            currentJoinedStudies: dto.currentJoinedStudies
-        )
-    }
-
-    static func toDomain(_ dto: FeatureLimitDTO) -> FeatureLimit {
-        FeatureLimit(
-            allowed: dto.allowed,
-            current: dto.current,
-            max: dto.max,
-            feature: dto.feature
-        )
-    }
-
     // MARK: - Notification
 
     static func toDomain(_ dto: NotificationDTO) -> AppNotification {

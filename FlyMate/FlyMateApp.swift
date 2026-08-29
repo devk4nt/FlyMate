@@ -1,5 +1,4 @@
 @preconcurrency import SwiftUI
-import StoreKit
 import ComposableArchitecture
 import Core
 import Domain
@@ -111,7 +110,6 @@ struct FlyMateApp: App {
             deleteStudy: { try await studyRepo.deleteStudy(id: $0) },
             removeMember: { try await studyRepo.removeMember(studyID: $0, userID: $1) },
             transferOwnership: { try await studyRepo.transferOwnership(studyID: $0, newOwnerID: $1) },
-            fetchInviteCodeInfo: { try await studyRepo.fetchInviteCodeInfo(code: $0) },
             updateNotice: { try await studyRepo.updateNotice(studyID: $0, notice: $1) },
             fetchPendingRequests: { try await studyRepo.fetchPendingRequests(studyID: $0) },
             approveJoinRequest: { try await studyRepo.approveJoinRequest(requestID: $0) },
@@ -281,20 +279,6 @@ struct FlyMateApp: App {
             setBool: { value, key in UserDefaults.standard.set(value, forKey: key) }
         )
 
-        // Subscription
-        let subscriptionRepo = SubscriptionRepositoryImpl(client: supabaseClient)
-        let storeKitService = StoreKitService()
-        dependencies.subscriptionClient = SubscriptionClient(
-            fetchEntitlements: { try await subscriptionRepo.fetchEntitlements(userID: $0) },
-            fetchPlans: { try await subscriptionRepo.fetchPlans() },
-            verifyReceipt: { try await subscriptionRepo.verifyReceipt($0) },
-            checkFeatureLimit: { try await subscriptionRepo.checkFeatureLimit(userID: $0, feature: $1) },
-            fetchProducts: { try await storeKitService.fetchProducts() },
-            purchase: { try await storeKitService.purchase($0) },
-            currentEntitlement: { await storeKitService.currentEntitlement() },
-            observeTransactionUpdates: { storeKitService.observeTransactionUpdates() },
-            restorePurchases: { try await storeKitService.restorePurchases() }
-        )
     }
 
     #if DEBUG
@@ -924,19 +908,6 @@ struct FlyMateApp: App {
                     }
                 }
             },
-            fetchInviteCodeInfo: { code in
-                guard let study = (studyStore.value + [studyC]).first(where: { $0.inviteCode == code }) else {
-                    throw AppError.business(.invalidInviteCode)
-                }
-                return InviteCode(
-                    code: code,
-                    studyID: study.id,
-                    studyName: study.name,
-                    createdAt: now,
-                    expiresAt: now.addingTimeInterval(7 * day),
-                    isActive: true
-                )
-            },
             updateNotice: { studyID, notice in
                 studyStore.withValue { studies in
                     guard let index = studies.firstIndex(where: { $0.id == studyID }) else { return }
@@ -1449,35 +1420,6 @@ struct FlyMateApp: App {
             setBool: { value, key in UserDefaults.standard.set(value, forKey: key) }
         )
 
-        // Subscription (프리미엄 — 스터디 2개 소속 시나리오와 일관성 유지)
-        let premium = Entitlement(
-            planID: "premium_monthly",
-            status: "active",
-            expiresDate: now.addingTimeInterval(30 * day),
-            maxOwnedStudies: 5,
-            maxJoinedStudies: 5,
-            maxVideoDurationSeconds: 180,
-            maxStudyMembers: 8,
-            currentOwnedStudies: 1,
-            currentJoinedStudies: 1
-        )
-        dependencies.subscriptionClient = SubscriptionClient(
-            fetchEntitlements: { _ in premium },
-            fetchPlans: {
-                [
-                    SubscriptionPlan(id: "free", name: "무료", maxOwnedStudies: 1, maxJoinedStudies: 1, maxVideoDurationSeconds: 60, maxStudyMembers: 3),
-                    SubscriptionPlan(id: "premium_monthly", name: "프리미엄 (월간)", maxOwnedStudies: 5, maxJoinedStudies: 5, maxVideoDurationSeconds: 180, maxStudyMembers: 8),
-                    SubscriptionPlan(id: "premium_yearly", name: "프리미엄 (연간)", maxOwnedStudies: 5, maxJoinedStudies: 5, maxVideoDurationSeconds: 180, maxStudyMembers: 8),
-                ]
-            },
-            verifyReceipt: { _ in premium },
-            checkFeatureLimit: { _, feature in FeatureLimit(allowed: true, current: 1, max: 5, feature: feature) },
-            fetchProducts: { [] },
-            purchase: { _ in fatalError("Mock: purchase not available") },
-            currentEntitlement: { nil },
-            observeTransactionUpdates: { AsyncStream { continuation in continuation.finish() } },
-            restorePurchases: {}
-        )
     }
 
     nonisolated private static func mockUpdateRecruitStatus(
