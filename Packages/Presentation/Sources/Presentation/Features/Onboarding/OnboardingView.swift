@@ -91,42 +91,72 @@ public struct OnboardingView: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("총 \(store.pages.count)페이지 중 \(store.currentPage + 1)페이지")
 
-            FMButton(
-                title: store.isLastPage ? "첫 영상 올리고 피드백 받기" : "다음"
-            ) {
+            FMButton(title: primaryButtonTitle) {
                 primaryButtonTapped()
             }
-            .accessibilityHint(
-                store.isLastPage
-                    ? "온보딩을 완료하고 첫 영상 업로드 화면으로 이동합니다"
-                    : "다음 소개 페이지로 이동합니다"
-            )
+            .accessibilityHint(primaryButtonHint)
 
-            Button(store.isLastPage ? "나중에 할게요" : "건너뛰기") {
-                store.send(store.isLastPage ? .startTapped : .skipTapped)
+            Button(secondaryButtonTitle) {
+                secondaryButtonTapped()
             }
             .font(FMTypography.font(size: 16, relativeTo: .callout, weight: .semibold))
             .foregroundStyle(FMColors.secondaryLabel)
             .frame(minHeight: 44)
-            .accessibilityHint(
-                store.isLastPage
-                    ? "온보딩을 완료하고 앱을 시작합니다"
-                    : "남은 소개를 건너뛰고 앱을 시작합니다"
-            )
+            .accessibilityHint(secondaryButtonHint)
         }
         .padding(.top, FMSpacing.sm)
+    }
+
+    private var primaryButtonTitle: String {
+        if store.isLastPage { return "첫 영상 올리고 피드백 받기" }
+        if store.isNotificationPage { return "알림 켜기" }
+        return "다음"
+    }
+
+    private var primaryButtonHint: String {
+        if store.isLastPage { return "온보딩을 완료하고 첫 영상 업로드 화면으로 이동합니다" }
+        if store.isNotificationPage { return "알림 권한 요청 팝업을 표시합니다" }
+        return "다음 소개 페이지로 이동합니다"
+    }
+
+    private var secondaryButtonTitle: String {
+        if store.isLastPage || store.isNotificationPage { return "나중에 할게요" }
+        return "건너뛰기"
+    }
+
+    private var secondaryButtonHint: String {
+        if store.isLastPage { return "온보딩을 완료하고 앱을 시작합니다" }
+        if store.isNotificationPage { return "알림 설정 없이 다음 페이지로 이동합니다" }
+        return "남은 소개를 건너뛰고 앱을 시작합니다"
     }
 
     private func primaryButtonTapped() {
         if store.isLastPage {
             store.send(.uploadFirstVideoTapped)
+        } else if store.isNotificationPage {
+            store.send(.enableNotificationsTapped, animation: reduceMotion ? nil : .easeInOut(duration: 0.3))
         } else {
-            let nextPage = min(store.currentPage + 1, store.pages.count - 1)
-            store.send(
-                .pageChanged(nextPage),
-                animation: reduceMotion ? nil : .easeInOut(duration: 0.3)
-            )
+            advanceToNextPage()
         }
+    }
+
+    private func secondaryButtonTapped() {
+        if store.isLastPage {
+            store.send(.startTapped)
+        } else if store.isNotificationPage {
+            // 알림은 나중에 — 온보딩은 계속 진행
+            advanceToNextPage()
+        } else {
+            store.send(.skipTapped)
+        }
+    }
+
+    private func advanceToNextPage() {
+        let nextPage = min(store.currentPage + 1, store.pages.count - 1)
+        store.send(
+            .pageChanged(nextPage),
+            animation: reduceMotion ? nil : .easeInOut(duration: 0.3)
+        )
     }
 }
 
@@ -181,6 +211,11 @@ private struct OnboardingArtwork: View {
                 caption: "함께 만드는 성장"
             )
         case 3:
+            ArtworkConfiguration(
+                detailSymbol: "bell.badge.fill",
+                caption: "가입 신청 · 피드백 · 멘션"
+            )
+        case 4:
             ArtworkConfiguration(
                 detailSymbol: "video.badge.plus",
                 caption: "첫 영상 올리기"
@@ -247,6 +282,21 @@ private struct OnboardingArtwork: View {
                     .offset(x: 8, y: 8)
             }
         case 3:
+            ZStack {
+                Image(systemName: "bell.fill")
+                    .font(.system(size: 64, weight: .semibold))
+                    .foregroundStyle(FMColors.brandTitle)
+
+                Circle()
+                    .fill(FMColors.coral)
+                    .frame(width: 18, height: 18)
+                    .overlay {
+                        Circle()
+                            .stroke(FMColors.elevatedBackground, lineWidth: 3)
+                    }
+                    .offset(x: 24, y: -28)
+            }
+        case 4:
             HStack(spacing: FMSpacing.sm) {
                 cycleStep(symbol: "video.fill", tint: FMColors.brandTitle)
                 Image(systemName: "arrow.right")

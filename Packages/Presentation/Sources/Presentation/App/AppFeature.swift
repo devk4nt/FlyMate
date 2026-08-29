@@ -141,14 +141,23 @@ public struct AppFeature : Sendable {
                 }
                 return .none
 
+            case .onboarding(.delegate(.notificationPermissionRequested)):
+                // 온보딩 알림 페이지 CTA — 어필 문구를 본 직후 시스템 팝업 표시
+                return .send(.requestPushPermission)
+
             case .onboarding(.delegate(.onboardingCompleted)):
                 state.onboarding = nil
-                return .none
+                // 알림 페이지 CTA를 거치지 않고 닫았어도 권한 요청·FCM 등록은 보장
+                // (이미 결정된 상태면 시스템 팝업 없이 토큰 등록만 수행)
+                return state.termsConsent == nil ? .send(.requestPushPermission) : .none
 
             case .onboarding(.delegate(.firstUploadRequested)):
                 state.onboarding = nil
                 guard case .tab = state.destination else { return .none }
-                return .send(.destination(.tab(.study(.startFirstVideoUpload))))
+                return .merge(
+                    .send(.destination(.tab(.study(.startFirstVideoUpload)))),
+                    state.termsConsent == nil ? .send(.requestPushPermission) : .none
+                )
 
             case .onboarding:
                 return .none
@@ -177,9 +186,13 @@ public struct AppFeature : Sendable {
                         if !userDefaultsClient.boolForKey(TermsConsentFeature.consentKey) {
                             state.termsConsent = TermsConsentFeature.State()
                         }
+                        // 첫 설치(온보딩 예정) 세션에서는 맥락 없는 시스템 팝업 대신
+                        // 온보딩 알림 페이지 CTA에서 요청한다
+                        let willShowOnboarding = !userDefaultsClient.boolForKey("hasCompletedOnboarding")
                         var effects: [Effect<Action>] = [
                             // 동의 시트가 떠 있으면 시스템 팝업 중첩 방지 — 동의 완료 후 요청
-                            state.termsConsent == nil ? .send(.requestPushPermission) : .none,
+                            state.termsConsent == nil && !willShowOnboarding
+                                ? .send(.requestPushPermission) : .none,
                             // ponytail: 구독 미출시 — entitlement 조회 + Transaction.updates 구독 비활성.
                             // verify-receipt/app-store-webhook 배포 후 아래 주석 복원 (SettingsView 구독 버튼과 함께)
                             // .run { [subClient = subscriptionClient, userID = user.id] send in
@@ -252,7 +265,8 @@ public struct AppFeature : Sendable {
                         await send(.fcmTokenReceived(token))
                     }
                 }
-                .cancellable(id: CancelID.fcmTokenObserver)
+                // 온보딩 CTA·완료·동의 완료 등 한 세션에서 여러 번 요청될 수 있어 기존 옵저버 교체
+                .cancellable(id: CancelID.fcmTokenObserver, cancelInFlight: true)
 
             case .fcmTokenReceived(let token):
                 state.fcmToken = token
@@ -272,6 +286,9 @@ public struct AppFeature : Sendable {
             case .pushNotificationTapped(let payload):
                 if payload["recruitPostId"] != nil || payload["type"] == "recruit_post" {
                     return .send(.deepLink(.recruit))
+                }
+                if let studyID = payload["studyId"].flatMap(UUID.init(uuidString:)) {
+                    return .send(.deepLink(.studyDetail(studyID: studyID)))
                 }
                 guard let videoIDString = payload["videoId"],
                       let videoID = UUID(uuidString: videoIDString) else {
@@ -297,6 +314,12 @@ public struct AppFeature : Sendable {
                 case .recruit:
                     if case .tab = state.destination {
                         return .send(.destination(.tab(.showRecruit)))
+                    } else {
+                        state.pendingDeepLink = deepLink
+                    }
+                case .studyDetail(let studyID):
+                    if case .tab = state.destination {
+                        return .send(.destination(.tab(.navigateToStudyByID(studyID))))
                     } else {
                         state.pendingDeepLink = deepLink
                     }
@@ -430,6 +453,7 @@ public enum DeepLink: Equatable {
     case inviteCode(String)
     case videoDetail(studyID: UUID, videoID: UUID, feedbackID: UUID? = nil)
     case recruit
+    case studyDetail(studyID: UUID)
 }
 
 public enum DeepLinkParser {
