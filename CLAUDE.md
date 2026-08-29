@@ -602,6 +602,19 @@ tuist generate        # 워크스페이스 생성 + Xcode 열기
 ```
 
 - 이후 Xcode에서 `FlyMate.xcworkspace`의 FlyMate 스킴으로 iOS 시뮬레이터 빌드
+
+### 환경 (Supabase 프로젝트 2개)
+
+| 환경 | 프로젝트 ref | 앱 구성 / 스킴 | 자격 증명 |
+|------|-------------|---------------|----------|
+| prod | `fvhrydkofctahxwyvsnp` (Flymate Release) | Debug/Release — `FlyMate` 스킴, 심사 빌드 | `Secrets.xcconfig` |
+| staging | `kilkzezzkvyegnuubltg` (Flymate Staging) | `Staging` 구성 — `FlyMate-Staging`(실 로그인), `FlyMate-Owner/Member`(테스트 계정) 스킴 | `Secrets.staging.xcconfig` |
+
+- `FlyMate` 스킴 기본 실행은 여전히 목 데이터(로그인 없음) — 오프라인 UI 검수용. 실 백엔드 플로우 검증은 `FlyMate-Staging`
+- 번들 ID·서명·Firebase·카카오 설정은 두 환경이 동일, Supabase URL/키만 다름
+- 마이그레이션은 **staging 먼저 → 검증 → prod** 순서. `supabase db push`가 고장나 있어 스크립트 사용:
+  `node scripts/apply-migrations.mjs <project-ref> [--dry-run]` (Management API로 미적용 파일 순차 실행 + 히스토리 등록)
+- Edge Function 배포: `supabase functions deploy --project-ref <ref>` (staging 시크릿은 대시보드에서 별도 설정)
 - 테스트: FlyMate 스킴에 FlyMateTests + PresentationTests 포함 (`tuist test` 또는 Cmd+U)
 
 ## CI/CD (.github/workflows/)
