@@ -112,6 +112,7 @@ struct FlyMateApp: App {
             transferOwnership: { try await studyRepo.transferOwnership(studyID: $0, newOwnerID: $1) },
             updateNotice: { try await studyRepo.updateNotice(studyID: $0, notice: $1) },
             fetchPendingRequests: { try await studyRepo.fetchPendingRequests(studyID: $0) },
+            fetchMyJoinRequests: { try await studyRepo.fetchMyJoinRequests() },
             approveJoinRequest: { try await studyRepo.approveJoinRequest(requestID: $0) },
             rejectJoinRequest: { try await studyRepo.rejectJoinRequest(requestID: $0) },
             cancelJoinRequest: { try await studyRepo.cancelJoinRequest(requestID: $0) },
@@ -872,9 +873,16 @@ struct FlyMateApp: App {
                 guard code == studyC.inviteCode else {
                     throw AppError.business(.invalidInviteCode)
                 }
+                let myRequest = JoinRequest(
+                    id: UUID(), studyID: studyC.id, studyName: studyC.name,
+                    userID: meID, userName: me.name,
+                    status: .pending, createdAt: Date()
+                )
+                joinRequestStore.withValue { $0.append(myRequest) }
                 // 3초 뒤 방장(최지우)이 승인한 것처럼 내 스터디 목록에 추가
                 Task {
                     try? await Task.sleep(for: .seconds(3))
+                    joinRequestStore.withValue { $0.removeAll { $0.id == myRequest.id } }
                     studyStore.withValue { studies in
                         guard !studies.contains(where: { $0.id == studyC.id }) else { return }
                         var joined = studyC
@@ -884,11 +892,7 @@ struct FlyMateApp: App {
                         studies.append(joined)
                     }
                 }
-                return JoinRequest(
-                    id: UUID(), studyID: studyC.id, studyName: studyC.name,
-                    userID: meID, userName: me.name,
-                    status: .pending, createdAt: Date()
-                )
+                return myRequest
             },
             leaveStudy: { id in studyStore.withValue { $0.removeAll { $0.id == id } } },
             deleteStudy: { id in studyStore.withValue { $0.removeAll { $0.id == id } } },
@@ -918,6 +922,10 @@ struct FlyMateApp: App {
             fetchPendingRequests: { studyID in
                 try await simulateLoading()
                 return joinRequestStore.value.filter { $0.studyID == studyID }
+            },
+            fetchMyJoinRequests: {
+                try await simulateLoading()
+                return joinRequestStore.value.filter { $0.userID == meID && $0.status == .pending }
             },
             approveJoinRequest: { requestID in
                 guard let request = joinRequestStore.value.first(where: { $0.id == requestID }) else { return }

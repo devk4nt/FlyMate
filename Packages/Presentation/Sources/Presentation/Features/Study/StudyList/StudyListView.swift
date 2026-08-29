@@ -40,6 +40,7 @@ public struct StudyListView: View {
             LazyVStack(alignment: .leading, spacing: FMSpacing.lg) {
                 practiceHero(studies: loadedStudies)
                 quickFeedbackOverview
+                pendingRequestsSection
                 studyContent
             }
             .frame(maxWidth: FMSizing.ContentWidth.regular)
@@ -80,6 +81,54 @@ public struct StudyListView: View {
             }
             .fmSheetStyle()
             .presentationDetents([.medium])
+        }
+        .alert($store.scope(state: \.cancelConfirmAlert, action: \.cancelConfirmAlert))
+    }
+
+    // MARK: - Pending Join Requests
+
+    @ViewBuilder
+    private var pendingRequestsSection: some View {
+        if !store.myJoinRequests.isEmpty {
+            VStack(alignment: .leading, spacing: FMSpacing.sm) {
+                Text("승인 대기 중")
+                    .font(FMTypography.sectionTitle)
+                    .foregroundStyle(FMColors.brandTitle)
+
+                ForEach(store.myJoinRequests) { request in
+                    FMCard(style: .feed) {
+                        HStack(spacing: FMSpacing.sm) {
+                            Image(systemName: "person.badge.clock")
+                                .font(.system(size: FMSizing.IconSize.md))
+                                .foregroundStyle(FMColors.attentionFill)
+                                .accessibilityHidden(true)
+
+                            VStack(alignment: .leading, spacing: FMSpacing.xxs) {
+                                Text(request.studyName)
+                                    .font(FMTypography.headline)
+                                    .foregroundStyle(FMColors.brandTitle)
+                                    .lineLimit(1)
+
+                                Text("방장 승인을 기다리고 있어요")
+                                    .font(FMTypography.caption1)
+                                    .foregroundStyle(FMColors.secondaryLabel)
+                            }
+
+                            Spacer()
+
+                            Button("철회") {
+                                store.send(.cancelRequestTapped(request))
+                            }
+                            .font(FMTypography.feedMetaEmphasis)
+                            .foregroundStyle(FMColors.secondaryLabel)
+                            .frame(minHeight: 44)
+                            .accessibilityLabel("\(request.studyName) 가입 신청 철회")
+                            .accessibilityHint("가입 신청 철회 확인 창을 표시합니다")
+                        }
+                    }
+                    .accessibilityElement(children: .contain)
+                }
+            }
         }
     }
 

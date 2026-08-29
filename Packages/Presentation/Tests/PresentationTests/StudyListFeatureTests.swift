@@ -17,18 +17,21 @@ struct StudyListFeatureTests {
         } withDependencies: {
             $0.studyClient.fetchMyStudies = { mockStudies }
             $0.quickFeedbackClient.fetchDashboard = { .mock }
+            $0.studyClient.fetchMyJoinRequests = { [] }
         }
+
+        // 병렬 조회 3건의 응답 순서는 비결정적 — 최종 상태만 검증
+        store.exhaustivity = .off
 
         await store.send(.onAppear) {
             $0.studies = .loading
             $0.quickFeedback = .loading
         }
-        await store.receive(\.studiesResponse.success) {
-            $0.studies = .loaded(mockStudies)
-        }
-        await store.receive(\.quickFeedbackResponse.success) {
-            $0.quickFeedback = .loaded(.mock)
-        }
+        await store.finish()
+        await store.skipReceivedActions()
+
+        #expect(store.state.studies == .loaded(mockStudies))
+        #expect(store.state.quickFeedback == .loaded(.mock))
     }
 
     @Test
@@ -38,18 +41,21 @@ struct StudyListFeatureTests {
         } withDependencies: {
             $0.studyClient.fetchMyStudies = { throw AppError.network(.noConnection) }
             $0.quickFeedbackClient.fetchDashboard = { .mock }
+            $0.studyClient.fetchMyJoinRequests = { [] }
         }
+
+        // 병렬 조회 3건의 응답 순서는 비결정적 — 최종 상태만 검증
+        store.exhaustivity = .off
 
         await store.send(.onAppear) {
             $0.studies = .loading
             $0.quickFeedback = .loading
         }
-        await store.receive(\.studiesResponse.failure) {
-            $0.studies = .failed(.network(.noConnection))
-        }
-        await store.receive(\.quickFeedbackResponse.success) {
-            $0.quickFeedback = .loaded(.mock)
-        }
+        await store.finish()
+        await store.skipReceivedActions()
+
+        #expect(store.state.studies == .failed(.network(.noConnection)))
+        #expect(store.state.quickFeedback == .loaded(.mock))
     }
 
     @Test
@@ -92,12 +98,15 @@ struct StudyListFeatureTests {
 
         let store = TestStore(initialState: state) {
             StudyListFeature()
+        } withDependencies: {
+            $0.studyClient.fetchMyJoinRequests = { [] }
         }
 
-        // 참여 신청은 방장 승인 대기 상태이므로 목록 새로고침 없이 시트만 닫는다
+        // 시트를 닫고 방금 보낸 신청이 승인 대기 섹션에 보이도록 재조회한다
         await store.send(.joinStudy(.presented(.delegate(.joinRequested)))) {
             $0.joinStudy = nil
         }
+        await store.receive(\.myJoinRequestsResponse.success)
     }
 
     @Test
@@ -130,14 +139,66 @@ struct StudyListFeatureTests {
         } withDependencies: {
             $0.studyClient.fetchMyStudies = { [Study.mock] }
             $0.quickFeedbackClient.fetchDashboard = { .mock }
+            $0.studyClient.fetchMyJoinRequests = { [] }
         }
+
+        // 병렬 조회 3건의 응답 순서는 비결정적 — 최종 상태만 검증
+        store.exhaustivity = .off
 
         // 로드된 콘텐츠는 유지 — 스켈레톤으로 돌아가지 않는다
         await store.send(.refresh)
-        await store.receive(\.studiesResponse.success)
-        await store.receive(\.quickFeedbackResponse.success) {
-            $0.quickFeedback = .loaded(.mock)
+        await store.finish()
+        await store.skipReceivedActions()
+
+        #expect(store.state.studies == .loaded([Study.mock]))
+        #expect(store.state.quickFeedback == .loaded(.mock))
+    }
+
+    @Test
+    func 가입신청_철회_확인시_목록에서_제거_및_서버_호출() async {
+        let request = JoinRequest(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000901")!,
+            studyID: UUID(uuidString: "00000000-0000-0000-0000-000000000902")!,
+            studyName: "승무원 영상면접 스터디",
+            userID: UUID(uuidString: "00000000-0000-0000-0000-000000000903")!,
+            userName: "박지원",
+            status: .pending,
+            createdAt: Date(timeIntervalSince1970: 1_700_000_000)
+        )
+        let canceledID = LockIsolated<UUID?>(nil)
+
+        var state = StudyListFeature.State()
+        state.myJoinRequests = [request]
+
+        let store = TestStore(initialState: state) {
+            StudyListFeature()
+        } withDependencies: {
+            $0.studyClient.cancelJoinRequest = { canceledID.setValue($0) }
         }
+
+        await store.send(.cancelRequestTapped(request)) {
+            $0.requestToCancel = request
+            $0.cancelConfirmAlert = AlertState {
+                TextState("가입 신청을 철회할까요?")
+            } actions: {
+                ButtonState(role: .destructive, action: .confirmCancel) {
+                    TextState("철회")
+                }
+                ButtonState(role: .cancel) {
+                    TextState("취소")
+                }
+            } message: {
+                TextState("'승무원 영상면접 스터디' 가입 신청이 취소됩니다. 다시 신청하려면 초대 코드가 필요해요.")
+            }
+        }
+
+        await store.send(.cancelConfirmAlert(.presented(.confirmCancel))) {
+            $0.cancelConfirmAlert = nil
+            $0.requestToCancel = nil
+            $0.myJoinRequests = []
+        }
+
+        canceledID.withValue { #expect($0 == request.id) }
     }
 }
 

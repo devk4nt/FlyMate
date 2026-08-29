@@ -122,6 +122,20 @@ public struct StudyRepositoryImpl: StudyRepository {
         return dtos.map(DTOMapper.toDomain)
     }
 
+    public func fetchMyJoinRequests() async throws -> [JoinRequest] {
+        // RLS는 방장에게 자기 스터디의 신청도 보여주므로 내 것만 명시적으로 필터
+        let userID = try await client.auth.session.user.id
+        let dtos: [JoinRequestDTO] = try await client.from(SupabaseConfig.Table.joinRequests)
+            .select()
+            .eq("user_id", value: userID)
+            .eq("status", value: "pending")
+            .order("created_at", ascending: false)
+            .execute()
+            .value
+
+        return dtos.map(DTOMapper.toDomain)
+    }
+
     public func approveJoinRequest(requestID: UUID) async throws {
         do {
             try await client.rpc(
