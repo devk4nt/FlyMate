@@ -122,8 +122,9 @@ async function uploadStorage(bucket, path, data, contentType) {
   console.log(`업로드: ${bucket}/${path}`);
 }
 
+// 앱의 StorageService.videoPath는 UUID 문자열 보간(대문자)로 경로를 만든다 — 반드시 대문자로 업로드
 for (const videoID of [VIDEO1_ID, VIDEO2_ID]) {
-  await uploadStorage("videos", `${STUDY_ID}/${videoID}.mp4`, videoData, "video/mp4");
+  await uploadStorage("videos", `${STUDY_ID.toUpperCase()}/${videoID.toUpperCase()}.mp4`, videoData, "video/mp4");
   await uploadStorage("thumbnails", `${STUDY_ID}/${videoID}.jpg`, thumbnailData, "image/jpeg");
 }
 const thumbnailURL = (videoID) =>
