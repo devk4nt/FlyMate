@@ -28,6 +28,9 @@ public protocol StudyRepository: Sendable {
     /// 스터디의 대기 중인 참여 요청 목록을 조회한다 (소유자만).
     func fetchPendingRequests(studyID: UUID) async throws -> [JoinRequest]
 
+    /// 내가 보낸 승인 대기 중인 참여 요청 목록을 조회한다 (신청자 관점).
+    func fetchMyJoinRequests() async throws -> [JoinRequest]
+
     /// 참여 요청을 승인한다 (소유자만).
     func approveJoinRequest(requestID: UUID) async throws
 
@@ -49,12 +52,8 @@ public protocol StudyRepository: Sendable {
     /// 스터디 방장을 다른 멤버에게 위임한다 (소유자만).
     func transferOwnership(studyID: UUID, newOwnerID: UUID) async throws
 
-    /// 초대 코드 정보를 조회한다.
-
     /// 스터디 공지사항을 업데이트한다 (소유자만).
     func updateNotice(studyID: UUID, notice: String?) async throws
-
-    func fetchInviteCodeInfo(code: String) async throws -> InviteCode
 
     /// 스터디 멤버의 활동 통계를 조회한다.
     func fetchMemberStats(studyID: UUID, userID: UUID) async throws -> MemberStats

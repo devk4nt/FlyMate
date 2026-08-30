@@ -155,6 +155,12 @@ private struct NotificationRow: View {
             return "heart.text.square.fill"
         case .recruitPost:
             return "person.2.badge.plus.fill"
+        case .joinRequest:
+            return "person.badge.clock"
+        case .joinRequestApproved:
+            return "person.crop.circle.badge.checkmark"
+        case .joinRequestRejected:
+            return "person.crop.circle.badge.xmark"
         }
     }
 

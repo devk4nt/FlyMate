@@ -122,6 +122,20 @@ public struct StudyRepositoryImpl: StudyRepository {
         return dtos.map(DTOMapper.toDomain)
     }
 
+    public func fetchMyJoinRequests() async throws -> [JoinRequest] {
+        // RLS는 방장에게 자기 스터디의 신청도 보여주므로 내 것만 명시적으로 필터
+        let userID = try await client.auth.session.user.id
+        let dtos: [JoinRequestDTO] = try await client.from(SupabaseConfig.Table.joinRequests)
+            .select()
+            .eq("user_id", value: userID)
+            .eq("status", value: "pending")
+            .order("created_at", ascending: false)
+            .execute()
+            .value
+
+        return dtos.map(DTOMapper.toDomain)
+    }
+
     public func approveJoinRequest(requestID: UUID) async throws {
         do {
             try await client.rpc(
@@ -224,29 +238,6 @@ public struct StudyRepositoryImpl: StudyRepository {
             .execute()
     }
 
-    public func fetchInviteCodeInfo(code: String) async throws -> InviteCode {
-        do {
-            let response: InviteCodeResponse = try await client.rpc(
-                "get_study_by_invite_code",
-                params: ["p_invite_code": code]
-            )
-            .single()
-            .execute()
-            .value
-
-            return InviteCode(
-                code: response.code,
-                studyID: response.studyID,
-                studyName: response.studyName,
-                createdAt: response.createdAt,
-                expiresAt: response.expiresAt,
-                isActive: response.isActive
-            )
-        } catch {
-            throw mapRPCError(error)
-        }
-    }
-
     public func fetchMemberStats(studyID: UUID, userID: UUID) async throws -> MemberStats {
         do {
             let response: MemberStatsResponse = try await client.rpc(
@@ -281,10 +272,6 @@ public struct StudyRepositoryImpl: StudyRepository {
         let message = error.localizedDescription
         if message.contains("INVALID_INVITE_CODE") {
             return AppError.business(.invalidInviteCode)
-        } else if message.contains("INVITE_CODE_EXPIRED") {
-            return AppError.business(.inviteCodeExpired)
-        } else if message.contains("INVITE_CODE_INACTIVE") {
-            return AppError.business(.inviteCodeInactive)
         } else if message.contains("ALREADY_REQUESTED") {
             return AppError.business(.alreadyRequested)
         } else if message.contains("REQUEST_NOT_FOUND") {
@@ -309,24 +296,6 @@ public struct StudyRepositoryImpl: StudyRepository {
 }
 
 // MARK: - RPC Response DTOs
-
-private struct InviteCodeResponse: Codable, Sendable {
-    let code: String
-    let studyID: UUID
-    let studyName: String
-    let createdAt: Date
-    let expiresAt: Date
-    let isActive: Bool
-
-    enum CodingKeys: String, CodingKey {
-        case code
-        case studyID = "study_id"
-        case studyName = "study_name"
-        case createdAt = "created_at"
-        case expiresAt = "expires_at"
-        case isActive = "is_active"
-    }
-}
 
 private struct MemberStatsResponse: Codable, Sendable {
     let userID: UUID

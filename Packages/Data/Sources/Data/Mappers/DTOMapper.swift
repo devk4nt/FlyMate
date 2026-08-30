@@ -122,6 +122,27 @@ enum DTOMapper {
         )
     }
 
+    /// ponytail: 풀 항목은 신원·영상·썸네일 미노출(서버 RPC가 반환 안 함). uploaderID/uploaderName은
+    /// 카드 표시에 쓰이지 않는 sentinel — 실제 신원은 claim 후 claim RPC 반환값으로만 채워진다.
+    static func toDomain(_ dto: AvailableQuickFeedbackRequestDTO) -> QuickFeedbackRequest {
+        QuickFeedbackRequest(
+            id: dto.id,
+            uploaderID: anonymousPoolUploaderID,
+            uploaderName: "",
+            title: dto.title,
+            durationSeconds: dto.durationSeconds,
+            focusArea: QuickFeedbackFocusArea(rawValue: dto.focusArea) ?? .overall,
+            status: .open,
+            feedbackCount: dto.feedbackCount,
+            targetFeedbackCount: dto.targetFeedbackCount,
+            expiresAt: parseDate(dto.expiresAt),
+            createdAt: parseDate(dto.createdAt)
+        )
+    }
+
+    private static let anonymousPoolUploaderID =
+        UUID(uuidString: "00000000-0000-0000-0000-000000000000") ?? UUID()
+
     static func toDomain(_ dto: QuickFeedbackReviewDTO) -> QuickFeedbackReview {
         QuickFeedbackReview(
             id: dto.id,
@@ -185,61 +206,6 @@ enum DTOMapper {
         )
     }
 
-    // MARK: - Subscription
-
-    static func toDomain(_ dto: SubscriptionDTO) -> Subscription {
-        Subscription(
-            id: dto.id,
-            userID: dto.userID,
-            planID: dto.planID,
-            status: SubscriptionStatus(rawValue: dto.status) ?? .active,
-            originalTransactionID: dto.originalTransactionID,
-            latestTransactionID: dto.latestTransactionID,
-            productID: dto.productID,
-            environment: SubscriptionEnvironment(rawValue: dto.environment ?? "production") ?? .production,
-            purchaseDate: dto.purchaseDate.map(parseDate),
-            expiresDate: dto.expiresDate.map(parseDate),
-            isInBillingRetry: dto.isInBillingRetry,
-            autoRenewStatus: dto.autoRenewStatus,
-            createdAt: parseDate(dto.createdAt),
-            updatedAt: parseDate(dto.updatedAt)
-        )
-    }
-
-    static func toDomain(_ dto: SubscriptionPlanDTO) -> SubscriptionPlan {
-        SubscriptionPlan(
-            id: dto.id,
-            name: dto.name,
-            maxOwnedStudies: dto.maxOwnedStudies,
-            maxJoinedStudies: dto.maxJoinedStudies,
-            maxVideoDurationSeconds: dto.maxVideoDurationSeconds,
-            maxStudyMembers: dto.maxStudyMembers
-        )
-    }
-
-    static func toDomain(_ dto: EntitlementDTO) -> Entitlement {
-        Entitlement(
-            planID: dto.planID,
-            status: dto.status,
-            expiresDate: dto.expiresDate.map(parseDate),
-            maxOwnedStudies: dto.maxOwnedStudies,
-            maxJoinedStudies: dto.maxJoinedStudies,
-            maxVideoDurationSeconds: dto.maxVideoDurationSeconds,
-            maxStudyMembers: dto.maxStudyMembers,
-            currentOwnedStudies: dto.currentOwnedStudies,
-            currentJoinedStudies: dto.currentJoinedStudies
-        )
-    }
-
-    static func toDomain(_ dto: FeatureLimitDTO) -> FeatureLimit {
-        FeatureLimit(
-            allowed: dto.allowed,
-            current: dto.current,
-            max: dto.max,
-            feature: dto.feature
-        )
-    }
-
     // MARK: - Notification
 
     static func toDomain(_ dto: NotificationDTO) -> AppNotification {
@@ -254,6 +220,7 @@ enum DTOMapper {
             referenceAnnouncementID: dto.referenceAnnouncementID,
             referenceQuickFeedbackRequestID: dto.referenceQuickFeedbackRequestID,
             referenceRecruitPostID: dto.referenceRecruitPostID,
+            referenceStudyID: dto.referenceStudyID,
             isRead: dto.isRead,
             createdAt: parseDate(dto.createdAt)
         )

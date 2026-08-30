@@ -24,10 +24,11 @@ public struct AppFeature : Sendable {
         public var toast: ToastState?
         public var pendingDeepLink: DeepLink?
         public var fcmToken: String?
-        public var entitlement: Entitlement?
         public var onboarding: OnboardingFeature.State?
         public var termsConsent: TermsConsentFeature.State?
         public var hasCheckedOnboarding = false
+        /// 첫 인증 확인(currentUser) 완료 여부 — 확인 전엔 스플래시를 유지해 로그인 화면이 비치지 않게 한다
+        public var hasResolvedAuth = false
         /// 온보딩을 본 첫 세션에는 공지 팝업을 보류한다 (첫 실행 팝업 연타 방지)
         public var didShowOnboardingThisSession = false
         @Presents public var announcement: AnnouncementDetailFeature.State?
@@ -63,8 +64,6 @@ public struct AppFeature : Sendable {
         case checkOnboarding
         case onboarding(OnboardingFeature.Action)
         case termsConsent(TermsConsentFeature.Action)
-        case entitlementLoaded(Entitlement)
-        case transactionUpdated
         case startupAnnouncementRequested
         case startupAnnouncementResponse(Result<AppNotification?, AppError>)
         case startupAnnouncementMarkedAsRead
@@ -80,13 +79,11 @@ public struct AppFeature : Sendable {
     private enum CancelID {
         case fcmTokenObserver
         case pushNotificationObserver
-        case transactionUpdates
     }
 
     @Dependency(\.authClient) private var authClient
     @Dependency(\.userClient) private var userClient
     @Dependency(\.pushNotificationClient) private var pushNotificationClient
-    @Dependency(\.subscriptionClient) private var subscriptionClient
     @Dependency(\.userDefaultsClient) private var userDefaultsClient
     @Dependency(\.notificationClient) private var notificationClient
 
@@ -139,14 +136,23 @@ public struct AppFeature : Sendable {
                 }
                 return .none
 
+            case .onboarding(.delegate(.notificationPermissionRequested)):
+                // 온보딩 알림 페이지 CTA — 어필 문구를 본 직후 시스템 팝업 표시
+                return .send(.requestPushPermission)
+
             case .onboarding(.delegate(.onboardingCompleted)):
                 state.onboarding = nil
-                return .none
+                // 알림 페이지 CTA를 거치지 않고 닫았어도 권한 요청·FCM 등록은 보장
+                // (이미 결정된 상태면 시스템 팝업 없이 토큰 등록만 수행)
+                return state.termsConsent == nil ? .send(.requestPushPermission) : .none
 
             case .onboarding(.delegate(.firstUploadRequested)):
                 state.onboarding = nil
                 guard case .tab = state.destination else { return .none }
-                return .send(.destination(.tab(.study(.startFirstVideoUpload))))
+                return .merge(
+                    .send(.destination(.tab(.study(.startFirstVideoUpload)))),
+                    state.termsConsent == nil ? .send(.requestPushPermission) : .none
+                )
 
             case .onboarding:
                 return .none
@@ -164,30 +170,24 @@ public struct AppFeature : Sendable {
 
             case .authStateChanged(let user):
                 state.currentUser = user
+                state.hasResolvedAuth = true
                 if let user {
+                    // 캐시 프로필로 먼저 진입한 뒤 최신 프로필(.initialSession/.tokenRefreshed)이 오면 Tab·설정에도 반영
+                    state.tabState?.currentUser = user
+                    state.tabState?.settings.currentUser = user
                     if case .login = state.destination {
                         state.destination = .tab(TabFeature.State(currentUser: user))
                         // UGC 이용 전 커뮤니티 가이드라인 동의 필수 (Guideline 1.2)
                         if !userDefaultsClient.boolForKey(TermsConsentFeature.consentKey) {
                             state.termsConsent = TermsConsentFeature.State()
                         }
+                        // 첫 설치(온보딩 예정) 세션에서는 맥락 없는 시스템 팝업 대신
+                        // 온보딩 알림 페이지 CTA에서 요청한다
+                        let willShowOnboarding = !userDefaultsClient.boolForKey("hasCompletedOnboarding")
                         var effects: [Effect<Action>] = [
                             // 동의 시트가 떠 있으면 시스템 팝업 중첩 방지 — 동의 완료 후 요청
-                            state.termsConsent == nil ? .send(.requestPushPermission) : .none,
-                            // ponytail: 구독 미출시 — entitlement 조회 + Transaction.updates 구독 비활성.
-                            // verify-receipt/app-store-webhook 배포 후 아래 주석 복원 (SettingsView 구독 버튼과 함께)
-                            // .run { [subClient = subscriptionClient, userID = user.id] send in
-                            //     let entitlement = try? await subClient.fetchEntitlements(userID)
-                            //     if let entitlement {
-                            //         await send(.entitlementLoaded(entitlement))
-                            //     }
-                            // },
-                            // .run { [subClient = subscriptionClient] send in
-                            //     for await _ in subClient.observeTransactionUpdates() {
-                            //         await send(.transactionUpdated)
-                            //     }
-                            // }
-                            // .cancellable(id: CancelID.transactionUpdates)
+                            state.termsConsent == nil && !willShowOnboarding
+                                ? .send(.requestPushPermission) : .none,
                         ]
                         // 온보딩은 로그인 후에 노출 — 첫 업로드 안내는 계정이 생긴 뒤에 의미가 있다
                         effects.append(.send(.checkOnboarding))
@@ -205,14 +205,12 @@ public struct AppFeature : Sendable {
                         return .merge(effects)
                     }
                 } else {
-                    // 로그아웃 시 FCM 토큰 제거 + 구독 상태 초기화
+                    // 로그아웃 시 FCM 토큰 제거
                     let fcmToken = state.fcmToken
                     state.fcmToken = nil
-                    state.entitlement = nil
                     state.destination = .login(LoginFeature.State())
                     return .merge(
                         .cancel(id: CancelID.fcmTokenObserver),
-                        .cancel(id: CancelID.transactionUpdates),
                         fcmToken.map { token in
                             let client = userClient
                             return Effect<Action>.run { _ in
@@ -246,7 +244,8 @@ public struct AppFeature : Sendable {
                         await send(.fcmTokenReceived(token))
                     }
                 }
-                .cancellable(id: CancelID.fcmTokenObserver)
+                // 온보딩 CTA·완료·동의 완료 등 한 세션에서 여러 번 요청될 수 있어 기존 옵저버 교체
+                .cancellable(id: CancelID.fcmTokenObserver, cancelInFlight: true)
 
             case .fcmTokenReceived(let token):
                 state.fcmToken = token
@@ -266,6 +265,13 @@ public struct AppFeature : Sendable {
             case .pushNotificationTapped(let payload):
                 if payload["recruitPostId"] != nil || payload["type"] == "recruit_post" {
                     return .send(.deepLink(.recruit))
+                }
+                if let studyID = payload["studyId"].flatMap(UUID.init(uuidString:)) {
+                    // 가입 신청(방장 수신)은 승인/거절 화면으로 직행
+                    if payload["type"] == "join_request" {
+                        return .send(.deepLink(.joinRequests(studyID: studyID)))
+                    }
+                    return .send(.deepLink(.studyDetail(studyID: studyID)))
                 }
                 guard let videoIDString = payload["videoId"],
                       let videoID = UUID(uuidString: videoIDString) else {
@@ -294,26 +300,24 @@ public struct AppFeature : Sendable {
                     } else {
                         state.pendingDeepLink = deepLink
                     }
+                case .studyDetail(let studyID):
+                    if case .tab = state.destination {
+                        return .send(.destination(.tab(.navigateToStudyByID(studyID))))
+                    } else {
+                        state.pendingDeepLink = deepLink
+                    }
+                case .joinRequests(let studyID):
+                    if case .tab = state.destination {
+                        return .send(.destination(.tab(.navigateToJoinRequestsByID(studyID))))
+                    } else {
+                        state.pendingDeepLink = deepLink
+                    }
                 }
                 return .none
 
             case .toastDismissed:
                 state.toast = nil
                 return .none
-
-            case .entitlementLoaded(let entitlement):
-                state.entitlement = entitlement
-                return .none
-
-            case .transactionUpdated:
-                guard let userID = state.currentUser?.id else { return .none }
-                let subClient = subscriptionClient
-                return .run { send in
-                    let entitlement = try? await subClient.fetchEntitlements(userID)
-                    if let entitlement {
-                        await send(.entitlementLoaded(entitlement))
-                    }
-                }
 
             case .startupAnnouncementRequested:
                 guard state.startupAnnouncementUserID != nil,
@@ -359,11 +363,9 @@ public struct AppFeature : Sendable {
                 let fcmToken = state.fcmToken
                 state.currentUser = nil
                 state.fcmToken = nil
-                state.entitlement = nil
                 state.destination = .login(LoginFeature.State())
                 return .merge(
                     .cancel(id: CancelID.fcmTokenObserver),
-                    .cancel(id: CancelID.transactionUpdates),
                     fcmToken.map { token in
                         let client = userClient
                         return Effect<Action>.run { _ in
@@ -424,6 +426,8 @@ public enum DeepLink: Equatable {
     case inviteCode(String)
     case videoDetail(studyID: UUID, videoID: UUID, feedbackID: UUID? = nil)
     case recruit
+    case studyDetail(studyID: UUID)
+    case joinRequests(studyID: UUID)
 }
 
 public enum DeepLinkParser {

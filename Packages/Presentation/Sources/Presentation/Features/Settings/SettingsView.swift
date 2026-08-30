@@ -25,7 +25,6 @@ public struct SettingsView: View {
                 .listRowSeparator(.hidden)
 
                 Section("서비스") {
-                    // ponytail: 베타 기간 동안 구독 진입점 숨김 — 정식 출시 시 버튼 복원 (git: 884d61e 이전 참고)
                     Button {
                         store.send(.myActivityTapped)
                     } label: {
@@ -227,11 +226,6 @@ public struct SettingsView: View {
         }
         .sheet(item: $store.scope(state: \.destination?.myActivity, action: \.destination.myActivity)) { activityStore in
             MyActivitySheet(store: activityStore)
-        }
-        .sheet(item: $store.scope(state: \.destination?.subscription, action: \.destination.subscription)) { subStore in
-            NavigationStack {
-                SubscriptionView(store: subStore)
-            }
         }
     }
 

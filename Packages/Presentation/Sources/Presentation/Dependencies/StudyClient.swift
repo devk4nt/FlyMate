@@ -11,9 +11,9 @@ public struct StudyClient: Sendable {
     public var deleteStudy: @Sendable (UUID) async throws -> Void
     public var removeMember: @Sendable (UUID, UUID) async throws -> Void
     public var transferOwnership: @Sendable (UUID, UUID) async throws -> Void
-    public var fetchInviteCodeInfo: @Sendable (String) async throws -> InviteCode
     public var updateNotice: @Sendable (UUID, String?) async throws -> Void
     public var fetchPendingRequests: @Sendable (UUID) async throws -> [JoinRequest]
+    public var fetchMyJoinRequests: @Sendable () async throws -> [JoinRequest]
     public var approveJoinRequest: @Sendable (UUID) async throws -> Void
     public var rejectJoinRequest: @Sendable (UUID) async throws -> Void
     public var cancelJoinRequest: @Sendable (UUID) async throws -> Void
@@ -28,9 +28,9 @@ public struct StudyClient: Sendable {
         deleteStudy: @escaping @Sendable (UUID) async throws -> Void,
         removeMember: @escaping @Sendable (UUID, UUID) async throws -> Void,
         transferOwnership: @escaping @Sendable (UUID, UUID) async throws -> Void,
-        fetchInviteCodeInfo: @escaping @Sendable (String) async throws -> InviteCode,
         updateNotice: @escaping @Sendable (UUID, String?) async throws -> Void,
         fetchPendingRequests: @escaping @Sendable (UUID) async throws -> [JoinRequest],
+        fetchMyJoinRequests: @escaping @Sendable () async throws -> [JoinRequest],
         approveJoinRequest: @escaping @Sendable (UUID) async throws -> Void,
         rejectJoinRequest: @escaping @Sendable (UUID) async throws -> Void,
         cancelJoinRequest: @escaping @Sendable (UUID) async throws -> Void,
@@ -44,9 +44,9 @@ public struct StudyClient: Sendable {
         self.deleteStudy = deleteStudy
         self.removeMember = removeMember
         self.transferOwnership = transferOwnership
-        self.fetchInviteCodeInfo = fetchInviteCodeInfo
         self.updateNotice = updateNotice
         self.fetchPendingRequests = fetchPendingRequests
+        self.fetchMyJoinRequests = fetchMyJoinRequests
         self.approveJoinRequest = approveJoinRequest
         self.rejectJoinRequest = rejectJoinRequest
         self.cancelJoinRequest = cancelJoinRequest
@@ -64,9 +64,9 @@ extension StudyClient: TestDependencyKey {
         deleteStudy: unimplemented("\(Self.self).deleteStudy"),
         removeMember: unimplemented("\(Self.self).removeMember"),
         transferOwnership: unimplemented("\(Self.self).transferOwnership"),
-        fetchInviteCodeInfo: unimplemented("\(Self.self).fetchInviteCodeInfo"),
         updateNotice: unimplemented("\(Self.self).updateNotice"),
         fetchPendingRequests: unimplemented("\(Self.self).fetchPendingRequests"),
+        fetchMyJoinRequests: unimplemented("\(Self.self).fetchMyJoinRequests"),
         approveJoinRequest: unimplemented("\(Self.self).approveJoinRequest"),
         rejectJoinRequest: unimplemented("\(Self.self).rejectJoinRequest"),
         cancelJoinRequest: unimplemented("\(Self.self).cancelJoinRequest"),

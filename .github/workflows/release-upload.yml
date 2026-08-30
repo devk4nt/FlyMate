@@ -21,6 +21,7 @@ jobs:
         run: |
           printf 'SUPABASE_URL = %s\nSUPABASE_ANON_KEY = %s\nKAKAO_APP_KEY = %s\n' \
             "$SUPABASE_URL" "$SUPABASE_ANON_KEY" "$KAKAO_APP_KEY" > Secrets.xcconfig
+          cp Secrets.xcconfig Secrets.staging.xcconfig  # Staging 구성 참조 파일 — CI는 prod만 빌드
 
       - name: Create GoogleService-Info.plist
         env:

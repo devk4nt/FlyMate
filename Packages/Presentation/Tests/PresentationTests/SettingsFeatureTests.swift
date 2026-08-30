@@ -22,19 +22,6 @@ struct SettingsFeatureTests {
     }
 
     @Test
-    func 구독_화면_표시() async {
-        let store = TestStore(initialState: SettingsFeature.State(currentUser: .settingsMock)) {
-            SettingsFeature()
-        }
-
-        await store.send(.subscriptionTapped) {
-            $0.destination = .subscription(
-                SubscriptionFeature.State(currentUserID: User.settingsMock.id)
-            )
-        }
-    }
-
-    @Test
     func 스터디_관리_화면_표시() async {
         let store = TestStore(initialState: SettingsFeature.State(currentUser: .settingsMock)) {
             SettingsFeature()

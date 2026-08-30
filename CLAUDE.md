@@ -3,11 +3,10 @@
 ## 프로젝트 개요
 
 - **앱**: 승무원, 아나운서 등 영상면접 준비자를 위한 스터디 피드백 iOS 앱 (v1.0 App Store 심사 제출 완료)
-- **스택**: Swift 6, SwiftUI, TCA 1.x, Supabase, Firebase(Analytics/Messaging/Crashlytics), Kakao Login, StoreKit 2
+- **스택**: Swift 6, SwiftUI, TCA 1.x, Supabase, Firebase(Analytics/Messaging/Crashlytics), Kakao Login
 - **타겟**: iOS 17+
 - **모듈**: Tuist 프레임워크 타겟 4개 (Core, Domain, Data, Presentation) — `Project.swift`에서 정의, 소스는 `Packages/{모듈}/Sources/{모듈}/`
-- **핵심 정책**: 피드백 요청 영상은 최대 3분(180초, 무료 플랜은 60초)
-- **수익 모델**: 프리미엄 구독 (월간/연간, StoreKit 2) — 무료 플랜은 스터디 개설 1개/가입 1개/멤버 3명 제한
+- **핵심 정책**: 피드백 요청 영상은 최대 3분(180초). 스터디 개설 3개 / 총 참여 5개 / 멤버 8명 고정 한도 (플랜 개념 없음)
 
 ---
 
@@ -27,13 +26,13 @@ Core → (없음)
 |--------|------|----------|
 | **Core** | 공통 유틸리티 | Extensions, AppConstants, Logger, Debouncer, RetryHelper, Protocols (Analytics/CrashReport 포함), Models (LoadingState, PaginatedState, AppError) |
 | **Domain** | 비즈니스 모델 | Entities, Repository 프로토콜 |
-| **Data** | 데이터 소스 | DTOs, Mappers, Repository 구현체, Services (RealtimeService, StorageService, StoreKitService) |
+| **Data** | 데이터 소스 | DTOs, Mappers, Repository 구현체, Services (RealtimeService, StorageService) |
 | **Presentation** | UI 레이어 | TCA Features, DesignSystem, Dependencies (TCA Client) |
 
-### Feature 목록 (13개)
+### Feature 목록 (12개)
 
 `Packages/Presentation/Sources/Presentation/Features/`:
-Auth, BugReport, Feedback, Notification, Onboarding, Recruit, Report, Settings, Study, Subscription, Tab, TermsConsent, Video
+Auth, BugReport, Feedback, Notification, Onboarding, Recruit, Report, Settings, Study, Tab, TermsConsent, Video
 
 - 차단(Block)은 Settings 하위 `Settings/BlockedUsers/`
 - Analytics/Crashlytics는 Core의 `AnalyticsProtocol`/`CrashReportProtocol` 추상화 + Firebase 구현, Presentation의 Dependencies에서 TCA Client로 주입
@@ -568,22 +567,10 @@ public enum AppConstants {
     public static let maxJoinedStudies = 5
     public static let defaultPageSize = 20
     public static let maxFeedbackLength = 500
-
-    // 중첩 enum으로 도메인별 그룹화
-    public enum SubscriptionProductID {
-        public static let premiumMonthly = "com.flymate.premium.monthly"
-        public static let premiumYearly = "com.flymate.premium.yearly"
-    }
-    public enum FreePlanDefaults {   // 무료 플랜 제한
-        public static let maxOwnedStudies = 1
-        public static let maxJoinedStudies = 1
-        public static let maxVideoDurationSeconds = 60
-        public static let maxStudyMembers = 3
-    }
 }
 ```
 
-- `enum` 사용 (인스턴스화 방지), 도메인별 상수는 중첩 enum으로 그룹화
+- `enum` 사용 (인스턴스화 방지), 도메인별 상수는 중첩 enum으로 그룹화 (예: `AppConstants.QuickFeedback`)
 - Doc comment로 각 상수 설명
 - 바이트 크기는 `* 1_024` 형태로 가독성 확보
 
@@ -602,6 +589,19 @@ tuist generate        # 워크스페이스 생성 + Xcode 열기
 ```
 
 - 이후 Xcode에서 `FlyMate.xcworkspace`의 FlyMate 스킴으로 iOS 시뮬레이터 빌드
+
+### 환경 (Supabase 프로젝트 2개)
+
+| 환경 | 프로젝트 ref | 앱 구성 / 스킴 | 자격 증명 |
+|------|-------------|---------------|----------|
+| prod | `fvhrydkofctahxwyvsnp` (Flymate Release) | Debug/Release — `FlyMate` 스킴, 심사 빌드 | `Secrets.xcconfig` |
+| staging | `kilkzezzkvyegnuubltg` (Flymate Staging) | `Staging` 구성 — `FlyMate-Staging`(실 로그인), `FlyMate-Owner/Member`(테스트 계정) 스킴 | `Secrets.staging.xcconfig` |
+
+- `FlyMate` 스킴 기본 실행은 여전히 목 데이터(로그인 없음) — 오프라인 UI 검수용. 실 백엔드 플로우 검증은 `FlyMate-Staging`
+- 번들 ID·서명·Firebase·카카오 설정은 두 환경이 동일, Supabase URL/키만 다름
+- 마이그레이션은 **staging 먼저 → 검증 → prod** 순서. `supabase db push`가 고장나 있어 스크립트 사용:
+  `node scripts/apply-migrations.mjs <project-ref> [--dry-run]` (Management API로 미적용 파일 순차 실행 + 히스토리 등록)
+- Edge Function 배포: `supabase functions deploy --project-ref <ref>` (staging 시크릿은 대시보드에서 별도 설정)
 - 테스트: FlyMate 스킴에 FlyMateTests + PresentationTests 포함 (`tuist test` 또는 Cmd+U)
 
 ## CI/CD (.github/workflows/)

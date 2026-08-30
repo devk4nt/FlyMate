@@ -39,4 +39,19 @@ struct OnboardingFeatureTests {
         await store.send(.startTapped)
         await store.receive(\.delegate.onboardingCompleted)
     }
+
+    @Test
+    func 알림켜기_탭시_권한요청_delegate_전달_및_다음_페이지_진행() async {
+        var state = OnboardingFeature.State()
+        state.currentPage = OnboardingFeature.notificationPageID
+
+        let store = TestStore(initialState: state) {
+            OnboardingFeature()
+        }
+
+        await store.send(.enableNotificationsTapped) {
+            $0.currentPage = OnboardingFeature.notificationPageID + 1
+        }
+        await store.receive(\.delegate.notificationPermissionRequested)
+    }
 }

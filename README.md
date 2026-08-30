@@ -18,10 +18,10 @@ v1.0 App Store 심사 진행 중
 
 영상면접을 준비하는 사람들이 스터디를 만들고, 연습 영상을 올리고, 구간별 타임스탬프 피드백을 주고받는 앱입니다. 기획 → 디자인 → 개발 → 심사 제출까지 전 과정을 직접 진행했습니다.
 
-- 스터디 개설/모집/가입 — 무료 플랜 제한(개설 1·가입 1·멤버 3명)과 프리미엄 구독으로 확장
+- 스터디 개설/모집/가입 — 초대 코드 + 방장 승인 흐름
 - 영상 업로드(최대 3분) 및 타임스탬프 기반 피드백
 - Supabase Realtime 실시간 피드백/알림
-- 카카오 로그인, StoreKit 2 월간/연간 구독
+- 카카오 로그인
 
 ## 아키텍처
 
@@ -32,7 +32,7 @@ App
  └─ Presentation ── TCA Features(13개), DesignSystem, Dependency Clients
      └─ Domain ──── Entities, Repository 프로토콜
          └─ Core ── LoadingState, AppError, Analytics/CrashReport 추상화, 공통 유틸
- └─ Data ────────── Repository 구현, DTO/Mapper, Supabase·StoreKit·Realtime Services
+ └─ Data ────────── Repository 구현, DTO/Mapper, Supabase·Realtime Services
 ```
 
 의존성은 항상 안쪽(Core)을 향하고, Presentation은 Data를 모릅니다 — Repository 프로토콜(Domain)과 TCA `@Dependency` 클라이언트로 결합을 끊었습니다.
@@ -54,7 +54,6 @@ App
 | UI | SwiftUI, TCA 1.17+, Kingfisher |
 | 동시성 | Swift Concurrency (async/await, AsyncStream, Actor) |
 | 백엔드 | Supabase (Auth, DB, Realtime, Storage) |
-| 결제 | StoreKit 2 (월간/연간 구독) |
 | 인증 | Kakao Login, Apple 로그인 |
 | 관측 | Firebase Analytics · Messaging · Crashlytics |
 | 빌드 | Tuist (mise 버전 고정), SPM |

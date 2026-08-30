@@ -5,6 +5,8 @@ public struct AppView: View {
     @Bindable var store: StoreOf<AppFeature>
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isShowingSplash = true
+    @State private var splashStartedAt = ContinuousClock.now
+    private static let maxSplashWait: Duration = .seconds(6)
     @State private var bugReportDraft: BugReportDraft?
 
     public init(store: StoreOf<AppFeature>) {
@@ -28,11 +30,15 @@ public struct AppView: View {
                     .zIndex(10)
             }
         }
-        .task {
+        .task(id: store.hasResolvedAuth) {
             guard isShowingSplash else { return }
 
-            let duration: UInt64 = reduceMotion ? 700_000_000 : 1_450_000_000
-            try? await Task.sleep(nanoseconds: duration)
+            // 인증 확인 전엔 스플래시를 유지한다 — 초기 destination이 .login이라 먼저 걷으면 로그인 화면이 비친다.
+            // 네트워크가 멈춰도 갇히지 않도록 최대 대기 후에는 강제 해제.
+            let minimum: Duration = reduceMotion ? .milliseconds(700) : .milliseconds(1_450)
+            let wait = store.hasResolvedAuth ? minimum : Self.maxSplashWait
+            try? await Task.sleep(until: splashStartedAt + wait, clock: .continuous)
+            guard !Task.isCancelled else { return }
 
             withAnimation(reduceMotion ? .linear(duration: 0.15) : .easeOut(duration: 0.4)) {
                 isShowingSplash = false

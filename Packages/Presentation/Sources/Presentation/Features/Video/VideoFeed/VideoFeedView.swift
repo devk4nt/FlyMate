@@ -97,11 +97,10 @@ public struct VideoFeedView<Header: View>: View {
     private var loadingQueue: some View {
         ScrollView {
             header
-            LazyVStack(spacing: FMSpacing.md) {
+            LazyVStack(spacing: FMSpacing.sm) {
                 ForEach(0..<3, id: \.self) { _ in
-                    FMSkeletonView.card
+                    FMSkeletonView.feedCell
                 }
-                .padding(.horizontal, FMSpacing.md)
             }
             .padding(.top, FMSpacing.xs)
             .padding(.bottom, FMSpacing.xxxl)

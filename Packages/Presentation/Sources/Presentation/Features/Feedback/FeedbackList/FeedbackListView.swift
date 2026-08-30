@@ -26,7 +26,7 @@ public struct FeedbackListView<Header: View>: View {
                     header
                     LazyVStack(spacing: FMSpacing.sm) {
                         ForEach(0..<3, id: \.self) { _ in
-                            FMSkeletonView(height: 164)
+                            FMSkeletonView.card
                         }
                     }
                     .padding(.horizontal, FMSpacing.md)

@@ -46,17 +46,30 @@ public struct OnboardingFeature: Sendable {
                 ),
                 OnboardingPage(
                     id: 3,
+                    title: "알림을 켜주세요",
+                    description: "스터디 가입 신청과 승인, 내 영상에 달린 피드백, 나를 언급한 멘션을 놓치지 않으려면 알림이 꼭 필요해요."
+                ),
+                OnboardingPage(
+                    id: 4,
                     title: "첫 영상을 올려보세요",
                     description: "짧은 연습 영상을 올리면 다른 사람들이 피드백을 남겨줘요."
                 ),
             ]
         }
+
+        /// 알림 권한 어필 페이지 — CTA가 시스템 권한 팝업을 띄운다
+        public var isNotificationPage: Bool {
+            currentPage == OnboardingFeature.notificationPageID
+        }
     }
+
+    public static let notificationPageID = 3
 
     public enum Action {
         case pageChanged(Int)
         case skipTapped
         case startTapped
+        case enableNotificationsTapped
         case uploadFirstVideoTapped
         case delegate(Delegate)
 
@@ -64,6 +77,7 @@ public struct OnboardingFeature: Sendable {
         public enum Delegate {
             case onboardingCompleted
             case firstUploadRequested
+            case notificationPermissionRequested
         }
     }
 
@@ -91,6 +105,11 @@ public struct OnboardingFeature: Sendable {
                     await client.setBool(true, Constants.onboardingCompletedKey)
                     await send(.delegate(.onboardingCompleted))
                 }
+
+            case .enableNotificationsTapped:
+                // 시스템 팝업은 부모(AppFeature)가 띄우고, 온보딩은 다음 페이지로 진행
+                state.currentPage = min(state.currentPage + 1, state.pages.count - 1)
+                return .send(.delegate(.notificationPermissionRequested))
 
             case .uploadFirstVideoTapped:
                 let client = userDefaultsClient

@@ -43,7 +43,7 @@ public struct StudyManagementView: View {
                 FMSkeletonView(height: 64)
 
                 ForEach(0..<3, id: \.self) { _ in
-                    FMSkeletonView(height: 176)
+                    FMSkeletonView.card
                 }
             }
             .padding(FMSpacing.md)

@@ -18,6 +18,12 @@ public struct VideoPageView: View {
         ZStack {
             mediaBackdrop
             mediaContent
+                // 컨테이너(ZStack)에 라벨을 걸면 오버레이 버튼들까지 같은 라벨로 덮여
+                // VoiceOver가 피드백/음소거 버튼을 구분하지 못한다 — 영상 표면에만 적용
+                .accessibilityElement()
+                .accessibilityLabel("\(store.video.uploaderName)님의 영상, \(store.video.title)")
+                .accessibilityHint(store.player.isPlaying ? "탭하면 일시정지됩니다" : "탭하면 재생됩니다")
+                .accessibilityAddTraits(.startsMediaSession)
 
             // 일시정지 인디케이터
             if !store.player.isPlaying {
@@ -48,9 +54,6 @@ public struct VideoPageView: View {
                 store.send(.pause)
             }
         }
-        .accessibilityLabel("\(store.video.uploaderName)님의 영상, \(store.video.title)")
-        .accessibilityHint(store.player.isPlaying ? "탭하면 일시정지됩니다" : "탭하면 재생됩니다")
-        .accessibilityAddTraits(.startsMediaSession)
         .sheet(isPresented: Binding(
             get: { store.showFeedbackSheet },
             set: { newValue in

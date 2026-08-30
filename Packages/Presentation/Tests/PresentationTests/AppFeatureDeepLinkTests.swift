@@ -93,8 +93,6 @@ struct AppFeatureDeepLinkTests {
         let store = TestStore(initialState: state) {
             AppFeature()
         } withDependencies: {
-            $0.subscriptionClient.fetchEntitlements = { _ in .free }
-            $0.subscriptionClient.observeTransactionUpdates = { .finished }
             $0.pushNotificationClient.requestAuthorization = { false }
             $0.pushNotificationClient.registerForRemoteNotifications = {}
             $0.pushNotificationClient.observeFCMToken = { .finished }
@@ -122,8 +120,6 @@ struct AppFeatureDeepLinkTests {
         let store = TestStore(initialState: state) {
             AppFeature()
         } withDependencies: {
-            $0.subscriptionClient.fetchEntitlements = { _ in .free }
-            $0.subscriptionClient.observeTransactionUpdates = { .finished }
             $0.pushNotificationClient.requestAuthorization = { false }
             $0.pushNotificationClient.registerForRemoteNotifications = {}
             $0.pushNotificationClient.observeFCMToken = { .finished }
@@ -237,6 +233,11 @@ struct AppFeatureDeepLinkTests {
 
         let store = TestStore(initialState: state) {
             AppFeature()
+        } withDependencies: {
+            // 온보딩 종료 시 푸시 권한 요청·FCM 등록이 함께 일어난다
+            $0.pushNotificationClient.requestAuthorization = { false }
+            $0.pushNotificationClient.registerForRemoteNotifications = {}
+            $0.pushNotificationClient.observeFCMToken = { .finished }
         }
         store.exhaustivity = .off
 

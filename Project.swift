@@ -32,7 +32,7 @@ func module(
     )
 }
 
-/// 실제 Supabase 테스트 계정으로 로그인하는 디버그 스킴.
+/// 실제 Supabase 테스트 계정으로 로그인하는 디버그 스킴 — Staging 프로젝트(Secrets.staging.xcconfig)에 접속.
 /// 계정 정보(이메일·비밀번호)는 커밋되지 않도록 tuist generate 시점의 환경변수에서 읽는다:
 /// `TUIST_TEST_EMAIL_OWNER=<email> TUIST_TEST_PASSWORD=<pw> tuist generate` (mise.local.toml 참고)
 func testAccountScheme(_ role: String, email: String) -> Scheme {
@@ -42,7 +42,7 @@ func testAccountScheme(_ role: String, email: String) -> Scheme {
         shared: true,
         buildAction: .buildAction(targets: ["FlyMate"]),
         runAction: .runAction(
-            configuration: .debug,
+            configuration: "Staging",
             executable: "FlyMate",
             arguments: .arguments(environmentVariables: [
                 "TEST_EMAIL": .environmentVariable(value: email, isEnabled: true),
@@ -61,7 +61,14 @@ let project = Project(
         defaultKnownRegions: ["ko"],
         developmentRegion: "ko"
     ),
-    settings: .settings(base: baseSettings),
+    settings: .settings(
+        base: baseSettings,
+        configurations: [
+            .debug(name: .debug),
+            .debug(name: "Staging"),
+            .release(name: .release),
+        ]
+    ),
     targets: [
         // MARK: 모듈 (Core → Domain → Data/Presentation 방향으로만 의존)
         module("Core"),
@@ -126,7 +133,7 @@ let project = Project(
             ],
             settings: .settings(
                 base: baseSettings.merging([
-                    "MARKETING_VERSION": "1.4",
+                    "MARKETING_VERSION": "1.5",
                     "CURRENT_PROJECT_VERSION": "1",
                     "SWIFT_EMIT_LOC_STRINGS": true,
                     "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
@@ -139,6 +146,8 @@ let project = Project(
                 ]) { _, new in new },
                 configurations: [
                     .debug(name: .debug, xcconfig: "Secrets.xcconfig"),
+                    // Staging: 번들 ID·서명·Firebase·카카오 설정은 prod와 동일, Supabase만 staging 프로젝트를 바라봄
+                    .debug(name: "Staging", xcconfig: "Secrets.staging.xcconfig"),
                     .release(name: .release, xcconfig: "Secrets.xcconfig"),
                 ]
             )
@@ -207,6 +216,19 @@ let project = Project(
             archiveAction: .archiveAction(configuration: .release),
             profileAction: .profileAction(configuration: .release, executable: "FlyMate"),
             analyzeAction: .analyzeAction(configuration: .debug)
+        ),
+        // Staging 백엔드로 실제 로그인 플로우(Apple/카카오) 진입 — prod 오염 없이 실 API·마이그레이션·Edge Function 검증
+        .scheme(
+            name: "FlyMate-Staging",
+            shared: true,
+            buildAction: .buildAction(targets: ["FlyMate"]),
+            runAction: .runAction(
+                configuration: "Staging",
+                executable: "FlyMate",
+                arguments: .arguments(environmentVariables: [
+                    "LIVE_AUTH": .environmentVariable(value: "1", isEnabled: true),
+                ])
+            )
         ),
         // 다중 계정 시나리오용 실계정 스킴 — 시뮬레이터/기기 2대에 각각 띄워 크로스 계정 확인
         // Owner: 방장 계정 (스터디 생성·가입 승인·FCM 푸시 수신)

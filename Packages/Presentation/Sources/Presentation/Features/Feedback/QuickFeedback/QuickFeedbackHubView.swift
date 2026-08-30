@@ -294,7 +294,8 @@ private struct QuickFeedbackAvailableCard: View {
         Button(action: onTapped) {
             FMCard {
                 HStack(alignment: .top, spacing: FMSpacing.sm) {
-                    thumbnail
+                    // 프라이버시: 풀에서는 영상 썸네일 대신 잠금 표시 — 실제 영상은 배정(claim) 후 공개
+                    lockedThumbnail
 
                     VStack(alignment: .leading, spacing: FMSpacing.xs) {
                         Text(request.title)
@@ -307,17 +308,13 @@ private struct QuickFeedbackAvailableCard: View {
                             .font(FMTypography.caption1)
                             .foregroundStyle(FMColors.secondaryLabel)
 
-                        HStack(spacing: FMSpacing.xxs) {
-                            FMProfileImage(
-                                url: request.uploaderProfileURL,
-                                name: request.uploaderName,
-                                size: .sm
-                            )
-                            Text(request.uploaderName)
-                                .font(FMTypography.caption1)
-                                .foregroundStyle(FMColors.secondaryLabel)
-                                .lineLimit(1)
+                        HStack(spacing: FMSpacing.sm) {
+                            Label("익명 요청", systemImage: "person.crop.circle.dashed")
+                            Label(durationText, systemImage: "clock")
+                                .monospacedDigit()
                         }
+                        .font(FMTypography.caption1)
+                        .foregroundStyle(FMColors.secondaryLabel)
                     }
 
                     Spacer(minLength: 0)
@@ -335,41 +332,17 @@ private struct QuickFeedbackAvailableCard: View {
             }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(request.uploaderName)님의 \(request.title) 영상")
+        .accessibilityLabel("익명 요청 영상, \(request.title), 길이 \(durationText)")
         .accessibilityHint("탭하면 이 영상을 배정받아 피드백을 작성합니다")
     }
 
-    private var thumbnail: some View {
-        Group {
-            if let thumbnailURL = request.thumbnailURL {
-                KFImage(thumbnailURL)
-                    .resizable()
-                    .placeholder { thumbnailPlaceholder }
-                    .fade(duration: 0.2)
-                    .aspectRatio(contentMode: .fill)
-            } else {
-                thumbnailPlaceholder
-            }
-        }
-        .aspectRatio(16.0 / 9.0, contentMode: .fit)
-        .frame(width: 112)
-        .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm, style: .continuous))
-        .overlay(alignment: .bottomTrailing) {
-                Text(durationText)
-                    .font(FMTypography.caption2)
-                    .foregroundStyle(FMColors.onAccent)
-                    .monospacedDigit()
-                    .padding(.horizontal, FMSpacing.xxs)
-                    .padding(.vertical, FMSpacing.xxxs)
-                    .background(Color.black.opacity(0.6), in: Capsule())
-                    .padding(FMSpacing.xxs)
-            }
-    }
-
-    private var thumbnailPlaceholder: some View {
+    private var lockedThumbnail: some View {
         FMColors.softCanvas
+            .aspectRatio(16.0 / 9.0, contentMode: .fit)
+            .frame(width: 112)
+            .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm, style: .continuous))
             .overlay {
-                Image(systemName: "play.circle.fill")
+                Image(systemName: "lock.fill")
                     .font(.system(size: FMSizing.IconSize.lg))
                     .foregroundStyle(FMColors.supportAccent)
             }

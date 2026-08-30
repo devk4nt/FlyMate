@@ -46,6 +46,8 @@ public struct TabFeature {
         case settings(SettingsFeature.Action)
         case navigateToVideo(Study, Video, feedbackID: UUID? = nil)
         case navigateToVideoByID(UUID, feedbackID: UUID? = nil)
+        case navigateToStudyByID(UUID)
+        case navigateToJoinRequestsByID(UUID)
         case navigationFailed
         case showInviteCode(String)
         case showRecruit
@@ -118,6 +120,13 @@ public struct TabFeature {
                 if case .loaded = state.notificationList.loadingState {
                     state.notificationList.loadingState = .loaded(state.notificationList.notifications.items)
                 }
+                // 가입 승인/거절은 스터디 목록·승인 대기 섹션에 바로 반영
+                if notification.type == .joinRequestApproved || notification.type == .joinRequestRejected {
+                    return .merge(
+                        updateBadgeCount(state.unreadNotificationCount),
+                        .send(.study(.studyList(.refresh)))
+                    )
+                }
                 return updateBadgeCount(state.unreadNotificationCount)
 
             case .unreadCountResponse(let count):
@@ -157,6 +166,30 @@ public struct TabFeature {
                 syncUnreadCount(&state)
                 return updateBadgeCount(0)
 
+            case .notificationList(.delegate(.navigateToStudy(let studyID))):
+                state.isNotificationSheetPresented = false
+                state.selectedTab = .study
+                let studyClient = studyClient
+                return .run { send in
+                    try await Task.sleep(for: .milliseconds(350))
+                    let study = try await studyClient.fetchStudy(studyID)
+                    await send(.study(.navigateToStudy(study)))
+                } catch: { _, send in
+                    await send(.navigationFailed)
+                }
+
+            case .notificationList(.delegate(.navigateToJoinRequests(let studyID))):
+                state.isNotificationSheetPresented = false
+                state.selectedTab = .study
+                let studyClient = studyClient
+                return .run { send in
+                    try await Task.sleep(for: .milliseconds(350))
+                    let study = try await studyClient.fetchStudy(studyID)
+                    await send(.study(.navigateToJoinRequests(study)))
+                } catch: { _, send in
+                    await send(.navigationFailed)
+                }
+
             case .notificationList(.delegate(.navigateToQuickFeedback)):
                 state.isNotificationSheetPresented = false
                 state.selectedTab = .study
@@ -194,6 +227,26 @@ public struct TabFeature {
                     let study = try await studyClient.fetchStudy(feedback.studyID)
                     let video = try await videoClient.fetchVideo(feedback.videoID)
                     await send(.navigateToVideo(study, video, feedbackID: feedback.id))
+                } catch: { _, send in
+                    await send(.navigationFailed)
+                }
+
+            case .navigateToStudyByID(let studyID):
+                state.selectedTab = .study
+                let studyClient = studyClient
+                return .run { send in
+                    let study = try await studyClient.fetchStudy(studyID)
+                    await send(.study(.navigateToStudy(study)))
+                } catch: { _, send in
+                    await send(.navigationFailed)
+                }
+
+            case .navigateToJoinRequestsByID(let studyID):
+                state.selectedTab = .study
+                let studyClient = studyClient
+                return .run { send in
+                    let study = try await studyClient.fetchStudy(studyID)
+                    await send(.study(.navigateToJoinRequests(study)))
                 } catch: { _, send in
                     await send(.navigationFailed)
                 }

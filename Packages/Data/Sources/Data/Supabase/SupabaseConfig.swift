@@ -28,8 +28,6 @@ public enum SupabaseConfig {
         public static let joinRequests = "study_join_requests"
         public static let deviceTokens = "device_tokens"
         public static let feedbackComments = "feedback_comments"
-        public static let subscriptionPlans = "subscription_plans"
-        public static let subscriptions = "subscriptions"
         public static let recruitPosts = "recruit_posts"
         public static let recruitComments = "recruit_comments"
         public static let blockedUsers = "blocked_users"
@@ -52,10 +50,9 @@ public enum SupabaseConfig {
     }
 
     public enum RPC {
-        public static let getUserEntitlements = "get_user_entitlements"
-        public static let checkFeatureLimit = "check_feature_limit"
         public static let syncStartupAnnouncement = "sync_startup_announcement"
         public static let reconcileQuickFeedbackRequests = "reconcile_quick_feedback_requests"
+        public static let listAvailableQuickFeedbackRequests = "list_available_quick_feedback_requests"
         public static let createQuickFeedbackRequest = "create_quick_feedback_request"
         public static let claimQuickFeedbackRequest = "claim_quick_feedback_request"
         public static let cancelQuickFeedbackAssignment = "cancel_quick_feedback_assignment"
@@ -66,5 +63,6 @@ public enum SupabaseConfig {
 
     public enum EdgeFunction {
         public static let verifyReceipt = "verify-receipt"
+        public static let interviewInsight = "interview-insight"
     }
 }

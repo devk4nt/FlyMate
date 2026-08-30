@@ -16,8 +16,6 @@ public struct StudyDetailFeature {
         public var editingNoticeText: String = ""
         public var noticeUpdateState: LoadingState<Bool> = .idle
         public var isCopied: Bool = false
-        public var inviteCodeInfo: LoadingState<InviteCode> = .idle
-        public var isInviteCodePopoverPresented: Bool = false
         public var pendingRequestCount: Int = 0
 
         public var isOwner: Bool {
@@ -44,10 +42,6 @@ public struct StudyDetailFeature {
         case memberManagementTapped
         case joinRequestManagementTapped
         case pendingRequestCountResponse(Result<Int, AppError>)
-        // Invite Code Info
-        case inviteCodeInfoTapped
-        case inviteCodeInfoResponse(Result<InviteCode, AppError>)
-        case dismissInviteCodePopover
         // Notice
         case noticeTapped
         case editNoticeTapped
@@ -95,7 +89,6 @@ public struct StudyDetailFeature {
             case .refresh:
                 // 로드된 콘텐츠는 유지 — pull-to-refresh 시 스켈레톤 대신 .refreshable 스피너가 로딩 표시
                 if state.videos.value == nil { state.videos = .loading }
-                state.inviteCodeInfo = .idle
                 let studyID = state.study.id
                 let isOwner = state.isOwner
                 let videoClient = videoClient
@@ -179,37 +172,6 @@ public struct StudyDetailFeature {
 
             case .resetCopyFeedback:
                 state.isCopied = false
-                return .none
-
-            // MARK: - Invite Code Info
-
-            case .inviteCodeInfoTapped:
-                state.isInviteCodePopoverPresented = true
-                if case .loading = state.inviteCodeInfo { return .none }
-                if case .loaded = state.inviteCodeInfo { return .none }
-                state.inviteCodeInfo = .loading
-                let inviteCode = state.study.inviteCode
-                let client = studyClient
-                return .run { send in
-                    do {
-                        let info = try await client.fetchInviteCodeInfo(inviteCode)
-                        await send(.inviteCodeInfoResponse(.success(info)))
-                    } catch {
-                        let appError = error as? AppError ?? .unexpected(error.localizedDescription)
-                        await send(.inviteCodeInfoResponse(.failure(appError)))
-                    }
-                }
-
-            case .inviteCodeInfoResponse(.success(let info)):
-                state.inviteCodeInfo = .loaded(info)
-                return .none
-
-            case .inviteCodeInfoResponse(.failure(let error)):
-                state.inviteCodeInfo = .failed(error)
-                return .none
-
-            case .dismissInviteCodePopover:
-                state.isInviteCodePopoverPresented = false
                 return .none
 
             // MARK: - Notice

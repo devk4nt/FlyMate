@@ -60,20 +60,63 @@ extension FMSkeletonView {
         .accessibilityLabel("목록 항목 로딩 중")
     }
 
-    /// A skeleton card mimicking a content card layout.
+    /// `FMCard(style: .feed)` 텍스트 카드 스켈레톤 — 아바타 헤더 + 제목 + 본문 2줄.
+    /// StudyRow, FeedbackManagementRow, RecruitPostRow 등 피드 카드 목록의 로딩용.
     public static var card: some View {
-        VStack(alignment: .leading, spacing: FMSpacing.sm) {
-            FMSkeletonView(height: 160, isShimmering: false)
-            FMSkeletonView(height: 16, isShimmering: false)
-            FMSkeletonView(width: 200, height: 14, isShimmering: false)
+        FMCard(style: .feed) {
+            VStack(alignment: .leading, spacing: FMSpacing.sm) {
+                HStack(spacing: FMSpacing.sm) {
+                    FMSkeletonView(width: 32, height: 32, cornerRadius: 16, isShimmering: false)
+                    FMSkeletonView(width: 96, height: 12, isShimmering: false)
+                    Spacer(minLength: 0)
+                }
+
+                VStack(alignment: .leading, spacing: FMSpacing.xs) {
+                    FMSkeletonView(width: 200, height: 18, isShimmering: false)
+                    FMSkeletonView(height: 14, isShimmering: false)
+                    FMSkeletonView(width: 240, height: 14, isShimmering: false)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .shimmer()
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(FMSpacing.md)
-        .shimmer()
-        .background(FMColors.background)
-        .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("카드 로딩 중")
+    }
+
+    /// `FMFeedCell` 스켈레톤 — 작성자 헤더 + 1.85:1 영상 영역 + 제목/푸터. 바깥 패딩까지 FMFeedCell과 동일.
+    public static var feedCell: some View {
+        FMCard(style: .feed, padding: 0) {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: FMSpacing.xs) {
+                    FMSkeletonView(width: 28, height: 28, cornerRadius: 14, isShimmering: false)
+                    VStack(alignment: .leading, spacing: FMSpacing.xxs) {
+                        FMSkeletonView(width: 88, height: 12, isShimmering: false)
+                        FMSkeletonView(width: 120, height: 10, isShimmering: false)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(FMSpacing.sm)
+
+                Color.clear
+                    .aspectRatio(1.85, contentMode: .fit)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md, style: .continuous)
+                            .fill(FMColors.label.opacity(0.08))
+                    }
+
+                VStack(alignment: .leading, spacing: FMSpacing.xs) {
+                    FMSkeletonView(width: 220, height: 16, isShimmering: false)
+                    FMSkeletonView(width: 140, height: 12, isShimmering: false)
+                }
+                .padding(FMSpacing.sm)
+            }
+            .shimmer()
+        }
+        .padding(.horizontal, FMSpacing.md)
+        .padding(.vertical, FMSpacing.xxs)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("영상 로딩 중")
     }
 }
 
@@ -83,6 +126,7 @@ extension FMSkeletonView {
         FMSkeletonView(width: 200, height: 14)
         FMSkeletonView.listRow
         FMSkeletonView.card
+        FMSkeletonView.feedCell
     }
     .padding()
 }
