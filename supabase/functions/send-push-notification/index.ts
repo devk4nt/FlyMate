@@ -14,10 +14,15 @@ interface WebhookPayload {
     reference_feedback_id: string | null;
     reference_recruit_post_id: string | null;
     reference_study_id: string | null;
+    reference_announcement_id?: string | null;
     is_read: boolean;
     created_at: string;
   };
 }
+
+/// 공지 게시 시점 fanout과 백필(sync_startup_announcement)을 구분하는 임계값.
+/// 게시 fanout은 공지 생성 직후 몇 초 내 INSERT되고, 백필은 유저가 나중에 앱을 열 때 INSERT된다.
+const ANNOUNCEMENT_BACKFILL_THRESHOLD_MS = 5 * 60 * 1000;
 
 interface DeviceToken {
   fcm_token: string;
@@ -127,6 +132,26 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
+
+    // 공지 백필이면 푸시 스킵 — 유저가 방금 앱을 열어 팝업으로 이미 보고 있는 지난 공지다
+    if (notification.type === "announcement" && notification.reference_announcement_id) {
+      const { data: announcement } = await supabaseAdmin
+        .from("announcements")
+        .select("created_at")
+        .eq("id", notification.reference_announcement_id)
+        .single();
+      if (announcement) {
+        const lag = new Date(notification.created_at).getTime()
+          - new Date(announcement.created_at).getTime();
+        if (lag > ANNOUNCEMENT_BACKFILL_THRESHOLD_MS) {
+          console.log(`Skipping backfill announcement push (lag ${Math.round(lag / 1000)}s)`);
+          return new Response(
+            JSON.stringify({ message: "Backfill announcement, push skipped" }),
+            { status: 200 }
+          );
+        }
+      }
+    }
 
     // Fetch device tokens for the recipient
     const { data: tokens, error: tokenError } = await supabaseAdmin
