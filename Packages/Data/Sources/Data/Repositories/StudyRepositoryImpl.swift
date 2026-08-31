@@ -232,9 +232,12 @@ public struct StudyRepositoryImpl: StudyRepository {
         }
 
         let now = notice != nil ? ISO8601DateFormatter().string(from: Date()) : nil
+        // RLS 등으로 0행이 업데이트되면 침묵 성공하므로, select+single로 미반영을 에러로 노출한다.
         try await client.from(SupabaseConfig.Table.studies)
             .update(UpdateNotice(notice: notice, noticeUpdatedAt: now))
             .eq("id", value: studyID)
+            .select("id")
+            .single()
             .execute()
     }
 

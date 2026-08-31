@@ -104,12 +104,18 @@ public struct StorageService: Sendable {
     }
 
     /// 프로필 이미지를 업로드하고 공개 URL을 반환한다.
+    /// 같은 경로에 덮어쓰므로 URL이 불변이면 Kingfisher/CDN이 옛 이미지를 계속 반환한다.
+    /// 버전 쿼리를 붙여 저장해 변경 시 캐시가 무효화되도록 한다.
     func uploadProfileImage(data: Data, userID: UUID) async throws -> URL {
         let path = "\(userID).jpg"
         try await client.storage.from(SupabaseConfig.Bucket.profileImages)
             .upload(path, data: data, options: .init(contentType: "image/jpeg", upsert: true))
         let publicURL = try client.storage.from(SupabaseConfig.Bucket.profileImages)
             .getPublicURL(path: path)
-        return publicURL
+        var components = URLComponents(url: publicURL, resolvingAgainstBaseURL: false)
+        components?.queryItems = [
+            URLQueryItem(name: "v", value: String(Int(Date().timeIntervalSince1970)))
+        ]
+        return components?.url ?? publicURL
     }
 }
