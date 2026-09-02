@@ -1538,10 +1538,10 @@ struct FlyMateApp: App {
                 .environment(\.locale, Locale(identifier: "ko_KR"))
                 .environment(\.font, FMTypography.body)
                 .onOpenURL { url in
-                    if url.scheme == "flymate" {
-                        if let deepLink = DeepLinkParser.parse(url: url) {
-                            store.send(.deepLink(deepLink))
-                        }
+                    // 커스텀 스킴과 유니버설 링크(https 초대 랜딩) 모두 여기로 들어온다.
+                    // parse가 스킴·호스트·경로를 직접 검증하므로 먼저 시도하고, 아니면 카카오 로그인 콜백으로 넘긴다
+                    if let deepLink = DeepLinkParser.parse(url: url) {
+                        store.send(.deepLink(deepLink))
                     } else {
                         _ = KakaoSignInClient.handleOpenURL(url)
                     }
