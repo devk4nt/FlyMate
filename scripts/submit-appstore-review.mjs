@@ -1,13 +1,28 @@
 // App Store 심사 제출 스크립트 (GitHub Actions에서 실행)
 // TestFlight 빌드 처리 완료를 기다렸다가 버전에 연결하고 심사 요청까지 수행한다.
 // 필요 env: ASC_KEY_ID, ASC_ISSUER_ID, ASC_PRIVATE_KEY(.p8 내용)
-// 선택 env: BUNDLE_ID(기본 com.flymate.app), TARGET_VERSION(기본 1.1), WHATS_NEW
+// 선택 env: BUNDLE_ID(기본 com.flymate.app), TARGET_VERSION(기본 1.1), WHATS_NEW, WHATS_NEW_FILE
 import crypto from "node:crypto";
+import { readFileSync } from "node:fs";
 
 const { ASC_KEY_ID, ASC_ISSUER_ID, ASC_PRIVATE_KEY } = process.env;
 const BUNDLE_ID = process.env.BUNDLE_ID || "com.flymate.app";
 const TARGET_VERSION = process.env.TARGET_VERSION || "1.1";
-const WHATS_NEW = process.env.WHATS_NEW || "";
+
+// 릴리즈 노트는 파일에서 읽는 것이 기본. workflow_dispatch 입력을 YAML 단일 스칼라
+// (`WHATS_NEW: ${{ inputs.whats_new }}`)로 넘기면 여러 줄이 공백으로 뭉개져 Apple이
+// "must provide a value for whatsNew" 409를 낸다 — v1.7 제출에서 실제로 겪음.
+const WHATS_NEW_FILE = process.env.WHATS_NEW_FILE || "Deliverables/AppStoreConnect/release-notes-ko.txt";
+function releaseNotes() {
+  const fromEnv = (process.env.WHATS_NEW || "").trim();
+  if (fromEnv) return fromEnv;
+  try {
+    return readFileSync(WHATS_NEW_FILE, "utf8").trim();
+  } catch {
+    return "";
+  }
+}
+const WHATS_NEW = releaseNotes();
 
 for (const [name, value] of Object.entries({ ASC_KEY_ID, ASC_ISSUER_ID, ASC_PRIVATE_KEY })) {
   if (!value) {

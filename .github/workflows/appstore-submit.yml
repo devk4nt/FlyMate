@@ -10,7 +10,7 @@ on:
         required: true
         default: "1.2"
       whats_new:
-        description: "새로운 기능 (릴리즈 노트)"
+        description: "릴리즈 노트 한 줄 오버라이드 (비우면 Deliverables/AppStoreConnect/release-notes-ko.txt 사용 — 여러 줄은 이 입력으로 넘기면 공백으로 뭉개진다)"
         required: false
         default: ""
 
