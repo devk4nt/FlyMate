@@ -6,7 +6,6 @@ import Domain
 public struct StudyDetailView: View {
     @Bindable var store: StoreOf<StudyDetailFeature>
     @State private var isDeleteNoticeConfirmationPresented = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(store: StoreOf<StudyDetailFeature>) {
         self.store = store
@@ -448,34 +447,41 @@ public struct StudyDetailView: View {
 
                     Spacer(minLength: 0)
 
-                    Button {
-                        store.send(.copyInviteCode)
-                    } label: {
-                        ZStack {
-                            Label("초대 코드 복사", systemImage: "doc.on.doc")
-                                .opacity(store.isCopied ? 0 : 1)
-
-                            Label("복사됨", systemImage: "checkmark")
-                                .opacity(store.isCopied ? 1 : 0)
+                    ShareLink(item: inviteShareMessage) {
+                        // 스터디원·대기 배지와 한 줄을 나눠 쓰므로 폭이 부족하면 아이콘만 — 큰 글자 크기에서도 안 깨진다
+                        ViewThatFits(in: .horizontal) {
+                            Label("초대 링크 공유", systemImage: "square.and.arrow.up")
+                            Image(systemName: "square.and.arrow.up")
                         }
-                        .fixedSize(horizontal: true, vertical: false)
+                        .lineLimit(1)
                         .font(FMTypography.caption1)
                         .fontWeight(.semibold)
-                        .foregroundStyle(store.isCopied ? FMColors.success : FMColors.actionForeground)
+                        .foregroundStyle(FMColors.onAccent)
                         .padding(.horizontal, FMSpacing.xs)
                         .frame(minHeight: FMSizing.IconContainer.sm)
-                        .background(
-                            (store.isCopied ? FMColors.success : FMColors.primary).opacity(0.1),
-                            in: Capsule()
-                        )
+                        .background(FMColors.primaryAction, in: Capsule())
+                        .contentShape(Capsule())
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(store.isCopied ? "복사됨" : "초대 코드 복사")
-                    .accessibilityHint("초대 코드를 클립보드에 복사합니다")
-                    .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: store.isCopied)
+                    .accessibilityLabel("초대 링크 공유")
+                    .accessibilityHint("카카오톡·문자 등으로 초대 링크를 보냅니다")
                 }
             }
         }
+    }
+
+    // MARK: - Invite Share
+
+    // ponytail: 유니버설 링크(AASA) 없이 https 랜딩 페이지가 앱을 열고 미설치 시 App Store로 보낸다.
+    // github.io는 도메인 루트를 못 쓰므로 AASA 배치가 불가 — 자체 도메인 확보 시 유니버설 링크로 승격.
+    private var inviteShareMessage: String {
+        var message = "✈️ FlyMate 스터디 '\(store.study.name)'에 초대합니다!"
+        if let url = DeepLinkParser.inviteShareURL(code: store.study.inviteCode) {
+            message += "\n아래 링크를 탭하면 가입 신청 화면으로 바로 이동해요.\n\(url.absoluteString)"
+        }
+        // 링크가 차단된 환경(일부 메신저·문자 필터)을 위한 폴백 — 앱에서 직접 입력할 수 있게 코드도 함께 안내
+        message += "\n\n초대 코드: \(store.study.inviteCode)"
+        return message
     }
 
     // MARK: - Feed Cell
@@ -506,6 +512,40 @@ public struct StudyDetailView: View {
     )
     var state = StudyDetailFeature.State(study: study)
     state.videos = .loaded([])
+    return NavigationStack {
+        StudyDetailView(store: Store(initialState: state) { StudyDetailFeature() })
+    }
+}
+
+#Preview("영상 있음 · 초대 공유 버튼") {
+    let ownerID = UUID()
+    let study = Study(
+        id: UUID(),
+        name: "승무원 영상면접 스터디",
+        description: "국내·외항사 승무원 영상면접을 함께 준비해요",
+        ownerID: ownerID,
+        inviteCode: "ABC123",
+        maxMembers: 8,
+        members: [],
+        createdAt: Date()
+    )
+    let video = Video(
+        id: UUID(),
+        studyID: study.id,
+        uploaderID: ownerID,
+        uploaderName: "김지원",
+        title: "1분 자기소개 연습",
+        videoURL: URL(filePath: "preview.mp4"),
+        thumbnailURL: nil,
+        durationSeconds: 62,
+        feedbackCount: 3,
+        focusPoints: nil,
+        feedbackRequest: nil,
+        createdAt: Date()
+    )
+    var state = StudyDetailFeature.State(study: study, currentUserID: ownerID)
+    state.videos = .loaded([video])
+    state.pendingRequestCount = 1
     return NavigationStack {
         StudyDetailView(store: Store(initialState: state) { StudyDetailFeature() })
     }

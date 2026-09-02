@@ -1,0 +1,16 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["4Y2567YJY8.com.flymate.app"],
+        "components": [
+          {
+            "/": "/flymate-site/invite.html",
+            "?": { "code": "?*" },
+            "comment": "스터디 초대 링크 — 앱이 설치돼 있으면 앱으로, 없으면 랜딩 페이지로"
+          }
+        ]
+      }
+    ]
+  }
+}

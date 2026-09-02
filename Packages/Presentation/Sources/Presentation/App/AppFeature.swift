@@ -431,21 +431,42 @@ public enum DeepLink: Equatable {
 }
 
 public enum DeepLinkParser {
-    /// Parses `flymate://invite?code=ABC123` format URLs
+    /// 커스텀 스킴(`flymate://invite?code=ABC123`)과 초대 랜딩 페이지 유니버설 링크를 모두 처리한다.
+    /// - 스킴: 랜딩 페이지의 "앱에서 열기" 버튼, 푸시 등에서 들어옴
+    /// - https: 유니버설 링크로 앱이 직접 열릴 때 (`onOpenURL`이 같은 경로로 전달)
     public static func parse(url: URL) -> DeepLink? {
-        guard url.scheme == "flymate" else { return nil }
-
-        switch url.host {
-        case "invite":
-            guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-                  let code = components.queryItems?.first(where: { $0.name == "code" })?.value,
-                  !code.isEmpty else {
+        switch url.scheme {
+        case "flymate":
+            guard url.host == "invite" else { return nil }
+            return inviteCode(from: url)
+        case "https":
+            // 랜딩 페이지 URL 하나(`AppConstants.ServiceURL.inviteLanding`)가 호스트·경로의 유일한 출처
+            guard let landing = URLComponents(string: AppConstants.ServiceURL.inviteLanding),
+                  url.host == landing.host,
+                  url.path == landing.path else {
                 return nil
             }
-            return .inviteCode(code)
+            return inviteCode(from: url)
         default:
             return nil
         }
+    }
+
+    private static func inviteCode(from url: URL) -> DeepLink? {
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              let code = components.queryItems?.first(where: { $0.name == "code" })?.value,
+              !code.isEmpty else {
+            return nil
+        }
+        return .inviteCode(code)
+    }
+
+    /// 공유용 초대 링크 — 랜딩 페이지가 `flymate://invite?code=` 로 앱을 열어 준다.
+    /// 커스텀 스킴을 직접 공유하면 카카오톡·문자에서 탭할 수 없는 일반 텍스트로 보이므로 https 링크를 쓴다.
+    public static func inviteShareURL(code: String) -> URL? {
+        var components = URLComponents(string: AppConstants.ServiceURL.inviteLanding)
+        components?.queryItems = [URLQueryItem(name: "code", value: code)]
+        return components?.url
     }
 }
 
