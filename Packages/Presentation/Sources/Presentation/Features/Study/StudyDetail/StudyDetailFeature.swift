@@ -1,5 +1,4 @@
 import Foundation
-import UIKit
 import ComposableArchitecture
 import Core
 import Domain
@@ -15,7 +14,6 @@ public struct StudyDetailFeature {
         public var isEditingNotice: Bool = false
         public var editingNoticeText: String = ""
         public var noticeUpdateState: LoadingState<Bool> = .idle
-        public var isCopied: Bool = false
         public var pendingRequestCount: Int = 0
 
         public var isOwner: Bool {
@@ -37,8 +35,6 @@ public struct StudyDetailFeature {
         case loadMoreResponse(Result<[Video], AppError>)
         case videoTapped(Video)
         case uploadVideoTapped(studyID: UUID)
-        case copyInviteCode
-        case resetCopyFeedback
         case memberManagementTapped
         case joinRequestManagementTapped
         case pendingRequestCountResponse(Result<Int, AppError>)
@@ -160,18 +156,6 @@ public struct StudyDetailFeature {
                 return .none
 
             case .pendingRequestCountResponse(.failure):
-                return .none
-
-            case .copyInviteCode:
-                UIPasteboard.general.string = state.study.inviteCode
-                state.isCopied = true
-                return .run { send in
-                    try await Task.sleep(for: .seconds(2))
-                    await send(.resetCopyFeedback)
-                }
-
-            case .resetCopyFeedback:
-                state.isCopied = false
                 return .none
 
             // MARK: - Notice

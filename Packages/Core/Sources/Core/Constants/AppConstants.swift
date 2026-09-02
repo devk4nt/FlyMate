@@ -82,5 +82,9 @@ public enum AppConstants {
         /// 이용약관 (EULA) — 부적절 콘텐츠 무관용 조항 포함 (App Store Guideline 1.2)
         public static let termsOfService = "https://devk4nt.github.io/flymate-site/terms.html"
         public static let privacyPolicy = "https://devk4nt.github.io/flymate-site/privacy.html"
+        /// 초대 링크 랜딩 페이지 — `?code=` 를 붙여 공유하면 페이지가 `flymate://invite` 로 앱을 열고,
+        /// 앱이 없으면 App Store 로 안내한다. 카카오톡·문자는 http(s) 링크만 탭 가능하게 렌더링하므로
+        /// 커스텀 스킴을 그대로 공유하면 안 된다.
+        public static let inviteLanding = "https://devk4nt.github.io/flymate-site/invite.html"
     }
 }

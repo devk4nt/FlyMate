@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FlyMate 스터디 초대</title>
+<meta property="og:title" content="FlyMate 스터디 초대">
+<meta property="og:description" content="영상면접 스터디에 초대받았어요. 탭해서 가입 신청하세요.">
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font-family: -apple-system, "Apple SD Gothic Neo", sans-serif;
+    max-width: 480px; margin: 0 auto; padding: 40px 24px;
+    line-height: 1.7; color: #1c1c1e; text-align: center;
+  }
+  h1 { font-size: 1.5em; margin-bottom: 0.2em; }
+  p.sub { color: #6c6c70; margin-top: 0; }
+  .code {
+    font-size: 2em; font-weight: 700; letter-spacing: 0.15em;
+    padding: 16px 24px; margin: 28px 0;
+    background: #f2f2f7; border-radius: 14px; display: inline-block;
+  }
+  a.btn, button.btn {
+    display: block; width: 100%; box-sizing: border-box;
+    padding: 15px 20px; margin: 12px 0;
+    font-size: 1.05em; font-weight: 600; font-family: inherit;
+    border: 0; border-radius: 14px; cursor: pointer; text-decoration: none;
+  }
+  a.primary { background: #1f6feb; color: #fff; }
+  button.secondary { background: #f2f2f7; color: #1f6feb; }
+  ol { text-align: left; color: #6c6c70; font-size: 0.92em; padding-left: 1.2em; }
+  footer { margin-top: 36px; font-size: 0.85em; color: #8e8e93; }
+  footer a { color: #8e8e93; }
+  @media (prefers-color-scheme: dark) {
+    body { color: #f2f2f7; background: #1c1c1e; }
+    p.sub, ol, footer, footer a { color: #98989d; }
+    .code { background: #2c2c2e; }
+    button.secondary { background: #2c2c2e; color: #6ea8ff; }
+  }
+</style>
+</head>
+<body>
+<h1>✈️ FlyMate 스터디 초대</h1>
+<p class="sub">영상면접 스터디에 초대받았어요.</p>
+
+<div id="valid" hidden>
+  <div class="code" id="code"></div>
+  <a class="btn primary" id="openApp" href="#">앱에서 가입 신청하기</a>
+  <button class="btn secondary" id="copy">초대 코드 복사</button>
+  <p class="sub" style="margin-top:28px">앱이 아직 없다면</p>
+  <a class="btn secondary" style="display:block" id="store"
+     href="https://apps.apple.com/kr/app/id6801114073">App Store에서 FlyMate 받기</a>
+  <ol>
+    <li>App Store에서 FlyMate를 설치하고 로그인해 주세요.</li>
+    <li>이 페이지로 돌아와 <b>앱에서 가입 신청하기</b>를 누르거나, 앱의 <b>스터디 참여</b>에서 위 코드를 입력하세요.</li>
+    <li>스터디를 만든 분이 승인하면 참여가 완료됩니다.</li>
+  </ol>
+</div>
+
+<div id="invalid" hidden>
+  <p>초대 코드가 없거나 형식이 올바르지 않은 링크예요.<br>초대해 주신 분께 링크를 다시 받아 주세요.</p>
+  <a class="btn primary" href="https://apps.apple.com/kr/app/id6801114073">App Store에서 FlyMate 받기</a>
+</div>
+
+<footer>
+  <a href="./support.html">고객 지원</a> · <a href="./privacy.html">개인정보처리방침</a>
+</footer>
+
+<script>
+  // 초대 코드는 앱이 생성하는 대문자·숫자 6자리. 그 외 입력은 링크 오류로 처리 (URL 주입 방어)
+  var code = (new URLSearchParams(location.search).get('code') || '').trim().toUpperCase();
+  if (/^[A-Z0-9]{6}$/.test(code)) {
+    document.getElementById('code').textContent = code;
+    document.getElementById('openApp').href = 'flymate://invite?code=' + code;
+    document.getElementById('valid').hidden = false;
+    document.getElementById('copy').addEventListener('click', function () {
+      var btn = this;
+      navigator.clipboard.writeText(code).then(function () {
+        btn.textContent = '복사됐어요';
+        setTimeout(function () { btn.textContent = '초대 코드 복사'; }, 2000);
+      });
+    });
+  } else {
+    document.getElementById('invalid').hidden = false;
+  }
+</script>
+</body>
+</html>

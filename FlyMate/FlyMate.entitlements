@@ -8,5 +8,12 @@
 	</array>
 	<key>aps-environment</key>
 	<string>development</string>
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<!-- 초대 링크 유니버설 링크. AASA는 이 호스트의 루트(devk4nt.github.io 유저 사이트 리포)에 있고,
+		     랜딩 페이지 경로 /flymate-site/invite.html 만 앱으로 넘긴다.
+		     자체 도메인으로 옮길 때 이 값과 AppConstants.ServiceURL.inviteLanding 을 함께 교체. -->
+		<string>applinks:devk4nt.github.io</string>
+	</array>
 </dict>
 </plist>
