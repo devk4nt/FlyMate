@@ -142,26 +142,26 @@ await api("PATCH", `/v1/appStoreVersions/${version.id}/relationships/build`, {
 });
 console.log(`빌드 연결 완료: build ${build.attributes.version}`);
 
-// 5. 새로운 기능(whatsNew) 갱신 — 최초 버전은 설정 불가하므로 실패해도 계속 진행
+// 5. 새로운 기능(whatsNew) 갱신 — 실패하면 여기서 중단한다.
+// 넘기고 진행하면 아래 심사 제출이 "This resource cannot be reviewed"로 실패해 원인이 가려진다.
+// 실제로 겪은 거부 사유: 여러 줄이 공백으로 뭉개짐, 이모지(✈️) 사용 — 이모지는 이 필드에서 금지된다.
 if (WHATS_NEW) {
-  try {
-    const localizations = await api(
-      "GET",
-      `/v1/appStoreVersions/${version.id}/appStoreVersionLocalizations`,
-    );
-    for (const localization of localizations.data) {
-      await api("PATCH", `/v1/appStoreVersionLocalizations/${localization.id}`, {
-        data: {
-          type: "appStoreVersionLocalizations",
-          id: localization.id,
-          attributes: { whatsNew: WHATS_NEW },
-        },
-      });
-      console.log(`whatsNew 갱신: ${localization.attributes.locale}`);
-    }
-  } catch (error) {
-    console.warn(`whatsNew 갱신 실패 (계속 진행): ${error.message}`);
+  const localizations = await api(
+    "GET",
+    `/v1/appStoreVersions/${version.id}/appStoreVersionLocalizations`,
+  );
+  for (const localization of localizations.data) {
+    await api("PATCH", `/v1/appStoreVersionLocalizations/${localization.id}`, {
+      data: {
+        type: "appStoreVersionLocalizations",
+        id: localization.id,
+        attributes: { whatsNew: WHATS_NEW },
+      },
+    });
+    console.log(`whatsNew 갱신: ${localization.attributes.locale}`);
   }
+} else {
+  throw new Error(`릴리즈 노트가 비어 있음 — WHATS_NEW 또는 ${WHATS_NEW_FILE} 확인`);
 }
 
 // 6. 심사 제출 (열려 있는 제출이 있으면 재사용)
