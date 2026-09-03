@@ -146,8 +146,14 @@ let project = Project(
                 ]) { _, new in new },
                 configurations: [
                     .debug(name: .debug, xcconfig: "Secrets.xcconfig"),
-                    // Staging: 번들 ID·서명·Firebase·카카오 설정은 prod와 동일, Supabase만 staging 프로젝트를 바라봄
-                    .debug(name: "Staging", xcconfig: "Secrets.staging.xcconfig"),
+                    // Staging: 번들 ID·서명·Firebase·카카오 설정은 prod와 동일, Supabase만 staging 프로젝트를 바라봄.
+                    // 번들 ID가 같아 한 기기에 하나만 설치되므로, 어느 환경이 깔려 있는지 홈 화면에서
+                    // 구분되도록 주황 + STAGING 띠 아이콘을 쓴다.
+                    .debug(
+                        name: "Staging",
+                        settings: ["ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon-Staging"],
+                        xcconfig: "Secrets.staging.xcconfig"
+                    ),
                     .release(name: .release, xcconfig: "Secrets.xcconfig"),
                 ]
             )
