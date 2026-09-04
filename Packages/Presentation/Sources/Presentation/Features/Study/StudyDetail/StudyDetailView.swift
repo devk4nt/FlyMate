@@ -70,45 +70,43 @@ public struct StudyDetailView: View {
 
     @ViewBuilder
     private func loadedView(videos: [Video]) -> some View {
-        if videos.isEmpty {
-            FMEmptyState(
-                systemImage: "video.badge.plus",
-                title: "아직 영상이 없습니다",
-                description: "면접 연습 영상을 업로드해보세요.",
-                actionTitle: "영상 업로드"
-            ) {
-                store.send(.uploadVideoTapped(studyID: store.study.id))
-            }
-        } else {
-            videoListView(videos: videos)
-        }
-    }
-
-    private func videoListView(videos: [Video]) -> some View {
         ScrollView {
-            LazyVStack(spacing: 0) {
-                VStack(spacing: FMSpacing.md) {
-                    noticeBanner
-                    studyInfoHeader
-                }
-                .padding(FMSpacing.md)
+            if videos.isEmpty {
+                // 화면 높이만큼 잡아 헤더 아래 남은 공간에 빈 상태를 세로 중앙 정렬 (스크롤 당김 새로고침은 유지)
+                VStack(spacing: 0) {
+                    headerSection
 
-                ForEach(videos) { video in
-                    feedCell(video)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            store.send(.videoTapped(video))
-                        }
-                        .onAppear {
-                            if video == videos.last {
-                                store.send(.loadMoreVideos)
+                    FMEmptyState(
+                        systemImage: "video.badge.plus",
+                        title: "아직 영상이 없습니다",
+                        description: "면접 연습 영상을 업로드해보세요.",
+                        actionTitle: "영상 업로드"
+                    ) {
+                        store.send(.uploadVideoTapped(studyID: store.study.id))
+                    }
+                }
+                .containerRelativeFrame(.vertical)
+            } else {
+                LazyVStack(spacing: 0) {
+                    headerSection
+
+                    ForEach(videos) { video in
+                        feedCell(video)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                store.send(.videoTapped(video))
                             }
-                        }
-                }
+                            .onAppear {
+                                if video == videos.last {
+                                    store.send(.loadMoreVideos)
+                                }
+                            }
+                    }
 
-                if store.videosPagination.isLoadingMore {
-                    ProgressView()
-                        .padding()
+                    if store.videosPagination.isLoadingMore {
+                        ProgressView()
+                            .padding()
+                    }
                 }
             }
         }
@@ -116,6 +114,15 @@ public struct StudyDetailView: View {
         .refreshable {
             await store.send(.refresh).finish()
         }
+    }
+
+    // 공지·초대 공유·가입 대기는 영상 없이도 써야 하는 기능 — 영상 유무와 무관하게 항상 상단에 붙는다
+    private var headerSection: some View {
+        VStack(spacing: FMSpacing.md) {
+            noticeBanner
+            studyInfoHeader
+        }
+        .padding(FMSpacing.md)
     }
 
     // MARK: - Notice Banner
@@ -500,18 +507,20 @@ public struct StudyDetailView: View {
 }
 
 #Preview("영상 없음") {
+    let previewOwnerID = UUID()
     let study = Study(
         id: UUID(),
         name: "승무원 영상면접 스터디",
         description: "국내·외항사 승무원 영상면접을 함께 준비해요",
-        ownerID: UUID(),
+        ownerID: previewOwnerID,
         inviteCode: "ABC123",
         maxMembers: 8,
         members: [],
         createdAt: Date()
     )
-    var state = StudyDetailFeature.State(study: study)
+    var state = StudyDetailFeature.State(study: study, currentUserID: previewOwnerID)
     state.videos = .loaded([])
+    state.pendingRequestCount = 1
     return NavigationStack {
         StudyDetailView(store: Store(initialState: state) { StudyDetailFeature() })
     }
