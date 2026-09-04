@@ -57,4 +57,5 @@ public enum NotificationType: String, Equatable, Sendable, Hashable {
     case joinRequest = "join_request"
     case joinRequestApproved = "join_request_approved"
     case joinRequestRejected = "join_request_rejected"
+    case newVideoInStudy = "new_video_in_study"
 }

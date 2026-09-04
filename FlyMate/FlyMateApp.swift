@@ -756,6 +756,13 @@ struct FlyMateApp: App {
                 referenceVideoID: uuid(100), referenceFeedbackID: uuid(200),
                 isRead: true, createdAt: now.addingTimeInterval(-2 * day + 2 * hour)
             ),
+            AppNotification(
+                id: uuid(306), recipientID: meID, type: .newVideoInStudy,
+                title: "새 영상이 올라왔어요",
+                body: "김하늘님이 \"기내 안전 안내 롤플레이\" 영상을 올렸어요. 피드백을 남겨주세요.",
+                referenceVideoID: uuid(101),
+                isRead: false, createdAt: now.addingTimeInterval(-3 * hour)
+            ),
         ])
 
         // MARK: Join Requests (스터디 A 방장 시나리오용)

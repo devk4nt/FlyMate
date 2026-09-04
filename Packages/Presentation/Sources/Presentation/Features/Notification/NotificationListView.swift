@@ -161,6 +161,8 @@ private struct NotificationRow: View {
             return "person.crop.circle.badge.checkmark"
         case .joinRequestRejected:
             return "person.crop.circle.badge.xmark"
+        case .newVideoInStudy:
+            return "video.badge.plus"
         }
     }
 
