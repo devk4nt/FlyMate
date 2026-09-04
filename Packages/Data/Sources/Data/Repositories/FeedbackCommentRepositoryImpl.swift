@@ -36,26 +36,20 @@ public struct FeedbackCommentRepositoryImpl: FeedbackCommentRepository {
     }
 
     public func createComment(_ request: CreateFeedbackCommentRequest) async throws -> FeedbackComment {
-        let session = try await client.auth.session
-        let user = session.user
+        let user = try await client.auth.session.user
 
-        let userName = user.userMetadata["name"]?.stringValue ?? ""
-        let profileURL = user.userMetadata["profile_image_url"]?.stringValue
-
+        // author_name / author_profile_url 은 hydrate_author_profile 트리거가
+        // public.users 에서 채운다 (auth userMetadata 는 Apple 계정에서 비어 있을 수 있음)
         struct InsertComment: Codable {
             let feedbackID: UUID
             let studyID: UUID
             let authorID: UUID
-            let authorName: String
-            let authorProfileURL: String?
             let content: String
             let mentionedUserIDs: [UUID]
             enum CodingKeys: String, CodingKey {
                 case feedbackID = "feedback_id"
                 case studyID = "study_id"
                 case authorID = "author_id"
-                case authorName = "author_name"
-                case authorProfileURL = "author_profile_url"
                 case content
                 case mentionedUserIDs = "mentioned_user_ids"
             }
@@ -83,8 +77,6 @@ public struct FeedbackCommentRepositoryImpl: FeedbackCommentRepository {
                 feedbackID: request.feedbackID,
                 studyID: feedbackInfo.studyID,
                 authorID: user.id,
-                authorName: userName,
-                authorProfileURL: profileURL,
                 content: request.content,
                 mentionedUserIDs: request.mentionedUserIDs
             ))

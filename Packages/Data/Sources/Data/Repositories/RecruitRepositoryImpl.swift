@@ -51,38 +51,29 @@ public struct RecruitRepositoryImpl: RecruitRepository {
     }
 
     public func createPost(_ draft: RecruitPostDraft) async throws -> RecruitPost {
-        let session = try await client.auth.session
-        let user = session.user
-        let userName = user.userMetadata["name"]?.stringValue ?? ""
-        let authorProfileURL = user.userMetadata["profile_image_url"]?.stringValue
+        let user = try await client.auth.session.user
 
+        // author_name / author_profile_url 은 hydrate_author_profile 트리거가
+        // public.users 에서 채운다 (auth userMetadata 는 Apple 계정에서 비어 있을 수 있음)
         struct InsertPost: Encodable {
             let payload: PostPayload
             let authorID: UUID
-            let authorName: String
-            let authorProfileURL: String?
 
             func encode(to encoder: Encoder) throws {
                 try payload.encode(to: encoder)
                 var container = encoder.container(keyedBy: CodingKeys.self)
                 try container.encode(authorID, forKey: .authorID)
-                try container.encode(authorName, forKey: .authorName)
-                try container.encodeIfPresent(authorProfileURL, forKey: .authorProfileURL)
             }
 
             enum CodingKeys: String, CodingKey {
                 case authorID = "author_id"
-                case authorName = "author_name"
-                case authorProfileURL = "author_profile_url"
             }
         }
 
         let dto: RecruitPostDTO = try await client.from(SupabaseConfig.Table.recruitPosts)
             .insert(InsertPost(
                 payload: postPayload(draft),
-                authorID: user.id,
-                authorName: userName,
-                authorProfileURL: authorProfileURL
+                authorID: user.id
             ))
             .select()
             .single()
@@ -149,25 +140,19 @@ public struct RecruitRepositoryImpl: RecruitRepository {
     }
 
     public func createComment(_ request: CreateRecruitCommentRequest) async throws -> RecruitComment {
-        let session = try await client.auth.session
-        let user = session.user
-        let userName = user.userMetadata["name"]?.stringValue ?? ""
-        let profileURL = user.userMetadata["profile_image_url"]?.stringValue
+        let user = try await client.auth.session.user
 
+        // author_name / author_profile_url 은 hydrate_author_profile 트리거가 채운다
         struct InsertComment: Encodable {
             let postID: UUID
             let parentID: UUID?
             let authorID: UUID
-            let authorName: String
-            let authorProfileURL: String?
             let content: String
 
             enum CodingKeys: String, CodingKey {
                 case postID = "post_id"
                 case parentID = "parent_id"
                 case authorID = "author_id"
-                case authorName = "author_name"
-                case authorProfileURL = "author_profile_url"
                 case content
             }
         }
@@ -177,8 +162,6 @@ public struct RecruitRepositoryImpl: RecruitRepository {
                 postID: request.postID,
                 parentID: request.parentID,
                 authorID: user.id,
-                authorName: userName,
-                authorProfileURL: profileURL,
                 content: request.content
             ))
             .select()
