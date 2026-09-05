@@ -25,7 +25,9 @@ public struct PracticeMirrorView: View {
                 .scaleEffect(x: store.isMirrored ? -1 : 1, y: 1)
                 .ignoresSafeArea()
             } else if isDemoMode {
+                #if DEBUG
                 demoBackdrop
+                #endif
             } else {
                 unsupportedView
             }
