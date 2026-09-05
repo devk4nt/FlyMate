@@ -24,6 +24,8 @@ public struct PracticeMirrorView: View {
                 // ARSCNView 프리뷰 원본은 비반전(면접관 시점) — 거울 모드에서만 뒤집는다.
                 .scaleEffect(x: store.isMirrored ? -1 : 1, y: 1)
                 .ignoresSafeArea()
+            } else if isDemoMode {
+                demoBackdrop
             } else {
                 unsupportedView
             }
@@ -44,7 +46,7 @@ public struct PracticeMirrorView: View {
 
                 Spacer()
 
-                if ARFaceTrackingConfiguration.isSupported {
+                if ARFaceTrackingConfiguration.isSupported || isDemoMode {
                     bottomOverlay
                         .padding(.horizontal, FMSpacing.md)
                         .padding(.bottom, FMSpacing.lg)
@@ -60,6 +62,42 @@ public struct PracticeMirrorView: View {
             }
         }
     }
+
+    /// 시뮬레이터 데모 — ARKit 미지원 환경(DEBUG)에서 합성 미소 값으로 전체 플로우를 확인한다.
+    /// 실기기는 항상 isSupported=true라 이 경로를 타지 않는다.
+    private var isDemoMode: Bool {
+        #if DEBUG
+        return !ARFaceTrackingConfiguration.isSupported
+        #else
+        return false
+        #endif
+    }
+
+    #if DEBUG
+    private var demoBackdrop: some View {
+        ZStack {
+            LinearGradient(
+                colors: [Color(red: 0.10, green: 0.12, blue: 0.20), .black],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            Text(store.isSmiling ? "😄" : "🙂")
+                .font(.system(size: 160))
+                .accessibilityHidden(true)
+        }
+        .ignoresSafeArea()
+        .task(id: store.phase) {
+            guard store.phase == .measuring else { return }
+            var time = 0.0
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(25)) // 4배속 — 긴 그래프를 빠르게 채운다
+                time += 0.1
+                let score = min(1, max(0, 0.55 + 0.25 * sin(time / 3) + Double.random(in: -0.05...0.05)))
+                store.send(.smileSampled(score))
+            }
+        }
+    }
+    #endif
 
     // MARK: - Phase Overlay
 
