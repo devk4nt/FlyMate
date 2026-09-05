@@ -163,6 +163,8 @@ private struct NotificationRow: View {
             return "person.crop.circle.badge.xmark"
         case .newVideoInStudy:
             return "video.badge.plus"
+        case .feedbackReminder:
+            return "clock.badge.exclamationmark"
         }
     }
 
