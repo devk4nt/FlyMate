@@ -36,8 +36,8 @@ public struct PracticeMirrorView: View {
                         closeButton
                     }
 
-                    if store.phase == .measuring, let startedAt = store.startedAt {
-                        timerBadge(startedAt: startedAt)
+                    if store.phase == .measuring {
+                        timerBadge
                     }
                 }
                 .padding(FMSpacing.md)
@@ -278,14 +278,15 @@ public struct PracticeMirrorView: View {
         }
     }
 
-    private func timerBadge(startedAt: Date) -> some View {
+    private var timerBadge: some View {
         HStack(spacing: FMSpacing.xxs) {
             Circle()
                 .fill(.red)
                 .frame(width: 8, height: 8)
                 .accessibilityHidden(true)
 
-            Text(startedAt, style: .timer)
+            // 벽시계가 아닌 샘플 누적 기반 — 얼굴이 인식되지 않는 동안은 멈춘다
+            Text(Duration.seconds(store.measuredDuration).formatted(.time(pattern: .minuteSecond)))
                 .font(FMTypography.largeTitle)
                 .monospacedDigit()
                 .foregroundStyle(.white)
