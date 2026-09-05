@@ -127,6 +127,11 @@ public struct PracticeMirrorView: View {
                 )
                 .font(FMTypography.callout)
                 .foregroundStyle(.white.opacity(0.7))
+
+                // 심사·법적 고지 — 카메라 기능 첫 화면에 상시 노출
+                Text("얼굴 데이터는 기기 안에서만 처리되며 저장·전송되지 않아요")
+                    .font(FMTypography.caption1)
+                    .foregroundStyle(.white.opacity(0.5))
             }
             .multilineTextAlignment(.center)
 
