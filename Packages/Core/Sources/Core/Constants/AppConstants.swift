@@ -96,6 +96,21 @@ public enum AppConstants {
 
         /// 리포트 표시 후 평가 요청까지 지연 (초) — 그래프 볼 여유를 준 다음
         public static let reviewPromptDelay: TimeInterval = 1.5
+
+        /// 1일 1미소 알림 기본 시간 — 자정 기준 분 (09:00)
+        public static let reminderDefaultMinutes = 9 * 60
+
+        /// 미소 거울 관련 UserDefaults 키
+        public enum UserDefaultsKey {
+            /// 유효 리포트 누적 횟수 (Int)
+            public static let completedReportCount = "practiceMirror.completedReportCount"
+            /// 1일 1미소 알림 사용 여부 (Bool)
+            public static let reminderEnabled = "practiceMirror.reminderEnabled"
+            /// 알림 시간, 자정 기준 분+1 (Int, 0 = 미설정 — integer 기본값 0과 자정 설정을 구분)
+            public static let reminderMinutesPlusOne = "practiceMirror.reminderMinutes"
+            /// 최근 미소 유지율 %+1 (Int, 0 = 기록 없음)
+            public static let recentSmileRatioPercentPlusOne = "practiceMirror.recentSmileRatioPercent"
+        }
     }
 
     // MARK: - Service URLs

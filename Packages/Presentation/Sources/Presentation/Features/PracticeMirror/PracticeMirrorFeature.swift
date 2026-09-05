@@ -64,13 +64,13 @@ public struct PracticeMirrorFeature {
         case reviewPromptTriggered
     }
 
-    /// 유효 리포트(10초 이상 측정) 누적 횟수 저장 키
-    static let completedReportCountKey = "practiceMirror.completedReportCount"
+
 
     @Dependency(\.dismiss) private var dismiss
     @Dependency(\.date.now) private var now
     @Dependency(\.userDefaultsClient) private var userDefaultsClient
     @Dependency(\.continuousClock) private var clock
+    @Dependency(\.smileReminderClient) private var smileReminderClient
 
     public init() {}
 
@@ -104,11 +104,22 @@ public struct PracticeMirrorFeature {
                 }
                 state.phase = .finished
                 let defaults = userDefaultsClient
+                let reminder = smileReminderClient
                 let clock = clock
-                let completedCount = defaults.integerForKey(Self.completedReportCountKey) + 1
+                let completedCount = defaults.integerForKey(AppConstants.PracticeMirror.UserDefaultsKey.completedReportCount) + 1
                 let smileRatio = state.smileRatio
                 return .run { send in
-                    await defaults.setInteger(completedCount, Self.completedReportCountKey)
+                    await defaults.setInteger(completedCount, AppConstants.PracticeMirror.UserDefaultsKey.completedReportCount)
+
+                    // 최근 유지율 저장(기기 한정) — 1일 1미소 알림 개인화 문구에 사용
+                    let ratioPercent = Int(smileRatio * 100)
+                    await defaults.setInteger(ratioPercent + 1, AppConstants.PracticeMirror.UserDefaultsKey.recentSmileRatioPercentPlusOne)
+                    if defaults.boolForKey(AppConstants.PracticeMirror.UserDefaultsKey.reminderEnabled) {
+                        let storedMinutes = defaults.integerForKey(AppConstants.PracticeMirror.UserDefaultsKey.reminderMinutesPlusOne)
+                        let minutes = storedMinutes > 0 ? storedMinutes - 1 : AppConstants.PracticeMirror.reminderDefaultMinutes
+                        await reminder.reschedule(minutes, ratioPercent)
+                    }
+
                     guard completedCount >= AppConstants.PracticeMirror.reviewMinCompletedReports,
                           smileRatio >= AppConstants.PracticeMirror.reviewMinSmileRatio else { return }
                     try await clock.sleep(for: .seconds(AppConstants.PracticeMirror.reviewPromptDelay))

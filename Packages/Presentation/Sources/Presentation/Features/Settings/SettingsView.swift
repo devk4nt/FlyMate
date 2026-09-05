@@ -86,6 +86,30 @@ public struct SettingsView: View {
                         )
                     }
                     .tint(FMColors.actionForeground)
+
+                    Toggle(isOn: $store.smileReminderEnabled.sending(\.smileReminderToggled)) {
+                        SettingsActionLabel(
+                            systemImage: "face.smiling.inverse",
+                            title: "1일 1미소 알림",
+                            description: "매일 정해진 시간에 미소 연습을 알려드려요",
+                            tint: FMColors.attentionFill,
+                            showsChevron: false
+                        )
+                    }
+                    .tint(FMColors.actionForeground)
+
+                    if store.smileReminderEnabled {
+                        DatePicker(
+                            "알림 시간",
+                            selection: Binding(
+                                get: { smileReminderDate },
+                                set: { store.send(.smileReminderTimeChanged($0)) }
+                            ),
+                            displayedComponents: .hourAndMinute
+                        )
+                        .font(FMTypography.body)
+                        .accessibilityHint("1일 1미소 알림을 받을 시간을 선택합니다")
+                    }
                 }
                 .settingsSectionStyle()
 
@@ -239,6 +263,15 @@ public struct SettingsView: View {
         .sheet(item: $store.scope(state: \.destination?.myActivity, action: \.destination.myActivity)) { activityStore in
             MyActivitySheet(store: activityStore)
         }
+    }
+
+    private var smileReminderDate: Date {
+        Calendar.current.date(
+            bySettingHour: store.smileReminderMinutes / 60,
+            minute: store.smileReminderMinutes % 60,
+            second: 0,
+            of: Date()
+        ) ?? Date()
     }
 
     private var profileCard: some View {

@@ -29,6 +29,7 @@ struct PracticeMirrorFeatureTests {
             $0.continuousClock = ImmediateClock()
             $0.userDefaultsClient.integerForKey = { _ in 0 }
             $0.userDefaultsClient.setInteger = { _, _ in }
+            $0.userDefaultsClient.boolForKey = { _ in false }
         }
 
         await store.send(.startTapped) {
@@ -75,13 +76,26 @@ struct PracticeMirrorFeatureTests {
         initialState.samples = [Double](repeating: 0.8, count: 100) // 10초, 유지율 100%
         initialState.startedAt = Date(timeIntervalSince1970: 1_000)
 
-        let savedCount = LockIsolated(0)
+        let saved = LockIsolated<[String: Int]>([:])
+        let rescheduled = LockIsolated<(minutes: Int, percent: Int?)?>(nil)
         let store = TestStore(initialState: initialState) {
             PracticeMirrorFeature()
         } withDependencies: {
             $0.continuousClock = ImmediateClock()
-            $0.userDefaultsClient.integerForKey = { _ in 2 } // 이번이 3회째
-            $0.userDefaultsClient.setInteger = { value, _ in savedCount.setValue(value) }
+            $0.userDefaultsClient.integerForKey = { key in
+                switch key {
+                case AppConstants.PracticeMirror.UserDefaultsKey.completedReportCount: return 2 // 이번이 3회째
+                case AppConstants.PracticeMirror.UserDefaultsKey.reminderMinutesPlusOne: return 8 * 60 + 1 // 08:00
+                default: return 0
+                }
+            }
+            $0.userDefaultsClient.setInteger = { value, key in
+                saved.withValue { $0[key] = value }
+            }
+            $0.userDefaultsClient.boolForKey = { _ in true } // 1일 1미소 알림 켜짐
+            $0.smileReminderClient.reschedule = { minutes, percent in
+                rescheduled.setValue((minutes, percent))
+            }
         }
 
         await store.send(.stopTapped) {
@@ -92,7 +106,10 @@ struct PracticeMirrorFeatureTests {
             $0.isReviewPromptRequested = true
         }
 
-        #expect(savedCount.value == 3)
+        #expect(saved.value[AppConstants.PracticeMirror.UserDefaultsKey.completedReportCount] == 3)
+        #expect(saved.value[AppConstants.PracticeMirror.UserDefaultsKey.recentSmileRatioPercentPlusOne] == 101) // 100% + 1
+        #expect(rescheduled.value?.minutes == 8 * 60)
+        #expect(rescheduled.value?.percent == 100)
     }
 
     @Test

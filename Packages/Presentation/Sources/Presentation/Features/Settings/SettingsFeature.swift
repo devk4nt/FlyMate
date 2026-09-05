@@ -12,6 +12,9 @@ public struct SettingsFeature {
         public var currentUser: User
         public var notificationsEnabled = true
         public var pushAuthorizationStatus: UNAuthorizationStatus = .notDetermined
+        public var smileReminderEnabled = false
+        /// 1일 1미소 알림 시간 — 자정 기준 분
+        public var smileReminderMinutes = AppConstants.PracticeMirror.reminderDefaultMinutes
         // 재진입 시 목록이 즉시 보이도록 자식 상태를 상주시킨다 (탭 루트 리스트와 동일한 전략)
         public var studyManagement: StudyManagementFeature.State
         public var blockedUsers = BlockedUsersFeature.State()
@@ -43,6 +46,8 @@ public struct SettingsFeature {
         case developerContactOpenResponse(Bool)
         case verificationRequestTapped
         case notificationToggled(Bool)
+        case smileReminderToggled(Bool)
+        case smileReminderTimeChanged(Date)
         case signOutTapped
         case deleteAccountTapped
         case destination(PresentationAction<Destination.Action>)
@@ -73,6 +78,8 @@ public struct SettingsFeature {
     @Dependency(\.pushNotificationClient) private var pushNotificationClient
     @Dependency(\.cacheClient) private var cacheClient
     @Dependency(\.openURL) private var openURL
+    @Dependency(\.userDefaultsClient) private var userDefaultsClient
+    @Dependency(\.smileReminderClient) private var smileReminderClient
 
     public init() {}
 
@@ -87,6 +94,11 @@ public struct SettingsFeature {
             switch action {
             case .onAppear:
                 state.cacheSize = .loading
+                state.smileReminderEnabled = userDefaultsClient.boolForKey(AppConstants.PracticeMirror.UserDefaultsKey.reminderEnabled)
+                let storedMinutes = userDefaultsClient.integerForKey(AppConstants.PracticeMirror.UserDefaultsKey.reminderMinutesPlusOne)
+                if storedMinutes > 0 {
+                    state.smileReminderMinutes = storedMinutes - 1
+                }
                 let pushClient = pushNotificationClient
                 return .merge(
                     .run { send in
@@ -176,6 +188,51 @@ public struct SettingsFeature {
                     TextState("메일 앱을 설정한 뒤 다시 시도해 주세요. 문의 주소는 \(AppConstants.supportEmail)입니다.")
                 }
                 return .none
+
+            case .smileReminderToggled(let enabled):
+                state.smileReminderEnabled = enabled
+                let defaults = userDefaultsClient
+                let reminder = smileReminderClient
+                let pushClient = pushNotificationClient
+                let minutes = state.smileReminderMinutes
+                if enabled {
+                    return .run { send in
+                        // 시스템 알림 권한이 없으면 예약해도 전달되지 않는다 — 미허용 시 요청
+                        let status = await pushClient.getAuthorizationStatus()
+                        if status == .notDetermined {
+                            let granted = (try? await pushClient.requestAuthorization()) ?? false
+                            guard granted else {
+                                await send(.smileReminderToggled(false))
+                                return
+                            }
+                        } else if status == .denied {
+                            await send(.smileReminderToggled(false))
+                            return
+                        }
+                        await defaults.setBool(true, AppConstants.PracticeMirror.UserDefaultsKey.reminderEnabled)
+                        await defaults.setInteger(minutes + 1, AppConstants.PracticeMirror.UserDefaultsKey.reminderMinutesPlusOne)
+                        let recent = defaults.integerForKey(AppConstants.PracticeMirror.UserDefaultsKey.recentSmileRatioPercentPlusOne)
+                        await reminder.reschedule(minutes, recent > 0 ? recent - 1 : nil)
+                    }
+                }
+                return .run { _ in
+                    await defaults.setBool(false, AppConstants.PracticeMirror.UserDefaultsKey.reminderEnabled)
+                    await reminder.cancelAll()
+                }
+
+            case .smileReminderTimeChanged(let date):
+                let components = Calendar.current.dateComponents([.hour, .minute], from: date)
+                let minutes = (components.hour ?? 0) * 60 + (components.minute ?? 0)
+                state.smileReminderMinutes = minutes
+                let isEnabled = state.smileReminderEnabled
+                let defaults = userDefaultsClient
+                let reminder = smileReminderClient
+                return .run { _ in
+                    await defaults.setInteger(minutes + 1, AppConstants.PracticeMirror.UserDefaultsKey.reminderMinutesPlusOne)
+                    guard isEnabled else { return }
+                    let recent = defaults.integerForKey(AppConstants.PracticeMirror.UserDefaultsKey.recentSmileRatioPercentPlusOne)
+                    await reminder.reschedule(minutes, recent > 0 ? recent - 1 : nil)
+                }
 
             case .notificationToggled(let enabled):
                 if enabled {

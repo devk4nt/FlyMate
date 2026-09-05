@@ -129,6 +129,8 @@ struct SettingsFeatureTests {
         } withDependencies: {
             $0.pushNotificationClient.getAuthorizationStatus = { .denied }
             $0.cacheClient.diskCacheSize = { 1_024 }
+            $0.userDefaultsClient.boolForKey = { _ in false }
+            $0.userDefaultsClient.integerForKey = { _ in 0 }
         }
 
         await store.send(.onAppear) {
@@ -150,6 +152,8 @@ struct SettingsFeatureTests {
         } withDependencies: {
             $0.pushNotificationClient.getAuthorizationStatus = { .authorized }
             $0.cacheClient.diskCacheSize = { 1_024 }
+            $0.userDefaultsClient.boolForKey = { _ in false }
+            $0.userDefaultsClient.integerForKey = { _ in 0 }
         }
 
         await store.send(.onAppear) {
@@ -161,6 +165,51 @@ struct SettingsFeatureTests {
         await store.receive(\.cacheSizeResponse.success) {
             $0.cacheSize = .loaded(1_024)
         }
+    }
+
+    @Test
+    func 미소_알림_토글_켜면_저장하고_예약한다() async {
+        let rescheduled = LockIsolated<(minutes: Int, percent: Int?)?>(nil)
+        let store = TestStore(initialState: SettingsFeature.State(currentUser: .settingsMock)) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.pushNotificationClient.getAuthorizationStatus = { .authorized }
+            $0.userDefaultsClient.setBool = { _, _ in }
+            $0.userDefaultsClient.setInteger = { _, _ in }
+            $0.userDefaultsClient.integerForKey = { _ in 0 }
+            $0.smileReminderClient.reschedule = { minutes, percent in
+                rescheduled.setValue((minutes, percent))
+            }
+        }
+
+        await store.send(.smileReminderToggled(true)) {
+            $0.smileReminderEnabled = true
+        }
+        await store.finish()
+
+        #expect(rescheduled.value?.minutes == AppConstants.PracticeMirror.reminderDefaultMinutes)
+        #expect(rescheduled.value?.percent == nil)
+    }
+
+    @Test
+    func 미소_알림_토글_끄면_예약을_취소한다() async {
+        let cancelled = LockIsolated(false)
+        var state = SettingsFeature.State(currentUser: .settingsMock)
+        state.smileReminderEnabled = true
+
+        let store = TestStore(initialState: state) {
+            SettingsFeature()
+        } withDependencies: {
+            $0.userDefaultsClient.setBool = { _, _ in }
+            $0.smileReminderClient.cancelAll = { cancelled.setValue(true) }
+        }
+
+        await store.send(.smileReminderToggled(false)) {
+            $0.smileReminderEnabled = false
+        }
+        await store.finish()
+
+        #expect(cancelled.value)
     }
 
     @Test
