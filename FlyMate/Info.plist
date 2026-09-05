@@ -43,6 +43,8 @@
 	<false/>
 	<key>KAKAO_APP_KEY</key>
 	<string>$(KAKAO_APP_KEY)</string>
+	<key>NSCameraUsageDescription</key>
+	<string>미소 연습 거울에서 실시간 표정 측정을 위해 전면 카메라 접근 권한이 필요합니다.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>연습 영상과 프로필 사진을 업로드하기 위해 사진 보관함 접근 권한이 필요합니다.</string>
 	<key>LSApplicationQueriesSchemes</key>

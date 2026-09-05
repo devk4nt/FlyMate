@@ -91,6 +91,18 @@ public struct SettingsView: View {
 
                 Section("고객 지원") {
                     Button {
+                        store.send(.rateAppTapped)
+                    } label: {
+                        SettingsActionLabel(
+                            systemImage: "star.fill",
+                            title: "FlyMate 평가하기",
+                            description: "App Store에 별점과 리뷰를 남겨요",
+                            tint: FMColors.warning
+                        )
+                    }
+                    .accessibilityHint("App Store 리뷰 작성 화면을 엽니다")
+
+                    Button {
                         store.send(.developerContactTapped)
                     } label: {
                         SettingsActionLabel(

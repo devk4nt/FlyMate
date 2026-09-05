@@ -39,6 +39,7 @@ public struct SettingsFeature {
         case studyManagement(StudyManagementFeature.Action)
         case blockedUsers(BlockedUsersFeature.Action)
         case developerContactTapped
+        case rateAppTapped
         case developerContactOpenResponse(Bool)
         case verificationRequestTapped
         case notificationToggled(Bool)
@@ -133,6 +134,15 @@ public struct SettingsFeature {
 
             case .studyManagement, .blockedUsers:
                 return .none
+
+            case .rateAppTapped:
+                guard let url = URL(string: AppConstants.ServiceURL.appStore + "?action=write-review") else {
+                    return .none
+                }
+                let open = openURL
+                return .run { _ in
+                    await open(url)
+                }
 
             case .developerContactTapped:
                 guard let url = Self.developerContactURL(for: state.currentUser) else {

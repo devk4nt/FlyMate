@@ -50,6 +50,10 @@ public struct StudyListView: View {
             .padding(.bottom, FMSpacing.xxxl)
         }
         .background(FMColors.canvas)
+        .overlay(alignment: .bottomTrailing) {
+            practiceMirrorFab
+                .padding(FMSpacing.lg)
+        }
         .refreshable {
             await store.send(.refresh).finish()
         }
@@ -83,6 +87,9 @@ public struct StudyListView: View {
             .presentationDetents([.medium])
         }
         .alert($store.scope(state: \.cancelConfirmAlert, action: \.cancelConfirmAlert))
+        .fullScreenCover(item: $store.scope(state: \.practiceMirror, action: \.practiceMirror)) { mirrorStore in
+            PracticeMirrorView(store: mirrorStore)
+        }
     }
 
     // MARK: - Pending Join Requests
@@ -141,6 +148,31 @@ public struct StudyListView: View {
         FMNotificationBell(unreadCount: store.unreadNotificationCount) {
             store.send(.notificationBellTapped)
         }
+    }
+
+    private var practiceMirrorFab: some View {
+        Button {
+            store.send(.practiceMirrorTapped)
+        } label: {
+            Text("😊")
+                .font(.system(size: 30))
+                .frame(width: 56, height: 56)
+                .background(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 1.0, green: 0.60, blue: 0.70),
+                            Color(red: 1.0, green: 0.45, blue: 0.55),
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    in: Circle()
+                )
+                .shadow(color: Color(red: 1.0, green: 0.498, blue: 0.624).opacity(0.45), radius: 10, y: 4)
+                .accessibilityHidden(true)
+        }
+        .accessibilityLabel("미소 연습 거울")
+        .accessibilityHint("전면 카메라로 미소를 실시간 측정하는 연습 거울을 엽니다")
     }
 
     @ViewBuilder

@@ -76,6 +76,28 @@ public enum AppConstants {
     /// 모집 글 댓글 최대 글자 수
     public static let maxRecruitCommentLength = 300
 
+    // MARK: - Practice Mirror
+
+    public enum PracticeMirror {
+        /// 미소로 판정하는 blendShape(mouthSmileLeft/Right 평균) 최소값
+        public static let smileThreshold: Double = 0.3
+
+        /// 미소 샘플 최소 간격 (초) — ARKit 60fps 콜백을 10Hz로 스로틀
+        public static let sampleInterval: TimeInterval = 0.1
+
+        /// 리포트가 만들어지는 최소 측정 시간 (초) — 미만이면 리포트 없이 준비 화면으로
+        public static let minimumReportDuration: TimeInterval = 10
+
+        /// 앱 평가 요청(requestReview) 최소 누적 리포트 수
+        public static let reviewMinCompletedReports = 3
+
+        /// 앱 평가 요청 최소 미소 유지율 — 결과가 좋은 순간에만 요청
+        public static let reviewMinSmileRatio: Double = 0.7
+
+        /// 리포트 표시 후 평가 요청까지 지연 (초) — 그래프 볼 여유를 준 다음
+        public static let reviewPromptDelay: TimeInterval = 1.5
+    }
+
     // MARK: - Service URLs
 
     public enum ServiceURL {
@@ -86,5 +108,7 @@ public enum AppConstants {
         /// 앱이 없으면 App Store 로 안내한다. 카카오톡·문자는 http(s) 링크만 탭 가능하게 렌더링하므로
         /// 커스텀 스킴을 그대로 공유하면 안 된다.
         public static let inviteLanding = "https://devk4nt.github.io/flymate-site/invite.html"
+        /// App Store 제품 페이지 (FlyMate - 승무원 면접 스터디) — 짧은 canonical 형태, 슬러그 포함 링크와 동일 페이지
+        public static let appStore = "https://apps.apple.com/kr/app/id6801114073"
     }
 }

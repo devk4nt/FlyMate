@@ -15,6 +15,7 @@ public struct StudyListFeature {
         @Presents public var createStudy: StudyCreateFeature.State?
         @Presents public var joinStudy: JoinStudyFeature.State?
         @Presents public var cancelConfirmAlert: AlertState<Action.CancelConfirm>?
+        @Presents public var practiceMirror: PracticeMirrorFeature.State?
         var requestToCancel: JoinRequest?
 
         /// 첫 빠른 피드백 요청 전이면 true — 홈 Hero를 첫 업로드 유도 모드로 전환
@@ -39,6 +40,8 @@ public struct StudyListFeature {
         case notificationBellTapped
         case createStudyTapped
         case joinStudyTapped
+        case practiceMirrorTapped
+        case practiceMirror(PresentationAction<PracticeMirrorFeature.Action>)
         case showJoinStudy(inviteCode: String)
         case createStudy(PresentationAction<StudyCreateFeature.Action>)
         case joinStudy(PresentationAction<JoinStudyFeature.Action>)
@@ -105,6 +108,13 @@ public struct StudyListFeature {
 
             case .joinStudyTapped:
                 state.joinStudy = JoinStudyFeature.State()
+                return .none
+
+            case .practiceMirrorTapped:
+                state.practiceMirror = PracticeMirrorFeature.State()
+                return .none
+
+            case .practiceMirror:
                 return .none
 
             case .showJoinStudy(inviteCode: let code):
@@ -175,6 +185,9 @@ public struct StudyListFeature {
             JoinStudyFeature()
         }
         .ifLet(\.$cancelConfirmAlert, action: \.cancelConfirmAlert)
+        .ifLet(\.$practiceMirror, action: \.practiceMirror) {
+            PracticeMirrorFeature()
+        }
     }
 
     private func fetchStudies() -> Effect<Action> {

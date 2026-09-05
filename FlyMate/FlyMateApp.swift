@@ -277,7 +277,9 @@ struct FlyMateApp: App {
         // UserDefaults
         dependencies.userDefaultsClient = UserDefaultsClient(
             boolForKey: { UserDefaults.standard.bool(forKey: $0) },
-            setBool: { value, key in UserDefaults.standard.set(value, forKey: key) }
+            setBool: { value, key in UserDefaults.standard.set(value, forKey: key) },
+            integerForKey: { UserDefaults.standard.integer(forKey: $0) },
+            setInteger: { value, key in UserDefaults.standard.set(value, forKey: key) }
         )
 
     }
@@ -1432,7 +1434,9 @@ struct FlyMateApp: App {
         // UserDefaults — 기본 디버그 실행에서도 실제 앱과 동일하게 온보딩 상태 유지
         dependencies.userDefaultsClient = UserDefaultsClient(
             boolForKey: { UserDefaults.standard.bool(forKey: $0) },
-            setBool: { value, key in UserDefaults.standard.set(value, forKey: key) }
+            setBool: { value, key in UserDefaults.standard.set(value, forKey: key) },
+            integerForKey: { UserDefaults.standard.integer(forKey: $0) },
+            setInteger: { value, key in UserDefaults.standard.set(value, forKey: key) }
         )
 
     }
