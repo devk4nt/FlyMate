@@ -24,6 +24,9 @@ public struct RecruitDetailView: View {
                     if store.isAuthor {
                         studyRoomSection
                     }
+                    if store.canRequestJoin {
+                        joinSection
+                    }
                     contactSection
                     commentSection
 
@@ -283,9 +286,10 @@ public struct RecruitDetailView: View {
                     .font(FMTypography.headline)
                     .foregroundStyle(FMColors.success)
 
-                Text("참여 문의를 확인하고 스터디 초대 코드를 안내해주세요.")
+                Text("가입 신청이 오면 알림으로 알려드려요. 스터디 화면에서 승인하면 참여됩니다.")
                     .font(FMTypography.callout)
                     .foregroundStyle(FMColors.secondaryLabel)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -295,6 +299,44 @@ public struct RecruitDetailView: View {
         return count > 0
             ? "\(count)명이 참여를 기다리고 있어요"
             : "참여자를 받을 방을 미리 준비하세요"
+    }
+
+    // MARK: - Join
+
+    private var joinSection: some View {
+        sectionCard("스터디 참여") {
+            switch store.joinRequest {
+            case .loaded:
+                Label("가입 신청 완료", systemImage: "checkmark.circle.fill")
+                    .font(FMTypography.headline)
+                    .foregroundStyle(FMColors.success)
+
+                Text("방장이 확인하면 알림으로 알려드릴게요.")
+                    .font(FMTypography.callout)
+                    .foregroundStyle(FMColors.secondaryLabel)
+
+            case .failed(let error):
+                Text(error.localizedDescription)
+                    .font(FMTypography.callout)
+                    .foregroundStyle(FMColors.secondaryLabel)
+                    .fixedSize(horizontal: false, vertical: true)
+
+            case .idle, .loading:
+                Text("초대 코드 없이 바로 신청할 수 있어요. 방장이 승인하면 참여됩니다.")
+                    .font(FMTypography.callout)
+                    .foregroundStyle(FMColors.secondaryLabel)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                FMButton(
+                    title: "가입 신청",
+                    isLoading: store.joinRequest == .loading
+                ) {
+                    store.send(.joinTapped)
+                }
+                .accessibilityHint("스터디 방장에게 참여 요청을 보냅니다")
+                .accessibilityIdentifier("모집_상세_가입신청")
+            }
+        }
     }
 
     // MARK: - Contact

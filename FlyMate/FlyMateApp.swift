@@ -106,6 +106,7 @@ struct FlyMateApp: App {
             fetchStudy: { try await studyRepo.fetchStudy(id: $0) },
             createStudy: { try await studyRepo.createStudy($0) },
             requestJoinStudy: { try await studyRepo.requestJoinStudy(inviteCode: $0) },
+            requestJoinStudyByPost: { try await studyRepo.requestJoinStudy(recruitPostID: $0) },
             leaveStudy: { try await studyRepo.leaveStudy(id: $0) },
             deleteStudy: { try await studyRepo.deleteStudy(id: $0) },
             removeMember: { try await studyRepo.removeMember(studyID: $0, userID: $1) },
@@ -901,6 +902,15 @@ struct FlyMateApp: App {
                         studies.append(joined)
                     }
                 }
+                return myRequest
+            },
+            requestJoinStudyByPost: { _ in
+                let myRequest = JoinRequest(
+                    id: UUID(), studyID: studyC.id, studyName: studyC.name,
+                    userID: meID, userName: me.name,
+                    status: .pending, createdAt: Date()
+                )
+                joinRequestStore.withValue { $0.append(myRequest) }
                 return myRequest
             },
             leaveStudy: { id in studyStore.withValue { $0.removeAll { $0.id == id } } },

@@ -16,6 +16,7 @@ public struct RecruitDetailFeature {
         /// 댓글 등록 직후 해당 댓글로 스크롤하기 위한 타깃
         public var scrollToCommentID: UUID?
         public var isProcessing = false
+        public var joinRequest: LoadingState<JoinRequest> = .idle
         public var showDeleteAlert = false
         public var showCloseAlert = false
         public var showReopenSheet = false
@@ -35,6 +36,12 @@ public struct RecruitDetailFeature {
         }
 
         public var isAuthor: Bool { post.authorID == currentUserID }
+
+        /// 모집 중이고 스터디방이 연결된 남의 글에서만 신청을 받는다.
+        /// 이미 멤버인지·신청했는지는 서버가 판정해 에러로 알려준다.
+        public var canRequestJoin: Bool {
+            !isAuthor && post.studyID != nil && post.status == .recruiting
+        }
 
         public var isCommentValid: Bool {
             !commentText.isBlank && commentText.count <= AppConstants.maxRecruitCommentLength
@@ -59,6 +66,9 @@ public struct RecruitDetailFeature {
         case submitCommentResponse(Result<RecruitComment, AppError>)
         case deleteCommentTapped(RecruitComment)
         case deleteCommentResponse(Result<UUID, AppError>)
+        // 가입 신청
+        case joinTapped
+        case joinResponse(Result<JoinRequest, AppError>)
         // 작성자 액션
         case editTapped
         case createStudyTapped
@@ -102,6 +112,7 @@ public struct RecruitDetailFeature {
     }
 
     @Dependency(\.recruitClient) private var recruitClient
+    @Dependency(\.studyClient) private var studyClient
     @Dependency(\.blockClient) private var blockClient
     @Dependency(\.date.now) private var now
 
@@ -117,6 +128,35 @@ public struct RecruitDetailFeature {
 
             case .refresh:
                 return .merge(fetchComments(postID: state.post.id), fetchPost(id: state.post.id))
+
+            case .joinTapped:
+                guard state.canRequestJoin, case .idle = state.joinRequest else { return .none }
+                state.joinRequest = .loading
+                let client = studyClient
+                let postID = state.post.id
+                return .run { send in
+                    do {
+                        let request = try await client.requestJoinStudyByPost(postID)
+                        await send(.joinResponse(.success(request)))
+                    } catch {
+                        let appError = error as? AppError ?? .unexpected(error.localizedDescription)
+                        await send(.joinResponse(.failure(appError)))
+                    }
+                }
+
+            case .joinResponse(.success(let request)):
+                state.joinRequest = .loaded(request)
+                state.toastMessage = "가입 신청을 보냈어요. 방장이 확인하면 알림으로 알려드릴게요."
+                state.showToast = true
+                return .none
+
+            case .joinResponse(.failure(let error)):
+                // 이미 멤버·이미 신청 등은 재시도해도 결과가 같으므로 .idle 로 되돌려
+                // 버튼을 다시 누르게 두지 않고 실패 상태로 남긴다.
+                state.joinRequest = .failed(error)
+                state.toastMessage = error.localizedDescription
+                state.showToast = true
+                return .none
 
             case .postResponse(.success(let post)):
                 state.post = post

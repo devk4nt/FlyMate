@@ -7,6 +7,7 @@ public struct StudyClient: Sendable {
     public var fetchStudy: @Sendable (UUID) async throws -> Study
     public var createStudy: @Sendable (CreateStudyRequest) async throws -> Study
     public var requestJoinStudy: @Sendable (String) async throws -> JoinRequest
+    public var requestJoinStudyByPost: @Sendable (UUID) async throws -> JoinRequest
     public var leaveStudy: @Sendable (UUID) async throws -> Void
     public var deleteStudy: @Sendable (UUID) async throws -> Void
     public var removeMember: @Sendable (UUID, UUID) async throws -> Void
@@ -24,6 +25,7 @@ public struct StudyClient: Sendable {
         fetchStudy: @escaping @Sendable (UUID) async throws -> Study,
         createStudy: @escaping @Sendable (CreateStudyRequest) async throws -> Study,
         requestJoinStudy: @escaping @Sendable (String) async throws -> JoinRequest,
+        requestJoinStudyByPost: @escaping @Sendable (UUID) async throws -> JoinRequest,
         leaveStudy: @escaping @Sendable (UUID) async throws -> Void,
         deleteStudy: @escaping @Sendable (UUID) async throws -> Void,
         removeMember: @escaping @Sendable (UUID, UUID) async throws -> Void,
@@ -40,6 +42,7 @@ public struct StudyClient: Sendable {
         self.fetchStudy = fetchStudy
         self.createStudy = createStudy
         self.requestJoinStudy = requestJoinStudy
+        self.requestJoinStudyByPost = requestJoinStudyByPost
         self.leaveStudy = leaveStudy
         self.deleteStudy = deleteStudy
         self.removeMember = removeMember
@@ -60,6 +63,7 @@ extension StudyClient: TestDependencyKey {
         fetchStudy: unimplemented("\(Self.self).fetchStudy"),
         createStudy: unimplemented("\(Self.self).createStudy"),
         requestJoinStudy: unimplemented("\(Self.self).requestJoinStudy"),
+        requestJoinStudyByPost: unimplemented("\(Self.self).requestJoinStudyByPost"),
         leaveStudy: unimplemented("\(Self.self).leaveStudy"),
         deleteStudy: unimplemented("\(Self.self).deleteStudy"),
         removeMember: unimplemented("\(Self.self).removeMember"),

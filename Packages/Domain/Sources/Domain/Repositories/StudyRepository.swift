@@ -25,6 +25,9 @@ public protocol StudyRepository: Sendable {
     /// 초대 코드로 스터디 참여를 요청한다.
     func requestJoinStudy(inviteCode: String) async throws -> JoinRequest
 
+    /// 모집 글에 연결된 스터디에 초대 코드 없이 참여를 요청한다.
+    func requestJoinStudy(recruitPostID: UUID) async throws -> JoinRequest
+
     /// 스터디의 대기 중인 참여 요청 목록을 조회한다 (소유자만).
     func fetchPendingRequests(studyID: UUID) async throws -> [JoinRequest]
 

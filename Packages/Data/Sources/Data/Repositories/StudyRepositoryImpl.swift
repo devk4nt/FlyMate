@@ -110,6 +110,22 @@ public struct StudyRepositoryImpl: StudyRepository {
         }
     }
 
+    public func requestJoinStudy(recruitPostID: UUID) async throws -> JoinRequest {
+        do {
+            let dto: JoinRequestDTO = try await client.rpc(
+                "request_join_study_by_post",
+                params: ["p_post_id": recruitPostID.uuidString]
+            )
+            .single()
+            .execute()
+            .value
+
+            return DTOMapper.toDomain(dto)
+        } catch {
+            throw mapRPCError(error)
+        }
+    }
+
     public func fetchPendingRequests(studyID: UUID) async throws -> [JoinRequest] {
         let dtos: [JoinRequestDTO] = try await client.from(SupabaseConfig.Table.joinRequests)
             .select()
@@ -291,6 +307,10 @@ public struct StudyRepositoryImpl: StudyRepository {
             return AppError.business(.maxJoinedStudiesReached)
         } else if message.contains("OWNER_MUST_TRANSFER_BEFORE_LEAVE") {
             return AppError.business(.ownerMustTransferBeforeLeave)
+        } else if message.contains("STUDY_NOT_LINKED") {
+            return AppError.business(.studyNotLinked)
+        } else if message.contains("RECRUIT_CLOSED") {
+            return AppError.business(.recruitClosed)
         } else if message.contains("UNAUTHORIZED") {
             return AppError.business(.unauthorized)
         }

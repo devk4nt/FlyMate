@@ -67,6 +67,8 @@ public enum BusinessError: Equatable, Sendable {
     case activeQuickFeedbackExists
     case quickFeedbackUnavailable
     case quickFeedbackExpired
+    case studyNotLinked
+    case recruitClosed
 
     public var userMessage: String {
         switch self {
@@ -88,6 +90,10 @@ public enum BusinessError: Equatable, Sendable {
             return "이미 참여 중인 스터디입니다."
         case .alreadyRequested:
             return "이미 참여 요청을 보낸 스터디입니다."
+        case .studyNotLinked:
+            return "아직 스터디방이 열리지 않은 모집 글입니다."
+        case .recruitClosed:
+            return "모집이 마감된 글입니다."
         case .requestAlreadyHandled:
             return "이미 처리된 요청입니다."
         case .requestNotFound:

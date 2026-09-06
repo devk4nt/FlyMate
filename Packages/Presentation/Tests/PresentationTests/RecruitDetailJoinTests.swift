@@ -1,0 +1,110 @@
+import Testing
+import Foundation
+import ComposableArchitecture
+import Domain
+import Core
+@testable import Presentation
+
+@MainActor
+struct RecruitDetailJoinTests {
+    private static let viewerID = UUID(uuidString: "00000000-0000-0000-0000-000000000099")!
+    private static let studyID = UUID(uuidString: "00000000-0000-0000-0000-000000000700")!
+
+    private static func linkedPost() -> RecruitPost {
+        RecruitPost.mock.withStudyID(studyID)
+    }
+
+    @Test
+    func 스터디방이_연결된_남의_모집글이면_신청_버튼이_보인다() {
+        let state = RecruitDetailFeature.State(post: Self.linkedPost(), currentUserID: Self.viewerID)
+        #expect(state.canRequestJoin)
+    }
+
+    @Test
+    func 스터디방이_없는_모집글은_신청할_수_없다() {
+        let state = RecruitDetailFeature.State(post: .mock, currentUserID: Self.viewerID)
+        #expect(!state.canRequestJoin)
+    }
+
+    @Test
+    func 작성자_본인에게는_신청_버튼이_없다() {
+        let post = Self.linkedPost()
+        let state = RecruitDetailFeature.State(post: post, currentUserID: post.authorID)
+        #expect(!state.canRequestJoin)
+    }
+
+    @Test
+    func 가입_신청_성공시_완료_상태와_안내_토스트() async {
+        let store = TestStore(
+            initialState: RecruitDetailFeature.State(
+                post: Self.linkedPost(),
+                currentUserID: Self.viewerID
+            )
+        ) {
+            RecruitDetailFeature()
+        } withDependencies: {
+            $0.studyClient.requestJoinStudyByPost = { _ in JoinRequest.mock }
+        }
+
+        await store.send(.joinTapped) {
+            $0.joinRequest = .loading
+        }
+
+        await store.receive(\.joinResponse.success) {
+            $0.joinRequest = .loaded(JoinRequest.mock)
+            $0.toastMessage = "가입 신청을 보냈어요. 방장이 확인하면 알림으로 알려드릴게요."
+            $0.showToast = true
+        }
+    }
+
+    @Test
+    func 이미_신청한_스터디면_사용자_문구로_알린다() async {
+        let error = AppError.business(.alreadyRequested)
+        let store = TestStore(
+            initialState: RecruitDetailFeature.State(
+                post: Self.linkedPost(),
+                currentUserID: Self.viewerID
+            )
+        ) {
+            RecruitDetailFeature()
+        } withDependencies: {
+            $0.studyClient.requestJoinStudyByPost = { _ in throw error }
+        }
+
+        await store.send(.joinTapped) {
+            $0.joinRequest = .loading
+        }
+
+        await store.receive(\.joinResponse.failure) {
+            $0.joinRequest = .failed(error)
+            $0.toastMessage = error.localizedDescription
+            $0.showToast = true
+        }
+    }
+
+    @Test
+    func 신청_진행_중_연속_탭은_무시된다() async {
+        let store = TestStore(
+            initialState: RecruitDetailFeature.State(
+                post: Self.linkedPost(),
+                currentUserID: Self.viewerID
+            )
+        ) {
+            RecruitDetailFeature()
+        } withDependencies: {
+            $0.studyClient.requestJoinStudyByPost = { _ in JoinRequest.mock }
+        }
+
+        await store.send(.joinTapped) {
+            $0.joinRequest = .loading
+        }
+        // 로딩 중에는 상태 변화도 추가 요청도 없어야 한다
+        await store.send(.joinTapped)
+
+        await store.receive(\.joinResponse.success) {
+            $0.joinRequest = .loaded(JoinRequest.mock)
+            $0.toastMessage = "가입 신청을 보냈어요. 방장이 확인하면 알림으로 알려드릴게요."
+            $0.showToast = true
+        }
+    }
+}
