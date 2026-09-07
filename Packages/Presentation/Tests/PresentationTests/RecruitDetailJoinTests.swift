@@ -84,6 +84,7 @@ struct RecruitDetailJoinTests {
 
     @Test
     func 신청_진행_중_연속_탭은_무시된다() async {
+        let responseClock = TestClock()
         let store = TestStore(
             initialState: RecruitDetailFeature.State(
                 post: Self.linkedPost(),
@@ -92,7 +93,11 @@ struct RecruitDetailJoinTests {
         ) {
             RecruitDetailFeature()
         } withDependencies: {
-            $0.studyClient.requestJoinStudyByPost = { _ in JoinRequest.mock }
+            // 즉시 응답하면 두 번째 탭 전에 joinResponse가 도착해 레이스가 난다 — 클록으로 응답 시점 제어
+            $0.studyClient.requestJoinStudyByPost = { _ in
+                try await responseClock.sleep(for: .seconds(1))
+                return JoinRequest.mock
+            }
         }
 
         await store.send(.joinTapped) {
@@ -100,6 +105,8 @@ struct RecruitDetailJoinTests {
         }
         // 로딩 중에는 상태 변화도 추가 요청도 없어야 한다
         await store.send(.joinTapped)
+
+        await responseClock.advance(by: .seconds(1))
 
         await store.receive(\.joinResponse.success) {
             $0.joinRequest = .loaded(JoinRequest.mock)
