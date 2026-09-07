@@ -248,6 +248,7 @@ public struct PracticeMirrorView: View {
                             .frame(minHeight: 50)
                     }
                     .background(.white.opacity(0.15), in: RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.sm, style: .continuous))
+                    .simultaneousGesture(TapGesture().onEnded { store.send(.shareTapped) })
                     .accessibilityLabel("미소 리포트 공유")
                     .accessibilityHint("리포트 이미지를 다른 앱으로 공유합니다")
                 }

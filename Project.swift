@@ -128,6 +128,7 @@ let project = Project(
                 .target(name: "Data"),
                 .target(name: "Presentation"),
                 .external(name: "FirebaseCore"),
+                .external(name: "FirebaseAnalytics"),
                 .external(name: "FirebaseMessaging"),
                 .external(name: "FirebaseCrashlytics"),
             ],

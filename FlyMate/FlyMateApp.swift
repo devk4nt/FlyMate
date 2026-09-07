@@ -8,6 +8,7 @@ import Foundation
 import UIKit
 import UserNotifications
 import FirebaseMessaging
+import FirebaseAnalytics
 
 @main
 struct FlyMateApp: App {
@@ -273,6 +274,11 @@ struct FlyMateApp: App {
             fetchComments: { try await recruitRepo.fetchComments(postID: $0) },
             createComment: { try await recruitRepo.createComment($0) },
             deleteComment: { try await recruitRepo.deleteComment(id: $0) }
+        )
+
+        // Analytics — Firebase (이벤트 이름·파라미터는 Presentation의 AnalyticsEvent 참조)
+        dependencies.analyticsClient = AnalyticsClient(
+            trackEvent: { name, parameters in Analytics.logEvent(name, parameters: parameters) }
         )
 
         // UserDefaults
@@ -1439,6 +1445,11 @@ struct FlyMateApp: App {
             deleteComment: { id in
                 recruitCommentStore.withValue { $0.removeAll { $0.id == id || $0.parentID == id } }
             }
+        )
+
+        // Analytics — 목 실행은 prod Firebase를 오염시키지 않게 콘솔 출력만
+        dependencies.analyticsClient = AnalyticsClient(
+            trackEvent: { name, parameters in print("[Analytics] \(name) \(parameters)") }
         )
 
         // UserDefaults — 기본 디버그 실행에서도 실제 앱과 동일하게 온보딩 상태 유지

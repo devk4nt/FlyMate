@@ -56,6 +56,7 @@ public struct StudyListFeature {
     }
 
     @Dependency(\.studyClient) private var studyClient
+    @Dependency(\.analyticsClient) private var analyticsClient
     @Dependency(\.quickFeedbackClient) private var quickFeedbackClient
 
     public init() {}
@@ -112,6 +113,7 @@ public struct StudyListFeature {
 
             case .practiceMirrorTapped:
                 state.practiceMirror = PracticeMirrorFeature.State()
+                analyticsClient.trackEvent(AnalyticsEvent.smileMirrorOpened, [:])
                 return .none
 
             case .practiceMirror:

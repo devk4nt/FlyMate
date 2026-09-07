@@ -60,6 +60,7 @@ public struct PracticeMirrorFeature {
         case stopTapped
         case retryTapped
         case mirrorToggleTapped
+        case shareTapped
         case closeTapped
         case reviewPromptTriggered
     }
@@ -71,6 +72,7 @@ public struct PracticeMirrorFeature {
     @Dependency(\.userDefaultsClient) private var userDefaultsClient
     @Dependency(\.continuousClock) private var clock
     @Dependency(\.smileReminderClient) private var smileReminderClient
+    @Dependency(\.analyticsClient) private var analyticsClient
 
     public init() {}
 
@@ -87,6 +89,7 @@ public struct PracticeMirrorFeature {
                 return .none
 
             case .startTapped:
+                analyticsClient.trackEvent(AnalyticsEvent.smilePracticeStarted, [:])
                 state.phase = .measuring
                 state.samples = []
                 state.startedAt = now
@@ -103,6 +106,10 @@ public struct PracticeMirrorFeature {
                     return .none
                 }
                 state.phase = .finished
+                analyticsClient.trackEvent(AnalyticsEvent.smileReportShown, [
+                    "smile_ratio_percent": "\(Int(state.smileRatio * 100))",
+                    "duration_seconds": "\(Int(state.measuredDuration))",
+                ])
                 let defaults = userDefaultsClient
                 let reminder = smileReminderClient
                 let clock = clock
@@ -138,6 +145,12 @@ public struct PracticeMirrorFeature {
 
             case .mirrorToggleTapped:
                 state.isMirrored.toggle()
+                return .none
+
+            case .shareTapped:
+                analyticsClient.trackEvent(AnalyticsEvent.smileReportShared, [
+                    "smile_ratio_percent": "\(Int(state.smileRatio * 100))",
+                ])
                 return .none
 
             case .closeTapped:

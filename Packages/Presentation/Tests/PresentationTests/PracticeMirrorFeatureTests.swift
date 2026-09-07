@@ -78,9 +78,11 @@ struct PracticeMirrorFeatureTests {
 
         let saved = LockIsolated<[String: Int]>([:])
         let rescheduled = LockIsolated<(minutes: Int, percent: Int?)?>(nil)
+        let events = LockIsolated<[String]>([])
         let store = TestStore(initialState: initialState) {
             PracticeMirrorFeature()
         } withDependencies: {
+            $0.analyticsClient.trackEvent = { name, _ in events.withValue { $0.append(name) } }
             $0.continuousClock = ImmediateClock()
             $0.userDefaultsClient.integerForKey = { key in
                 switch key {
@@ -110,6 +112,7 @@ struct PracticeMirrorFeatureTests {
         #expect(saved.value[AppConstants.PracticeMirror.UserDefaultsKey.recentSmileRatioPercentPlusOne] == 101) // 100% + 1
         #expect(rescheduled.value?.minutes == 8 * 60)
         #expect(rescheduled.value?.percent == 100)
+        #expect(events.value.contains("smile_report_shown"))
     }
 
     @Test

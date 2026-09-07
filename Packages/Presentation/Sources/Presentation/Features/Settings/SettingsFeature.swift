@@ -80,6 +80,7 @@ public struct SettingsFeature {
     @Dependency(\.openURL) private var openURL
     @Dependency(\.userDefaultsClient) private var userDefaultsClient
     @Dependency(\.smileReminderClient) private var smileReminderClient
+    @Dependency(\.analyticsClient) private var analyticsClient
 
     public init() {}
 
@@ -194,6 +195,7 @@ public struct SettingsFeature {
                 let defaults = userDefaultsClient
                 let reminder = smileReminderClient
                 let pushClient = pushNotificationClient
+                let analytics = analyticsClient
                 let minutes = state.smileReminderMinutes
                 if enabled {
                     return .run { send in
@@ -209,6 +211,7 @@ public struct SettingsFeature {
                             await send(.smileReminderToggled(false))
                             return
                         }
+                        analytics.trackEvent(AnalyticsEvent.smileReminderEnabled, ["minutes_from_midnight": "\(minutes)"])
                         await defaults.setBool(true, AppConstants.PracticeMirror.UserDefaultsKey.reminderEnabled)
                         await defaults.setInteger(minutes + 1, AppConstants.PracticeMirror.UserDefaultsKey.reminderMinutesPlusOne)
                         let recent = defaults.integerForKey(AppConstants.PracticeMirror.UserDefaultsKey.recentSmileRatioPercentPlusOne)
