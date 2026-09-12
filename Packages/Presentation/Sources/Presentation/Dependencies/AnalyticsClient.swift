@@ -17,6 +17,8 @@ public enum AnalyticsEvent {
     public static let smileReportShown = "smile_report_shown"
     public static let smileReportShared = "smile_report_shared"
     public static let smileReminderEnabled = "smile_reminder_enabled"
+    /// 거울을 열었지만 연습을 한 번도 시작하지 않고 닫음 — 준비 화면 이탈 측정
+    public static let smilePracticeAbandoned = "smile_practice_abandoned"
 }
 
 extension AnalyticsClient: TestDependencyKey {

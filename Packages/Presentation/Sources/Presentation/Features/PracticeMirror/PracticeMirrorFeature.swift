@@ -28,6 +28,8 @@ public struct PracticeMirrorFeature {
         public var isShortSessionNoticeVisible = false
         /// 앱 평가 요청 시점 신호 — 뷰가 관찰해 requestReview를 호출한다
         public var isReviewPromptRequested = false
+        /// 이번 세션에서 연습을 한 번이라도 시작했는지 — 준비 화면 이탈(abandoned) 판별용
+        public var hasStartedPractice = false
 
         public var isSmiling: Bool {
             smileScore >= AppConstants.PracticeMirror.smileThreshold
@@ -90,6 +92,7 @@ public struct PracticeMirrorFeature {
 
             case .startTapped:
                 analyticsClient.trackEvent(AnalyticsEvent.smilePracticeStarted, [:])
+                state.hasStartedPractice = true
                 state.phase = .measuring
                 state.samples = []
                 state.startedAt = now
@@ -154,6 +157,9 @@ public struct PracticeMirrorFeature {
                 return .none
 
             case .closeTapped:
+                if !state.hasStartedPractice {
+                    analyticsClient.trackEvent(AnalyticsEvent.smilePracticeAbandoned, [:])
+                }
                 let dismiss = dismiss
                 return .run { _ in await dismiss() }
             }

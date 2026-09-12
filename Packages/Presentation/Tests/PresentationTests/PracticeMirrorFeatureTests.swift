@@ -35,6 +35,7 @@ struct PracticeMirrorFeatureTests {
         await store.send(.startTapped) {
             $0.phase = .measuring
             $0.startedAt = now
+            $0.hasStartedPractice = true
         }
 
         await store.send(.smileSampled(0.5)) {
@@ -140,6 +141,7 @@ struct PracticeMirrorFeatureTests {
         await store.send(.startTapped) {
             $0.phase = .measuring
             $0.startedAt = now
+            $0.hasStartedPractice = true
             $0.isShortSessionNoticeVisible = false
         }
     }
@@ -175,5 +177,40 @@ struct PracticeMirrorFeatureTests {
         await store.send(.mirrorToggleTapped) {
             $0.isMirrored = false
         }
+    }
+
+    @Test
+    func 연습_없이_닫으면_이탈_이벤트를_보낸다() async {
+        let events = LockIsolated<[String]>([])
+        let store = TestStore(initialState: PracticeMirrorFeature.State()) {
+            PracticeMirrorFeature()
+        } withDependencies: {
+            $0.analyticsClient.trackEvent = { name, _ in events.withValue { $0.append(name) } }
+            $0.dismiss = DismissEffect {}
+        }
+
+        await store.send(.closeTapped)
+        #expect(events.value == [AnalyticsEvent.smilePracticeAbandoned])
+    }
+
+    @Test
+    func 연습을_시작했으면_닫아도_이탈_이벤트가_없다() async {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let events = LockIsolated<[String]>([])
+        let store = TestStore(initialState: PracticeMirrorFeature.State()) {
+            PracticeMirrorFeature()
+        } withDependencies: {
+            $0.date = .constant(now)
+            $0.analyticsClient.trackEvent = { name, _ in events.withValue { $0.append(name) } }
+            $0.dismiss = DismissEffect {}
+        }
+
+        await store.send(.startTapped) {
+            $0.phase = .measuring
+            $0.startedAt = now
+            $0.hasStartedPractice = true
+        }
+        await store.send(.closeTapped)
+        #expect(!events.value.contains(AnalyticsEvent.smilePracticeAbandoned))
     }
 }
