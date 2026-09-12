@@ -232,9 +232,15 @@ let project = Project(
             runAction: .runAction(
                 configuration: "Staging",
                 executable: "FlyMate",
-                arguments: .arguments(environmentVariables: [
-                    "LIVE_AUTH": .environmentVariable(value: "1", isEnabled: true),
-                ])
+                arguments: .arguments(
+                    environmentVariables: [
+                        "LIVE_AUTH": .environmentVariable(value: "1", isEnabled: true),
+                    ],
+                    launchArguments: [
+                        // Firebase Analytics DebugView 실시간 이벤트 확인용
+                        .launchArgument(name: "-FIRDebugEnabled", isEnabled: true),
+                    ]
+                )
             )
         ),
         // 다중 계정 시나리오용 실계정 스킴 — 시뮬레이터/기기 2대에 각각 띄워 크로스 계정 확인
