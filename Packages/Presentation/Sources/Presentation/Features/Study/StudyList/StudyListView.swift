@@ -87,6 +87,13 @@ public struct StudyListView: View {
             .presentationDetents([.medium])
         }
         .alert($store.scope(state: \.cancelConfirmAlert, action: \.cancelConfirmAlert))
+        .alert($store.scope(state: \.recruitPromptAlert, action: \.recruitPromptAlert))
+        .sheet(item: $store.scope(state: \.createRecruit, action: \.createRecruit)) { recruitStore in
+            NavigationStack {
+                RecruitCreateView(store: recruitStore)
+            }
+            .interactiveDismissDisabled(recruitStore.hasChanges)
+        }
         .fullScreenCover(item: $store.scope(state: \.practiceMirror, action: \.practiceMirror)) { mirrorStore in
             PracticeMirrorView(store: mirrorStore)
         }

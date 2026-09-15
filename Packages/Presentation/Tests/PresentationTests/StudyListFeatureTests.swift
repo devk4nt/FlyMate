@@ -230,3 +230,84 @@ private extension QuickFeedbackRequest {
         createdAt: Date(timeIntervalSince1970: 1_700_000_000)
     )
 }
+
+@MainActor
+struct StudyListRecruitPromptTests {
+    /// 스터디 생성 시트가 떠 있는 상태에서 생성 완료까지 태운다 — presented 액션의 전제 조건
+    private static func storeAfterStudyCreated() -> TestStoreOf<StudyListFeature> {
+        var state = StudyListFeature.State()
+        state.createStudy = StudyCreateFeature.State()
+
+        let store = TestStore(initialState: state) {
+            StudyListFeature()
+        } withDependencies: {
+            $0.studyClient.fetchMyStudies = { [Study.mock] }
+            $0.studyClient.fetchMyJoinRequests = { [] }
+            $0.quickFeedbackClient.fetchDashboard = { .mock }
+        }
+        store.exhaustivity = .off
+        return store
+    }
+
+    @Test
+    func 스터디_생성_직후_모집글_작성_제안이_뜬다() async {
+        let store = Self.storeAfterStudyCreated()
+
+        await store.send(.createStudy(.presented(.studyCreated(.mock))))
+
+        #expect(store.state.recruitPromptAlert != nil)
+        #expect(store.state.studyAwaitingRecruit == .mock)
+        await store.finish()
+        await store.skipReceivedActions()
+    }
+
+    @Test
+    func 올리기를_고르면_스터디_정보가_채워진_모집글_작성이_열린다() async {
+        let store = Self.storeAfterStudyCreated()
+        await store.send(.createStudy(.presented(.studyCreated(.mock))))
+
+        await store.send(.recruitPromptAlert(.presented(.writeRecruitPost)))
+
+        #expect(store.state.createRecruit?.title == Study.mock.name)
+        #expect(store.state.createRecruit?.description == Study.mock.description)
+        #expect(store.state.createRecruit?.maxMembers == Study.mock.maxMembers)
+        await store.finish()
+    }
+
+    @Test
+    func 모집글이_저장되면_만든_스터디에_연결된다() async {
+        var state = StudyListFeature.State()
+        state.studyAwaitingRecruit = .mock
+        state.createRecruit = RecruitCreateFeature.State(study: .mock)
+
+        let linked = LockIsolated<(UUID, UUID)?>(nil)
+        let store = TestStore(initialState: state) {
+            StudyListFeature()
+        } withDependencies: {
+            $0.recruitClient.linkStudy = { postID, studyID in
+                linked.setValue((postID, studyID))
+                return .mock
+            }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.createRecruit(.presented(.delegate(.saved(.mock)))))
+        await store.finish()
+
+        #expect(linked.value?.0 == RecruitPost.mock.id)
+        #expect(linked.value?.1 == Study.mock.id)
+        #expect(store.state.studyAwaitingRecruit == nil)
+    }
+
+    @Test
+    func 나중에를_고르면_대기중인_스터디가_비워진다() async {
+        let store = Self.storeAfterStudyCreated()
+        await store.send(.createStudy(.presented(.studyCreated(.mock))))
+
+        await store.send(.recruitPromptAlert(.dismiss))
+
+        #expect(store.state.studyAwaitingRecruit == nil)
+        #expect(store.state.createRecruit == nil)
+        await store.finish()
+    }
+}
