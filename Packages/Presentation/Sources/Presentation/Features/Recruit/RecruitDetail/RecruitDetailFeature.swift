@@ -40,7 +40,7 @@ public struct RecruitDetailFeature {
         /// 모집 중이고 스터디방이 연결된 남의 글에서만 신청을 받는다.
         /// 이미 멤버인지·신청했는지는 서버가 판정해 에러로 알려준다.
         public var canRequestJoin: Bool {
-            !isAuthor && post.studyID != nil && post.status == .recruiting
+            !isAuthor && post.studyID != nil && post.isRecruiting()
         }
 
         public var isCommentValid: Bool {

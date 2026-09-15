@@ -27,6 +27,34 @@ struct RecruitDetailJoinTests {
     }
 
     @Test
+    func 마감일이_지난_모집글은_status가_recruiting이어도_신청할_수_없다() {
+        let mock = RecruitPost.mock
+        let post = RecruitPost(
+            id: mock.id,
+            title: mock.title,
+            description: mock.description,
+            field: mock.field,
+            meetingType: mock.meetingType,
+            region: mock.region,
+            schedule: mock.schedule,
+            startDate: mock.startDate,
+            endDate: mock.endDate,
+            maxMembers: mock.maxMembers,
+            deadline: Date(timeIntervalSince1970: 1_000),
+            requirement: mock.requirement,
+            contactMethod: mock.contactMethod,
+            linkURL: mock.linkURL,
+            authorID: mock.authorID,
+            authorName: mock.authorName,
+            status: .recruiting,
+            commentCount: mock.commentCount,
+            createdAt: mock.createdAt
+        ).withStudyID(Self.studyID)
+        let state = RecruitDetailFeature.State(post: post, currentUserID: Self.viewerID)
+        #expect(!state.canRequestJoin)
+    }
+
+    @Test
     func 작성자_본인에게는_신청_버튼이_없다() {
         let post = Self.linkedPost()
         let state = RecruitDetailFeature.State(post: post, currentUserID: post.authorID)
