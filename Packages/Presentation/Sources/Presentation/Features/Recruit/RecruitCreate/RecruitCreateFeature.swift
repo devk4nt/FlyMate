@@ -57,6 +57,15 @@ public struct RecruitCreateFeature {
             }
         }
 
+        /// 스터디를 먼저 만든 뒤 모집 글을 올리는 경로의 프리필.
+        /// `StudyCreateFeature.State(recruitPost:)` 의 역방향이다.
+        public init(study: Study, now: Date = Date()) {
+            self.init(mode: .create, now: now)
+            title = study.name
+            description = study.description
+            maxMembers = min(study.maxMembers, AppConstants.maxRecruitMembers)
+        }
+
         public var isEditMode: Bool {
             if case .edit = mode { return true }
             return false

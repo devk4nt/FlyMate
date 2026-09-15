@@ -16,7 +16,11 @@ public struct StudyListFeature {
         @Presents public var joinStudy: JoinStudyFeature.State?
         @Presents public var cancelConfirmAlert: AlertState<Action.CancelConfirm>?
         @Presents public var practiceMirror: PracticeMirrorFeature.State?
+        @Presents public var recruitPromptAlert: AlertState<Action.RecruitPrompt>?
+        @Presents public var createRecruit: RecruitCreateFeature.State?
         var requestToCancel: JoinRequest?
+        /// 모집 글을 올리면 연결할 대상 — 스터디 생성 직후에만 채워진다
+        var studyAwaitingRecruit: Study?
 
         /// 첫 빠른 피드백 요청 전이면 true — 홈 Hero를 첫 업로드 유도 모드로 전환
         // ponytail: 스터디 영상 업로드 여부는 안 본다 — 빠른 피드백 첫 요청 기준으로 충분
@@ -49,15 +53,23 @@ public struct StudyListFeature {
         case cancelRequestTapped(JoinRequest)
         case cancelConfirmAlert(PresentationAction<CancelConfirm>)
         case cancelRequestFailed
+        case recruitPromptAlert(PresentationAction<RecruitPrompt>)
+        case createRecruit(PresentationAction<RecruitCreateFeature.Action>)
+        case linkStudyResponse(Result<RecruitPost, AppError>)
 
         public enum CancelConfirm: Equatable {
             case confirmCancel
+        }
+
+        public enum RecruitPrompt: Equatable {
+            case writeRecruitPost
         }
     }
 
     @Dependency(\.studyClient) private var studyClient
     @Dependency(\.analyticsClient) private var analyticsClient
     @Dependency(\.quickFeedbackClient) private var quickFeedbackClient
+    @Dependency(\.recruitClient) private var recruitClient
 
     public init() {}
 
@@ -172,11 +184,54 @@ public struct StudyListFeature {
             case .cancelRequestFailed:
                 return fetchMyJoinRequests()
 
-            case .createStudy(.presented(.studyCreated)):
+            case .createStudy(.presented(.studyCreated(let study))):
                 state.createStudy = nil
+                // 모집 글은 작성 시 전 유저에게 푸시가 나가는 유일한 경로라, 스터디를 만든
+                // 직후가 유일하게 확실한 유도 시점이다. 거절해도 모집 탭에서 언제든 쓸 수 있다.
+                state.studyAwaitingRecruit = study
+                state.recruitPromptAlert = AlertState {
+                    TextState("모집 글도 올릴까요?")
+                } actions: {
+                    ButtonState(action: .writeRecruitPost) {
+                        TextState("올리기")
+                    }
+                    ButtonState(role: .cancel) {
+                        TextState("나중에")
+                    }
+                } message: {
+                    TextState("'\(study.name)' 모집 글을 올리면 다른 사용자에게 알림이 가서 스터디원을 더 빨리 만날 수 있어요.")
+                }
                 return .send(.refresh)
 
-            case .createStudy, .joinStudy:
+            case .recruitPromptAlert(.presented(.writeRecruitPost)):
+                guard let study = state.studyAwaitingRecruit else { return .none }
+                state.createRecruit = RecruitCreateFeature.State(study: study)
+                return .none
+
+            case .recruitPromptAlert(.dismiss):
+                state.studyAwaitingRecruit = nil
+                return .none
+
+            case .createRecruit(.presented(.delegate(.saved(let post)))):
+                guard let study = state.studyAwaitingRecruit else { return .none }
+                state.studyAwaitingRecruit = nil
+                let client = recruitClient
+                return .run { send in
+                    do {
+                        let linked = try await client.linkStudy(post.id, study.id)
+                        await send(.linkStudyResponse(.success(linked)))
+                    } catch {
+                        let appError = error as? AppError ?? .unexpected(error.localizedDescription)
+                        await send(.linkStudyResponse(.failure(appError)))
+                    }
+                }
+
+            // 연결 실패해도 모집 글 자체는 올라갔다 — 글에서 '스터디 만들기'로 이어 붙일 수 있으므로
+            // 홈에서 에러를 띄우지 않는다.
+            case .linkStudyResponse:
+                return .none
+
+            case .createStudy, .joinStudy, .recruitPromptAlert, .createRecruit:
                 return .none
             }
         }
@@ -189,6 +244,10 @@ public struct StudyListFeature {
         .ifLet(\.$cancelConfirmAlert, action: \.cancelConfirmAlert)
         .ifLet(\.$practiceMirror, action: \.practiceMirror) {
             PracticeMirrorFeature()
+        }
+        .ifLet(\.$recruitPromptAlert, action: \.recruitPromptAlert)
+        .ifLet(\.$createRecruit, action: \.createRecruit) {
+            RecruitCreateFeature()
         }
     }
 
