@@ -17,7 +17,11 @@ jobs:
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
-          ASC_APP_ID: ${{ secrets.ASC_APP_ID }}
+          # 리포에 등록된 키 시크릿은 base64 인코딩된 ASC_KEY_P8 뿐이다.
+          # appstore-submit.yml 과 같은 방식으로 디코드해 넘긴다.
+          ASC_KEY_P8_B64: ${{ secrets.ASC_KEY_P8 }}
+          ASC_APP_ID: "6801114073" # 공개 App Store ID — 시크릿 아님
           GH_TOKEN: ${{ github.token }}
-        run: node scripts/sync-appstore-reviews.mjs
+        run: |
+          export ASC_PRIVATE_KEY="$(echo "$ASC_KEY_P8_B64" | base64 -d)"
+          node scripts/sync-appstore-reviews.mjs
