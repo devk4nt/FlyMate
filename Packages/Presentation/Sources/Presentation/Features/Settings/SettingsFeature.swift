@@ -39,6 +39,7 @@ public struct SettingsFeature {
         case studyManagement(StudyManagementFeature.Action)
         case blockedUsers(BlockedUsersFeature.Action)
         case subscriptionTapped
+        case visionAnalysisLabTapped
         case developerContactTapped
         case developerContactOpenResponse(Bool)
         case verificationRequestTapped
@@ -66,6 +67,7 @@ public struct SettingsFeature {
         case profileEdit(ProfileEditFeature)
         case myActivity(MyActivityFeature)
         case subscription(SubscriptionFeature)
+        case visionAnalysisLab(VideoAnalysisLabFeature)
     }
 
     @Dependency(\.authClient) private var authClient
@@ -140,6 +142,10 @@ public struct SettingsFeature {
                 state.destination = .subscription(
                     SubscriptionFeature.State(currentUserID: state.currentUser.id)
                 )
+                return .none
+
+            case .visionAnalysisLabTapped:
+                state.destination = .visionAnalysisLab(VideoAnalysisLabFeature.State())
                 return .none
 
             case .developerContactTapped:

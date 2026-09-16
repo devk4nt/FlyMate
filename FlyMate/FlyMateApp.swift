@@ -251,6 +251,12 @@ struct FlyMateApp: App {
             checkAlreadyReported: { try await reportRepo.checkAlreadyReported(targetType: $0, targetID: $1) }
         )
 
+        // Interview Insight (AI 면접 분석 실험실)
+        let interviewInsightRepo = InterviewInsightRepositoryImpl(client: supabaseClient)
+        dependencies.interviewInsightClient = InterviewInsightClient(
+            generateInsight: { try await interviewInsightRepo.generateInsight(request: $0) }
+        )
+
         // Block
         let blockRepo = BlockRepositoryImpl(client: supabaseClient)
         dependencies.blockClient = BlockClient(
@@ -1269,6 +1275,35 @@ struct FlyMateApp: App {
                 )
             },
             checkAlreadyReported: { _, _ in false }
+        )
+
+        // Interview Insight (목 문장별 분석)
+        dependencies.interviewInsightClient = InterviewInsightClient(
+            generateInsight: { request in
+                try? await Task.sleep(for: .seconds(1))
+                return InterviewInsight(
+                    summary: """
+                    목 데이터 총평입니다. 캡처 프레임 \(request.frames.count)장을 기반으로 \
+                    실제 환경에서는 승무원 면접 관점의 문장별 피드백을 제공합니다.
+                    """,
+                    sentences: [
+                        InterviewInsight.Sentence(
+                            start: 2,
+                            text: "안녕하십니까, 지원자 홍길동입니다.",
+                            strength: "첫인사의 속도와 끝맺음이 안정적이에요.",
+                            weakness: nil,
+                            suggestion: nil
+                        ),
+                        InterviewInsight.Sentence(
+                            start: 8,
+                            text: "저는 고객의 불편을 먼저 알아차리는 승무원이 되고 싶습니다.",
+                            strength: "결론을 먼저 말한 점이 좋아요.",
+                            weakness: "근거가 되는 경험이 바로 이어지지 않아요.",
+                            suggestion: "이 문장 뒤에 구체적인 경험 한 가지를 붙여 보세요."
+                        ),
+                    ]
+                )
+            }
         )
 
         // Block (인메모리 목)

@@ -186,8 +186,20 @@ public struct SettingsView: View {
                 .settingsSectionStyle()
 
                 #if DEBUG
-                // Crashlytics 동작 검증용 임시 섹션 — 검증 후 삭제
                 Section("개발자") {
+                    Button {
+                        store.send(.visionAnalysisLabTapped)
+                    } label: {
+                        SettingsActionLabel(
+                            systemImage: "sparkles.rectangle.stack.fill",
+                            title: "AI 면접 분석 실험실",
+                            description: "면접 답변을 AI가 문장별로 분석해요",
+                            tint: FMColors.brandInk
+                        )
+                    }
+                    .accessibilityHint("AI 면접 분석 실험 화면으로 이동합니다")
+
+                    // Crashlytics 동작 검증용 임시 버튼 — 검증 후 삭제
                     Button("테스트 크래시 발생") {
                         fatalError("Crashlytics test crash")
                     }
@@ -210,6 +222,14 @@ public struct SettingsView: View {
             }
             .navigationDestination(isPresented: $store.isBlockedUsersActive.sending(\.blockedUsersActiveChanged)) {
                 BlockedUsersView(store: store.scope(state: \.blockedUsers, action: \.blockedUsers))
+            }
+            .navigationDestination(
+                item: $store.scope(
+                    state: \.destination?.visionAnalysisLab,
+                    action: \.destination.visionAnalysisLab
+                )
+            ) { analysisStore in
+                VideoAnalysisLabView(store: analysisStore)
             }
         }
         .background(FMColors.canvas)
