@@ -11,8 +11,11 @@
 name: Instagram Hashtag Alerts
 
 on:
-  schedule:
-    - cron: "0 */6 * * *" # 6시간 간격 (00/06/12/18 UTC = 09/15/21/03 KST)
+  # 스케줄 중단 (2026-09-16) — 위 사전 준비 4~6번이 미완이라 IG_USER_ID·IG_ACCESS_TOKEN·
+  # GMAIL_APP_PASSWORD 시크릿이 셋 다 없고, 6시간마다 'missing env' 로 실패만 쌓였다.
+  # 시크릿을 등록한 뒤 아래 두 줄의 주석을 풀 것.
+  # schedule:
+  #   - cron: "0 */6 * * *" # 6시간 간격 (00/06/12/18 UTC = 09/15/21/03 KST)
   workflow_dispatch:
 
 jobs:
