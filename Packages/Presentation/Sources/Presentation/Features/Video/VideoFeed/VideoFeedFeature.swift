@@ -216,6 +216,23 @@ public struct VideoFeedFeature {
                 state.loadingState = .loaded(videos)
                 return .none
 
+            case .pages(.element(id: let videoID, action: .delegate(.videoDeleted))):
+                // 삭제한 페이지를 걷어내고, 보던 자리를 유지하도록 다음(없으면 이전) 영상으로 옮긴다
+                let removedIndex = state.pages.index(id: videoID)
+                state.pages.remove(id: videoID)
+                if case .loaded(var videos) = state.loadingState {
+                    videos.removeAll { $0.id == videoID }
+                    state.loadingState = .loaded(videos)
+                }
+                if state.presentedVideoID == videoID { state.presentedVideoID = nil }
+                guard state.currentVideoID == videoID else { return .none }
+                let neighborIndex = removedIndex.map { min($0, state.pages.count - 1) } ?? 0
+                let neighborID = state.pages.indices.contains(neighborIndex)
+                    ? state.pages[neighborIndex].id
+                    : nil
+                state.currentVideoID = neighborID
+                return activate(neighborID)
+
             case .pages:
                 return .none
             }

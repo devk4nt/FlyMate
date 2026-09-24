@@ -149,6 +149,16 @@ public struct StudyNavigationFeature {
                 }
                 return .none
 
+            case .path(.element(_, action: .videoFeed(.pages(.element(_, action: .delegate(.videoDeleted)))))):
+                // StudyDetail의 영상 목록은 onAppear에서 재조회하지 않으므로(.idle 가드) 명시적으로 갱신한다
+                if let detailID = state.path.ids.first(where: { id in
+                    if case .studyDetail = state.path[id: id] { return true }
+                    return false
+                }) {
+                    return .send(.path(.element(id: detailID, action: .studyDetail(.refresh))))
+                }
+                return .none
+
             case .path(.element(_, action: .videoUpload(.uploadCompleted))):
                 _ = state.path.popLast()
                 if let lastID = state.path.ids.last,

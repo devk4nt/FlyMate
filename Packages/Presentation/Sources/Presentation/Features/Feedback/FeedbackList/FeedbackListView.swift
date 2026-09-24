@@ -76,6 +76,9 @@ public struct FeedbackListView<Header: View>: View {
                                     onEdit: store.listType == .given ? {
                                         store.send(.editFeedbackTapped(feedback))
                                     } : nil,
+                                    onDelete: store.listType == .given ? {
+                                        store.send(.deleteFeedbackTapped(feedback))
+                                    } : nil,
                                     onReportFeedback: store.listType == .received ? {
                                         store.send(.reportFeedbackTapped(feedback))
                                     } : nil,
@@ -138,6 +141,7 @@ public struct FeedbackListView<Header: View>: View {
             MyActivitySheet(store: activityStore)
         }
         .alert($store.scope(state: \.blockAlert, action: \.blockAlert))
+        .alert($store.scope(state: \.deleteAlert, action: \.deleteAlert))
         .fmToast(
             isPresented: Binding(
                 get: { store.showToast },
@@ -155,6 +159,7 @@ public struct FeedbackListView<Header: View>: View {
 struct FeedbackManagementRow: View {
     let feedback: Domain.Feedback
     var onEdit: (() -> Void)?
+    var onDelete: (() -> Void)?
     var onReportFeedback: (() -> Void)?
     var onReportUser: (() -> Void)?
     var onBlockUser: (() -> Void)?
@@ -214,13 +219,20 @@ struct FeedbackManagementRow: View {
 
                     Spacer(minLength: 0)
 
-                    if onEdit != nil || onReportFeedback != nil || onReportUser != nil || onBlockUser != nil {
+                    if onEdit != nil || onDelete != nil || onReportFeedback != nil || onReportUser != nil || onBlockUser != nil {
                         Menu {
                             if let onEdit {
                                 Button {
                                     onEdit()
                                 } label: {
                                     Label("수정하기", systemImage: "pencil")
+                                }
+                            }
+                            if let onDelete {
+                                Button(role: .destructive) {
+                                    onDelete()
+                                } label: {
+                                    Label("삭제하기", systemImage: "trash")
                                 }
                             }
                             if let onReportFeedback {

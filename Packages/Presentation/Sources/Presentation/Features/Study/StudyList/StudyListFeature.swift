@@ -74,6 +74,26 @@ public struct StudyListFeature {
     public init() {}
 
     public var body: some ReducerOf<Self> {
+        // core를 별도 프로퍼티로 분리 — 거대한 Reduce와 ifLet 체인을 한 식에 두면 타입 체커가 시간 초과한다
+        core
+            .ifLet(\.$createStudy, action: \.createStudy) {
+                StudyCreateFeature()
+            }
+            .ifLet(\.$joinStudy, action: \.joinStudy) {
+                JoinStudyFeature()
+            }
+            .ifLet(\.$cancelConfirmAlert, action: \.cancelConfirmAlert)
+            .ifLet(\.$practiceMirror, action: \.practiceMirror) {
+                PracticeMirrorFeature()
+            }
+            .ifLet(\.$recruitPromptAlert, action: \.recruitPromptAlert)
+            .ifLet(\.$createRecruit, action: \.createRecruit) {
+                RecruitCreateFeature()
+            }
+    }
+
+    @ReducerBuilder<State, Action>
+    private var core: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .onAppear:
@@ -234,20 +254,6 @@ public struct StudyListFeature {
             case .createStudy, .joinStudy, .recruitPromptAlert, .createRecruit:
                 return .none
             }
-        }
-        .ifLet(\.$createStudy, action: \.createStudy) {
-            StudyCreateFeature()
-        }
-        .ifLet(\.$joinStudy, action: \.joinStudy) {
-            JoinStudyFeature()
-        }
-        .ifLet(\.$cancelConfirmAlert, action: \.cancelConfirmAlert)
-        .ifLet(\.$practiceMirror, action: \.practiceMirror) {
-            PracticeMirrorFeature()
-        }
-        .ifLet(\.$recruitPromptAlert, action: \.recruitPromptAlert)
-        .ifLet(\.$createRecruit, action: \.createRecruit) {
-            RecruitCreateFeature()
         }
     }
 

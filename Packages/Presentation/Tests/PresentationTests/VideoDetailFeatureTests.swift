@@ -501,6 +501,147 @@ struct VideoDetailFeatureTests {
             $0.toastType = .success
         }
     }
+
+    // MARK: - 피드백 삭제
+
+    @Test
+    func 피드백_삭제_확인시_목록과_답글_캐시에서_제거() async {
+        let feedback = Feedback.videoDetailMock()
+        let comment = FeedbackComment.videoDetailMock
+
+        var state = VideoDetailFeature.State(video: .videoDetailMock)
+        state.feedbacks = .loaded([feedback])
+        state.expandedFeedbackIDs = [feedback.id]
+        state.repliesByFeedback = [feedback.id: .loaded([comment])]
+        state.latestComments = [feedback.id: comment]
+
+        let deletedID = LockIsolated<UUID?>(nil)
+        let store = TestStore(initialState: state) {
+            VideoDetailFeature()
+        } withDependencies: {
+            $0.feedbackClient.deleteFeedback = { id in deletedID.setValue(id) }
+        }
+
+        await store.send(.deleteFeedbackTapped(feedback)) {
+            $0.deleteFeedbackAlert = AlertState {
+                TextState("피드백을 삭제할까요?")
+            } actions: {
+                ButtonState(role: .destructive, action: .confirm(feedbackID: feedback.id)) {
+                    TextState("삭제하기")
+                }
+                ButtonState(role: .cancel) {
+                    TextState("취소")
+                }
+            } message: {
+                TextState("삭제한 피드백과 답글은 복구할 수 없어요.")
+            }
+        }
+
+        await store.send(.deleteFeedbackAlert(.presented(.confirm(feedbackID: feedback.id)))) {
+            $0.deleteFeedbackAlert = nil
+        }
+
+        await store.receive(\.deleteFeedbackResponse.success) {
+            $0.feedbacks = .loaded([])
+            $0.repliesByFeedback = [:]
+            $0.latestComments = [:]
+            $0.expandedFeedbackIDs = []
+            $0.showToast = true
+            $0.toastMessage = "피드백을 삭제했습니다"
+            $0.toastType = .success
+        }
+
+        #expect(deletedID.value == feedback.id)
+    }
+
+    @Test
+    func 피드백_삭제_실패시_목록_유지하고_에러_토스트() async {
+        let feedback = Feedback.videoDetailMock()
+
+        var state = VideoDetailFeature.State(video: .videoDetailMock)
+        state.feedbacks = .loaded([feedback])
+
+        let store = TestStore(initialState: state) {
+            VideoDetailFeature()
+        } withDependencies: {
+            $0.feedbackClient.deleteFeedback = { _ in
+                throw AppError.network(.serverError(statusCode: 500))
+            }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.deleteFeedbackTapped(feedback))
+        await store.send(.deleteFeedbackAlert(.presented(.confirm(feedbackID: feedback.id))))
+
+        await store.receive(\.deleteFeedbackResponse.failure) {
+            // 목록은 그대로 두고 에러만 알린다
+            $0.feedbacks = .loaded([feedback])
+            $0.showToast = true
+            $0.toastType = .error
+        }
+    }
+
+    // MARK: - 영상 삭제
+
+    @Test
+    func 영상_삭제_확인시_재생을_멈추고_삭제를_부모에_알린다() async {
+        var state = VideoDetailFeature.State(video: .videoDetailMock)
+        state.player.isPlaying = true
+
+        let deletedID = LockIsolated<UUID?>(nil)
+        let store = TestStore(initialState: state) {
+            VideoDetailFeature()
+        } withDependencies: {
+            $0.videoClient.deleteVideo = { id in deletedID.setValue(id) }
+        }
+
+        await store.send(.deleteVideoTapped) {
+            $0.deleteVideoAlert = AlertState {
+                TextState("영상을 삭제할까요?")
+            } actions: {
+                ButtonState(role: .destructive, action: .confirm) {
+                    TextState("삭제하기")
+                }
+                ButtonState(role: .cancel) {
+                    TextState("취소")
+                }
+            } message: {
+                TextState("영상에 달린 피드백과 답글도 함께 삭제되며 복구할 수 없어요.")
+            }
+        }
+
+        await store.send(.deleteVideoAlert(.presented(.confirm))) {
+            $0.deleteVideoAlert = nil
+            $0.player.isPlaying = false
+        }
+
+        await store.receive(\.deleteVideoResponse.success)
+        await store.receive(\.delegate.videoDeleted)
+
+        #expect(deletedID.value == Video.videoDetailMock.id)
+    }
+
+    @Test
+    func 영상_삭제_실패시_에러_토스트만_노출() async {
+        let store = TestStore(
+            initialState: VideoDetailFeature.State(video: .videoDetailMock)
+        ) {
+            VideoDetailFeature()
+        } withDependencies: {
+            $0.videoClient.deleteVideo = { _ in
+                throw AppError.network(.noConnection)
+            }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.deleteVideoTapped)
+        await store.send(.deleteVideoAlert(.presented(.confirm)))
+
+        await store.receive(\.deleteVideoResponse.failure) {
+            $0.showToast = true
+            $0.toastType = .error
+        }
+    }
 }
 
 // MARK: - Mock Data

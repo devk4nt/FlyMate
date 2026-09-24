@@ -58,6 +58,7 @@ public struct VideoFeedbackSheet: View {
             }
         }
         .alert($store.scope(state: \.blockAlert, action: \.blockAlert))
+        .alert($store.scope(state: \.deleteFeedbackAlert, action: \.deleteFeedbackAlert))
         .background(FMColors.background.ignoresSafeArea())
         .tint(FMColors.actionForeground)
     }
@@ -171,6 +172,9 @@ public struct VideoFeedbackSheet: View {
                             onEdit: feedback.authorID == store.currentUserID ? {
                                 store.send(.editFeedbackTapped(feedback))
                             } : nil,
+                            onDelete: feedback.authorID == store.currentUserID ? {
+                                store.send(.deleteFeedbackTapped(feedback))
+                            } : nil,
                             onReportUser: feedback.authorID == store.currentUserID ? nil : {
                                 store.send(.reportUserTapped(authorID: feedback.authorID))
                             },
@@ -250,6 +254,7 @@ private struct FeedbackRow: View {
     var onToggleReplies: (() -> Void)?
     var onDeleteReply: ((FeedbackComment) -> Void)?
     var onEdit: (() -> Void)?
+    var onDelete: (() -> Void)?
     var onReportUser: (() -> Void)?
     var onBlockUser: (() -> Void)?
 
@@ -284,13 +289,20 @@ private struct FeedbackRow: View {
 
                 Spacer(minLength: 0)
 
-                if onEdit != nil || onReportUser != nil || onBlockUser != nil {
+                if onEdit != nil || onDelete != nil || onReportUser != nil || onBlockUser != nil {
                     Menu {
                         if let onEdit {
                             Button {
                                 onEdit()
                             } label: {
                                 Label("수정하기", systemImage: "pencil")
+                            }
+                        }
+                        if let onDelete {
+                            Button(role: .destructive) {
+                                onDelete()
+                            } label: {
+                                Label("삭제하기", systemImage: "trash")
                             }
                         }
                         if let onReportUser {
@@ -314,7 +326,7 @@ private struct FeedbackRow: View {
                             .frame(width: 24, height: 24)
                             .contentShape(Rectangle())
                     }
-                    .accessibilityLabel(onEdit != nil ? "더보기 메뉴" : "신고 및 차단 메뉴")
+                    .accessibilityLabel(onEdit != nil ? "내 피드백 더보기 메뉴" : "신고 및 차단 메뉴")
                 }
             }
             .padding(FMSpacing.sm)

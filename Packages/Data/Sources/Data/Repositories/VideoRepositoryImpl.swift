@@ -180,10 +180,15 @@ public struct VideoRepositoryImpl: VideoRepository {
     }
 
     public func deleteVideo(id: UUID) async throws {
-        try await client.from(SupabaseConfig.Table.videos)
+        // 삭제된 행을 되돌려 받아 studyID를 얻는다 — 스토리지 경로가 studyID/videoID 구조라 추가 조회 없이 정리한다
+        let deleted: [VideoDTO] = try await client.from(SupabaseConfig.Table.videos)
             .delete()
             .eq("id", value: id)
+            .select()
             .execute()
+            .value
+        guard let dto = deleted.first else { return }
+        await storageService.deleteVideoFiles(studyID: dto.studyID, videoIDs: [id])
     }
 
     // MARK: - Signed URL
