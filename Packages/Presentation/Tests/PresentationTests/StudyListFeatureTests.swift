@@ -200,6 +200,45 @@ struct StudyListFeatureTests {
 
         canceledID.withValue { #expect($0 == request.id) }
     }
+
+    @Test
+    func 재진입_시_빠른피드백_개수만_갱신된다() async {
+        let studyFetchCount = LockIsolated(0)
+        let dashboards = LockIsolated([
+            QuickFeedbackDashboard(latestRequest: nil, availableRequests: [.mock], receivedReviews: []),
+            QuickFeedbackDashboard(latestRequest: nil, availableRequests: [], receivedReviews: []),
+        ])
+
+        let store = TestStore(initialState: StudyListFeature.State()) {
+            StudyListFeature()
+        } withDependencies: {
+            $0.studyClient.fetchMyStudies = {
+                studyFetchCount.withValue { $0 += 1 }
+                return [Study.mock]
+            }
+            $0.studyClient.fetchMyJoinRequests = { [] }
+            $0.quickFeedbackClient.fetchDashboard = {
+                dashboards.withValue { $0.removeFirst() }
+            }
+        }
+        store.exhaustivity = .off
+
+        // 최초 진입: 피드백할 영상 1개
+        await store.send(.onAppear)
+        await store.finish()
+        await store.skipReceivedActions()
+        #expect(store.state.quickFeedback.value?.availableRequests.count == 1)
+
+        // 허브에서 피드백을 마치고 뒤로가기 → onAppear 재발화
+        await store.send(.onAppear)
+        await store.finish()
+        await store.skipReceivedActions()
+
+        #expect(store.state.quickFeedback.value?.availableRequests.count == 0)
+        // 스터디 목록은 재조회하지 않는다 (스켈레톤 깜빡임 방지)
+        studyFetchCount.withValue { #expect($0 == 1) }
+        #expect(store.state.studies == .loaded([Study.mock]))
+    }
 }
 
 // Study.mock은 FeedbackWriteFeatureTests.swift의 공용 정의를 사용한다
