@@ -60,6 +60,14 @@ final class SecureVideoPlayerViewController: UIViewController {
         setupSecureContainer()
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        // 기본 카테고리(soloAmbient)는 무음 스위치에 의해 음소거된다. 미디어 재생은 playback.
+        // 미소 연습 거울(ARKit)이 세션을 바꿔놓을 수 있어 표시될 때마다 다시 지정한다.
+        try? AVAudioSession.sharedInstance().setCategory(.playback)
+        try? AVAudioSession.sharedInstance().setActive(true)
+    }
+
     private func setupSecureContainer() {
         view.addSubview(secureTextField)
         secureTextField.translatesAutoresizingMaskIntoConstraints = false

@@ -359,6 +359,81 @@ struct FeedbackListFeatureTests {
 
         #expect(store.state.feedbacks.items == feedbacks)
     }
+
+    // MARK: - 피드백 삭제
+
+    @Test
+    func 작성한_피드백_삭제_확인시_목록에서_제거() async {
+        let userID = UUID(uuidString: "00000000-0000-0000-0002-000000000003")!
+        let feedbacks = [Feedback.mock(index: 1), Feedback.mock(index: 2)]
+
+        var state = FeedbackListFeature.State(userID: userID, listType: .given)
+        state.feedbacks.items = feedbacks
+        state.loadingState = .loaded(feedbacks)
+
+        let deletedID = LockIsolated<UUID?>(nil)
+        let store = TestStore(initialState: state) {
+            FeedbackListFeature()
+        } withDependencies: {
+            $0.feedbackClient.deleteFeedback = { id in deletedID.setValue(id) }
+        }
+
+        await store.send(.deleteFeedbackTapped(feedbacks[0])) {
+            $0.deleteAlert = AlertState {
+                TextState("피드백을 삭제할까요?")
+            } actions: {
+                ButtonState(role: .destructive, action: .confirm(feedbackID: feedbacks[0].id)) {
+                    TextState("삭제하기")
+                }
+                ButtonState(role: .cancel) {
+                    TextState("취소")
+                }
+            } message: {
+                TextState("삭제한 피드백과 답글은 복구할 수 없어요.")
+            }
+        }
+
+        await store.send(.deleteAlert(.presented(.confirm(feedbackID: feedbacks[0].id)))) {
+            $0.deleteAlert = nil
+        }
+
+        await store.receive(\.deleteResponse.success) {
+            $0.feedbacks.items = [feedbacks[1]]
+            $0.loadingState = .loaded([feedbacks[1]])
+            $0.toastMessage = "피드백을 삭제했습니다"
+            $0.showToast = true
+        }
+
+        #expect(deletedID.value == feedbacks[0].id)
+    }
+
+    @Test
+    func 피드백_삭제_실패시_목록_유지() async {
+        let userID = UUID(uuidString: "00000000-0000-0000-0002-000000000003")!
+        let feedbacks = [Feedback.mock(index: 1)]
+
+        var state = FeedbackListFeature.State(userID: userID, listType: .given)
+        state.feedbacks.items = feedbacks
+        state.loadingState = .loaded(feedbacks)
+
+        let store = TestStore(initialState: state) {
+            FeedbackListFeature()
+        } withDependencies: {
+            $0.feedbackClient.deleteFeedback = { _ in
+                throw AppError.network(.noConnection)
+            }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.deleteFeedbackTapped(feedbacks[0]))
+        await store.send(.deleteAlert(.presented(.confirm(feedbackID: feedbacks[0].id))))
+
+        await store.receive(\.deleteResponse.failure) {
+            $0.showToast = true
+        }
+
+        #expect(store.state.feedbacks.items == feedbacks)
+    }
 }
 
 // MARK: - Mock Data

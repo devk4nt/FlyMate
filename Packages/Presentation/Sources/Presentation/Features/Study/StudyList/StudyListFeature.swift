@@ -74,10 +74,33 @@ public struct StudyListFeature {
     public init() {}
 
     public var body: some ReducerOf<Self> {
+        // core를 별도 프로퍼티로 분리 — 거대한 Reduce와 ifLet 체인을 한 식에 두면 타입 체커가 시간 초과한다
+        core
+            .ifLet(\.$createStudy, action: \.createStudy) {
+                StudyCreateFeature()
+            }
+            .ifLet(\.$joinStudy, action: \.joinStudy) {
+                JoinStudyFeature()
+            }
+            .ifLet(\.$cancelConfirmAlert, action: \.cancelConfirmAlert)
+            .ifLet(\.$practiceMirror, action: \.practiceMirror) {
+                PracticeMirrorFeature()
+            }
+            .ifLet(\.$recruitPromptAlert, action: \.recruitPromptAlert)
+            .ifLet(\.$createRecruit, action: \.createRecruit) {
+                RecruitCreateFeature()
+            }
+    }
+
+    @ReducerBuilder<State, Action>
+    private var core: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                guard case .idle = state.studies else { return .none }
+                // 스터디 목록은 스켈레톤 깜빡임을 피하려고 최초 1회만 로드한다.
+                // 반면 빠른 피드백 개수는 되돌아올 때마다 갱신해야 한다
+                // (허브에서 피드백을 마치고 뒤로 왔는데 N개가 그대로 남는 문제)
+                guard case .idle = state.studies else { return fetchQuickFeedback() }
                 state.studies = .loading
                 state.quickFeedback = .loading
                 return .merge(fetchStudies(), fetchQuickFeedback(), fetchMyJoinRequests())
@@ -234,20 +257,6 @@ public struct StudyListFeature {
             case .createStudy, .joinStudy, .recruitPromptAlert, .createRecruit:
                 return .none
             }
-        }
-        .ifLet(\.$createStudy, action: \.createStudy) {
-            StudyCreateFeature()
-        }
-        .ifLet(\.$joinStudy, action: \.joinStudy) {
-            JoinStudyFeature()
-        }
-        .ifLet(\.$cancelConfirmAlert, action: \.cancelConfirmAlert)
-        .ifLet(\.$practiceMirror, action: \.practiceMirror) {
-            PracticeMirrorFeature()
-        }
-        .ifLet(\.$recruitPromptAlert, action: \.recruitPromptAlert)
-        .ifLet(\.$createRecruit, action: \.createRecruit) {
-            RecruitCreateFeature()
         }
     }
 

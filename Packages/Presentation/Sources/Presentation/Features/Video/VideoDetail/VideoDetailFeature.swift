@@ -25,6 +25,9 @@ public struct VideoDetailFeature {
         @Presents public var edit: FeedbackEditFeature.State?
         @Presents public var report: ReportFeature.State?
         @Presents public var blockAlert: AlertState<Action.BlockAlert>?
+        // 시트 위에 뜨는 알림은 시트에, 플레이어 알림은 페이지에 붙어야 하므로 상태를 분리한다
+        @Presents public var deleteFeedbackAlert: AlertState<Action.DeleteFeedbackAlert>?
+        @Presents public var deleteVideoAlert: AlertState<Action.DeleteVideoAlert>?
 
         public init(video: Video, focusedFeedbackID: UUID? = nil, currentUserID: UUID? = nil) {
             self.video = video
@@ -75,6 +78,14 @@ public struct VideoDetailFeature {
         case feedbackTapped(Feedback)
         case editFeedbackTapped(Feedback)
         case edit(PresentationAction<FeedbackEditFeature.Action>)
+        case deleteFeedbackTapped(Feedback)
+        case deleteFeedbackAlert(PresentationAction<DeleteFeedbackAlert>)
+        case deleteFeedbackResponse(Result<UUID, AppError>)
+        // 영상 삭제
+        case deleteVideoTapped
+        case deleteVideoAlert(PresentationAction<DeleteVideoAlert>)
+        case deleteVideoResponse(Result<UUID, AppError>)
+        case delegate(Delegate)
         // Comment input
         case commentInput(CommentInputFeature.Action)
         case replyTapped(Feedback)
@@ -96,6 +107,19 @@ public struct VideoDetailFeature {
         public enum BlockAlert: Equatable {
             case confirmBlock(userID: UUID, userName: String)
         }
+
+        public enum DeleteFeedbackAlert: Equatable {
+            case confirm(feedbackID: UUID)
+        }
+
+        public enum DeleteVideoAlert: Equatable {
+            case confirm
+        }
+
+        @CasePathable
+        public enum Delegate: Equatable {
+            case videoDeleted(UUID)
+        }
     }
 
     /// 피드에서 페이지별 인스턴스가 공존하므로 영상 단위로 스트림 구독을 취소한다
@@ -107,10 +131,29 @@ public struct VideoDetailFeature {
     @Dependency(\.feedbackCommentClient) private var feedbackCommentClient
     @Dependency(\.studyClient) private var studyClient
     @Dependency(\.blockClient) private var blockClient
+    @Dependency(\.videoClient) private var videoClient
 
     public init() {}
 
     public var body: some ReducerOf<Self> {
+        // core를 별도 프로퍼티로 분리 — 거대한 Reduce와 ifLet 체인을 한 식에 두면 타입 체커가 시간 초과한다
+        core
+            .ifLet(\.$feedbackCommentList, action: \.feedbackCommentList) {
+                FeedbackCommentListFeature()
+            }
+            .ifLet(\.$edit, action: \.edit) {
+                FeedbackEditFeature()
+            }
+            .ifLet(\.$report, action: \.report) {
+                ReportFeature()
+            }
+            .ifLet(\.$blockAlert, action: \.blockAlert)
+            .ifLet(\.$deleteFeedbackAlert, action: \.deleteFeedbackAlert)
+            .ifLet(\.$deleteVideoAlert, action: \.deleteVideoAlert)
+    }
+
+    @ReducerBuilder<State, Action>
+    private var core: some ReducerOf<Self> {
         Scope(state: \.commentInput, action: \.commentInput) {
             CommentInputFeature()
         }
@@ -479,6 +522,105 @@ public struct VideoDetailFeature {
             case .feedbackCommentList:
                 return .none
 
+            // MARK: - 피드백 / 영상 삭제
+
+            case .deleteFeedbackTapped(let feedback):
+                state.deleteFeedbackAlert = AlertState {
+                    TextState("피드백을 삭제할까요?")
+                } actions: {
+                    ButtonState(role: .destructive, action: .confirm(feedbackID: feedback.id)) {
+                        TextState("삭제하기")
+                    }
+                    ButtonState(role: .cancel) {
+                        TextState("취소")
+                    }
+                } message: {
+                    TextState("삭제한 피드백과 답글은 복구할 수 없어요.")
+                }
+                return .none
+
+            case .deleteFeedbackAlert(.presented(.confirm(let feedbackID))):
+                let client = feedbackClient
+                return .run { send in
+                    do {
+                        try await client.deleteFeedback(feedbackID)
+                        await send(.deleteFeedbackResponse(.success(feedbackID)))
+                    } catch {
+                        let appError = error as? AppError ?? .unexpected(error.localizedDescription)
+                        await send(.deleteFeedbackResponse(.failure(appError)))
+                    }
+                }
+
+            case .deleteFeedbackAlert:
+                return .none
+
+            case .deleteFeedbackResponse(.success(let feedbackID)):
+                // 실시간 스트림도 삭제를 밀어주지만, 즉시 반영해 탭 직후의 잔상을 없앤다
+                if case .loaded(var feedbacks) = state.feedbacks {
+                    feedbacks.removeAll { $0.id == feedbackID }
+                    state.feedbacks = .loaded(feedbacks)
+                }
+                state.repliesByFeedback[feedbackID] = nil
+                state.latestComments[feedbackID] = nil
+                state.expandedFeedbackIDs.remove(feedbackID)
+                if state.focusedFeedbackID == feedbackID { state.focusedFeedbackID = nil }
+                state.showToast = true
+                state.toastMessage = "피드백을 삭제했습니다"
+                state.toastType = .success
+                return .none
+
+            case .deleteFeedbackResponse(.failure(let error)):
+                state.showToast = true
+                state.toastMessage = error.localizedDescription
+                state.toastType = .error
+                return .none
+
+            case .deleteVideoTapped:
+                state.deleteVideoAlert = AlertState {
+                    TextState("영상을 삭제할까요?")
+                } actions: {
+                    ButtonState(role: .destructive, action: .confirm) {
+                        TextState("삭제하기")
+                    }
+                    ButtonState(role: .cancel) {
+                        TextState("취소")
+                    }
+                } message: {
+                    TextState("영상에 달린 피드백과 답글도 함께 삭제되며 복구할 수 없어요.")
+                }
+                return .none
+
+            case .deleteVideoAlert(.presented(.confirm)):
+                let client = videoClient
+                let videoID = state.video.id
+                state.player.isPlaying = false
+                return .run { send in
+                    do {
+                        try await client.deleteVideo(videoID)
+                        await send(.deleteVideoResponse(.success(videoID)))
+                    } catch {
+                        let appError = error as? AppError ?? .unexpected(error.localizedDescription)
+                        await send(.deleteVideoResponse(.failure(appError)))
+                    }
+                }
+
+            case .deleteVideoAlert:
+                return .none
+
+            case .deleteVideoResponse(.success(let videoID)):
+                // 페이지 제거는 부모(VideoFeedFeature)가 담당 — 자식은 알리기만 한다
+                // (페이지 상태가 제거되면 실시간 구독 effect도 forEach가 함께 취소한다)
+                return .send(.delegate(.videoDeleted(videoID)))
+
+            case .deleteVideoResponse(.failure(let error)):
+                state.showToast = true
+                state.toastMessage = error.localizedDescription
+                state.toastType = .error
+                return .none
+
+            case .delegate:
+                return .none
+
             // MARK: - Report / Block
 
             case .reportUserTapped(let authorID):
@@ -557,15 +699,5 @@ public struct VideoDetailFeature {
                 return .none
             }
         }
-        .ifLet(\.$feedbackCommentList, action: \.feedbackCommentList) {
-            FeedbackCommentListFeature()
-        }
-        .ifLet(\.$edit, action: \.edit) {
-            FeedbackEditFeature()
-        }
-        .ifLet(\.$report, action: \.report) {
-            ReportFeature()
-        }
-        .ifLet(\.$blockAlert, action: \.blockAlert)
     }
 }

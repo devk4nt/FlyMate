@@ -328,6 +328,82 @@ struct VideoFeedFeatureTests {
             $0.hasMore = false
         }
     }
+
+    // MARK: - 영상 삭제
+
+    @Test
+    func 영상_삭제시_페이지와_목록에서_제거하고_다음_영상으로_이동() async {
+        let videos = [Video.feedMock(1), Video.feedMock(2), Video.feedMock(3)]
+        var state = VideoFeedFeature.State(scope: .study(videos[0].studyID))
+        state.loadingState = .loaded(videos)
+        state.pages = IdentifiedArray(
+            uniqueElements: videos.map { VideoDetailFeature.State(video: $0) }
+        )
+        state.currentVideoID = videos[1].id
+
+        let store = TestStore(initialState: state) {
+            VideoFeedFeature()
+        } withDependencies: {
+            $0.feedbackClient.fetchFeedbacks = { _ in [] }
+            $0.feedbackClient.observeFeedbacks = { _ in .finished }
+            $0.feedbackCommentClient.fetchLatestComments = { _ in [:] }
+            $0.studyClient.fetchStudy = { _ in .mock }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.pages(.element(id: videos[1].id, action: .delegate(.videoDeleted(videos[1].id))))) {
+            $0.pages.remove(id: videos[1].id)
+            $0.loadingState = .loaded([videos[0], videos[2]])
+            // 삭제한 자리를 이어받아 다음 영상이 현재 페이지가 된다
+            $0.currentVideoID = videos[2].id
+        }
+    }
+
+    @Test
+    func 마지막_영상_삭제시_이전_영상으로_이동() async {
+        let videos = [Video.feedMock(1), Video.feedMock(2)]
+        var state = VideoFeedFeature.State(scope: .study(videos[0].studyID))
+        state.loadingState = .loaded(videos)
+        state.pages = IdentifiedArray(
+            uniqueElements: videos.map { VideoDetailFeature.State(video: $0) }
+        )
+        state.currentVideoID = videos[1].id
+
+        let store = TestStore(initialState: state) {
+            VideoFeedFeature()
+        } withDependencies: {
+            $0.feedbackClient.fetchFeedbacks = { _ in [] }
+            $0.feedbackClient.observeFeedbacks = { _ in .finished }
+            $0.feedbackCommentClient.fetchLatestComments = { _ in [:] }
+            $0.studyClient.fetchStudy = { _ in .mock }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.pages(.element(id: videos[1].id, action: .delegate(.videoDeleted(videos[1].id))))) {
+            $0.pages.remove(id: videos[1].id)
+            $0.loadingState = .loaded([videos[0]])
+            $0.currentVideoID = videos[0].id
+        }
+    }
+
+    @Test
+    func 마지막_한_개_영상_삭제시_빈_피드가_된다() async {
+        let video = Video.feedMock(1)
+        var state = VideoFeedFeature.State(scope: .study(video.studyID))
+        state.loadingState = .loaded([video])
+        state.pages = IdentifiedArray(uniqueElements: [VideoDetailFeature.State(video: video)])
+        state.currentVideoID = video.id
+
+        let store = TestStore(initialState: state) {
+            VideoFeedFeature()
+        }
+
+        await store.send(.pages(.element(id: video.id, action: .delegate(.videoDeleted(video.id))))) {
+            $0.pages = []
+            $0.loadingState = .loaded([])
+            $0.currentVideoID = nil
+        }
+    }
 }
 
 // MARK: - Mock Data

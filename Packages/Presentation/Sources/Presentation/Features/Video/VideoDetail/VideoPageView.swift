@@ -48,6 +48,7 @@ public struct VideoPageView: View {
             }
         }
         .screenCaptureGuarded()
+        .alert($store.scope(state: \.deleteVideoAlert, action: \.deleteVideoAlert))
         .onChange(of: scenePhase) { _, newPhase in
             // 백그라운드 전환 시 재생 중단 — isPlaying을 꺼둬야 복귀 후 자동 재생되지 않는다
             if newPhase == .background, store.player.isPlaying {
@@ -206,6 +207,20 @@ public struct VideoPageView: View {
                 store.send(.muteTapped)
             }
             .accessibilityLabel(store.player.isMuted ? "음소거 해제" : "음소거")
+
+            if store.video.uploaderID == store.currentUserID {
+                Menu {
+                    Button(role: .destructive) {
+                        store.send(.deleteVideoTapped)
+                    } label: {
+                        Label("영상 삭제", systemImage: "trash")
+                    }
+                } label: {
+                    playerControlIcon("ellipsis")
+                }
+                .accessibilityLabel("내 영상 관리 메뉴")
+                .accessibilityHint("영상을 삭제할 수 있습니다")
+            }
         }
     }
 
@@ -215,32 +230,37 @@ public struct VideoPageView: View {
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            Image(systemName: systemImage)
-                .font(.system(size: FMSizing.IconSize.md, weight: .semibold))
-                .foregroundStyle(FMColors.accent)
-                .frame(width: 48, height: 48)
-                .background(playerControlSurface, in: Circle())
-                .overlay {
-                    Circle()
-                        .stroke(playerControlBorder, lineWidth: 1)
-                }
-                .overlay(alignment: .topTrailing) {
-                    if let badgeText {
-                        Text(badgeText)
-                            .font(FMTypography.caption1)
-                            .fontWeight(.semibold)
-                            .monospacedDigit()
-                            .foregroundStyle(FMColors.mediaBadgeForeground)
-                            .padding(.horizontal, FMSpacing.xxs)
-                            .frame(minWidth: 22, minHeight: 22)
-                            .background(.white, in: Capsule())
-                            .offset(x: 5, y: -4)
-                    }
-                }
-                .shadow(color: .black.opacity(0.35), radius: 4, y: 2)
+            playerControlIcon(systemImage, badgeText: badgeText)
         }
         .buttonStyle(.plain)
         .contentShape(Circle())
+    }
+
+    /// 버튼과 Menu가 같은 원형 컨트롤 모양을 공유한다
+    private func playerControlIcon(_ systemImage: String, badgeText: String? = nil) -> some View {
+        Image(systemName: systemImage)
+            .font(.system(size: FMSizing.IconSize.md, weight: .semibold))
+            .foregroundStyle(FMColors.accent)
+            .frame(width: 48, height: 48)
+            .background(playerControlSurface, in: Circle())
+            .overlay {
+                Circle()
+                    .stroke(playerControlBorder, lineWidth: 1)
+            }
+            .overlay(alignment: .topTrailing) {
+                if let badgeText {
+                    Text(badgeText)
+                        .font(FMTypography.caption1)
+                        .fontWeight(.semibold)
+                        .monospacedDigit()
+                        .foregroundStyle(FMColors.mediaBadgeForeground)
+                        .padding(.horizontal, FMSpacing.xxs)
+                        .frame(minWidth: 22, minHeight: 22)
+                        .background(.white, in: Capsule())
+                        .offset(x: 5, y: -4)
+                }
+            }
+            .shadow(color: .black.opacity(0.35), radius: 4, y: 2)
     }
 
     private var seekBar: some View {

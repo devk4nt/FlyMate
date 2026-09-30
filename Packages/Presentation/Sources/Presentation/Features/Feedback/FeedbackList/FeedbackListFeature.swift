@@ -15,6 +15,7 @@ public struct FeedbackListFeature {
         @Presents public var edit: FeedbackEditFeature.State?
         @Presents public var userActivity: MyActivityFeature.State?
         @Presents public var blockAlert: AlertState<Action.BlockAlert>?
+        @Presents public var deleteAlert: AlertState<Action.DeleteAlert>?
         public var showToast = false
         public var toastMessage = ""
 
@@ -42,6 +43,9 @@ public struct FeedbackListFeature {
         case report(PresentationAction<ReportFeature.Action>)
         case editFeedbackTapped(Feedback)
         case edit(PresentationAction<FeedbackEditFeature.Action>)
+        case deleteFeedbackTapped(Feedback)
+        case deleteAlert(PresentationAction<DeleteAlert>)
+        case deleteResponse(Result<UUID, AppError>)
         case userActivity(PresentationAction<MyActivityFeature.Action>)
         case blockUserTapped(Feedback)
         case blockAlert(PresentationAction<BlockAlert>)
@@ -50,6 +54,10 @@ public struct FeedbackListFeature {
 
         public enum BlockAlert: Equatable {
             case confirmBlock(userID: UUID, userName: String)
+        }
+
+        public enum DeleteAlert: Equatable {
+            case confirm(feedbackID: UUID)
         }
     }
 
@@ -174,6 +182,48 @@ public struct FeedbackListFeature {
             case .edit:
                 return .none
 
+            case .deleteFeedbackTapped(let feedback):
+                state.deleteAlert = AlertState {
+                    TextState("피드백을 삭제할까요?")
+                } actions: {
+                    ButtonState(role: .destructive, action: .confirm(feedbackID: feedback.id)) {
+                        TextState("삭제하기")
+                    }
+                    ButtonState(role: .cancel) {
+                        TextState("취소")
+                    }
+                } message: {
+                    TextState("삭제한 피드백과 답글은 복구할 수 없어요.")
+                }
+                return .none
+
+            case .deleteAlert(.presented(.confirm(let feedbackID))):
+                let client = feedbackClient
+                return .run { send in
+                    do {
+                        try await client.deleteFeedback(feedbackID)
+                        await send(.deleteResponse(.success(feedbackID)))
+                    } catch {
+                        let appError = error as? AppError ?? .unexpected(error.localizedDescription)
+                        await send(.deleteResponse(.failure(appError)))
+                    }
+                }
+
+            case .deleteAlert:
+                return .none
+
+            case .deleteResponse(.success(let feedbackID)):
+                state.feedbacks.items.removeAll { $0.id == feedbackID }
+                state.loadingState = .loaded(state.feedbacks.items)
+                state.toastMessage = "피드백을 삭제했습니다"
+                state.showToast = true
+                return .none
+
+            case .deleteResponse(.failure(let error)):
+                state.toastMessage = error.localizedDescription
+                state.showToast = true
+                return .none
+
             case .userActivity:
                 return .none
 
@@ -235,6 +285,7 @@ public struct FeedbackListFeature {
             MyActivityFeature()
         }
         .ifLet(\.$blockAlert, action: \.blockAlert)
+        .ifLet(\.$deleteAlert, action: \.deleteAlert)
     }
 
     private func fetchFeedbacks(

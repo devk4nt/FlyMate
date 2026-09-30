@@ -125,10 +125,10 @@ async function uploadStorage(bucket, path, data, contentType) {
 // 앱의 StorageService.videoPath는 UUID 문자열 보간(대문자)로 경로를 만든다 — 반드시 대문자로 업로드
 for (const videoID of [VIDEO1_ID, VIDEO2_ID]) {
   await uploadStorage("videos", `${STUDY_ID.toUpperCase()}/${videoID.toUpperCase()}.mp4`, videoData, "video/mp4");
-  await uploadStorage("thumbnails", `${STUDY_ID}/${videoID}.jpg`, thumbnailData, "image/jpeg");
+  await uploadStorage("thumbnails", `${STUDY_ID.toUpperCase()}/${videoID.toUpperCase()}.jpg`, thumbnailData, "image/jpeg");
 }
 const thumbnailURL = (videoID) =>
-  `${SUPABASE_URL}/storage/v1/object/public/thumbnails/${STUDY_ID}/${videoID}.jpg`;
+  `${SUPABASE_URL}/storage/v1/object/public/thumbnails/${STUDY_ID.toUpperCase()}/${videoID.toUpperCase()}.jpg`;
 
 // 영상 fixture의 실제 길이(초) — DB의 duration_seconds와 대략 일치시키면 UI 표기가 자연스럽다
 const VIDEO_DURATION = 72;
