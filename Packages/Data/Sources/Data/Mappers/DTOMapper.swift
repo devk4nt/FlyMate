@@ -171,7 +171,8 @@ enum DTOMapper {
             timestampSeconds: dto.timestampSeconds,
             createdAt: parseDate(dto.createdAt),
             mentionedUserIDs: dto.mentionedUserIDs ?? [],
-            commentCount: dto.commentCount ?? 0
+            commentCount: dto.commentCount ?? 0,
+            acknowledgedAt: dto.acknowledgedAt.map(parseDate)
         )
     }
 

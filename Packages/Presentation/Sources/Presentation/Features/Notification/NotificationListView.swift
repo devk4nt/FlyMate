@@ -167,6 +167,8 @@ private struct NotificationRow: View {
             return "video.badge.plus"
         case .feedbackReminder:
             return "clock.badge.exclamationmark"
+        case .feedbackAcknowledged:
+            return "checkmark.circle.fill"
         }
     }
 

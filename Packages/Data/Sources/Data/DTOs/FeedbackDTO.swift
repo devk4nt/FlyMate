@@ -12,6 +12,7 @@ struct FeedbackDTO: Codable, Sendable {
     let createdAt: String
     let mentionedUserIDs: [UUID]?
     let commentCount: Int?
+    let acknowledgedAt: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -25,5 +26,6 @@ struct FeedbackDTO: Codable, Sendable {
         case createdAt = "created_at"
         case mentionedUserIDs = "mentioned_user_ids"
         case commentCount = "comment_count"
+        case acknowledgedAt = "acknowledged_at"
     }
 }

@@ -29,6 +29,14 @@ public struct VideoDetailFeature {
         @Presents public var deleteFeedbackAlert: AlertState<Action.DeleteFeedbackAlert>?
         @Presents public var deleteVideoAlert: AlertState<Action.DeleteVideoAlert>?
 
+        /// 로드된 피드백 목록에서 한 건의 확인 시각만 바꾼다
+        mutating func setAcknowledged(_ date: Date?, for feedbackID: UUID) {
+            guard case .loaded(var feedbacks) = feedbacks,
+                  let index = feedbacks.firstIndex(where: { $0.id == feedbackID }) else { return }
+            feedbacks[index].acknowledgedAt = date
+            self.feedbacks = .loaded(feedbacks)
+        }
+
         public init(video: Video, focusedFeedbackID: UUID? = nil, currentUserID: UUID? = nil) {
             self.video = video
             self.focusedFeedbackID = focusedFeedbackID
@@ -81,6 +89,8 @@ public struct VideoDetailFeature {
         case deleteFeedbackTapped(Feedback)
         case deleteFeedbackAlert(PresentationAction<DeleteFeedbackAlert>)
         case deleteFeedbackResponse(Result<UUID, AppError>)
+        case acknowledgeFeedbackTapped(Feedback)
+        case acknowledgeFeedbackResponse(feedbackID: UUID, Result<Feedback, AppError>)
         // 영상 삭제
         case deleteVideoTapped
         case deleteVideoAlert(PresentationAction<DeleteVideoAlert>)
@@ -125,6 +135,11 @@ public struct VideoDetailFeature {
     /// 피드에서 페이지별 인스턴스가 공존하므로 영상 단위로 스트림 구독을 취소한다
     private struct RealtimeCancelID: Hashable {
         let videoID: UUID
+    }
+
+    /// 빠른 연속 탭 방어 — 피드백별 최신 요청만 살린다
+    private struct AcknowledgeCancelID: Hashable {
+        let feedbackID: UUID
     }
 
     @Dependency(\.feedbackClient) private var feedbackClient
@@ -245,6 +260,39 @@ public struct VideoDetailFeature {
 
             case .feedbacksResponse(.failure(let error)):
                 state.feedbacks = .failed(error)
+                return .none
+
+            case .acknowledgeFeedbackTapped(let feedback):
+                // 영상 주인만 체크할 수 있다 (서버 함수도 같은 조건으로 거부한다)
+                guard state.currentUserID == state.video.uploaderID else { return .none }
+                let isAcknowledged = !feedback.isAcknowledged
+                // Optimistic update — 실패하면 응답에서 되돌린다
+                state.setAcknowledged(isAcknowledged ? Date() : nil, for: feedback.id)
+                let client = feedbackClient
+                let feedbackID = feedback.id
+                return .run { send in
+                    do {
+                        let updated = try await client.acknowledgeFeedback(feedbackID, isAcknowledged)
+                        await send(.acknowledgeFeedbackResponse(feedbackID: feedbackID, .success(updated)))
+                    } catch {
+                        let appError = error as? AppError ?? .unexpected(error.localizedDescription)
+                        await send(.acknowledgeFeedbackResponse(feedbackID: feedbackID, .failure(appError)))
+                    }
+                }
+                .cancellable(id: AcknowledgeCancelID(feedbackID: feedbackID), cancelInFlight: true)
+
+            case .acknowledgeFeedbackResponse(let feedbackID, .success(let updated)):
+                state.setAcknowledged(updated.acknowledgedAt, for: feedbackID)
+                return .none
+
+            case .acknowledgeFeedbackResponse(let feedbackID, .failure):
+                // 롤백: 낙관적으로 바꾼 값을 뒤집는다
+                if let current = state.feedbacks.value?.first(where: { $0.id == feedbackID }) {
+                    state.setAcknowledged(current.isAcknowledged ? nil : Date(), for: feedbackID)
+                }
+                state.toastMessage = "확인 표시에 실패했어요. 다시 시도해 주세요."
+                state.toastType = .error
+                state.showToast = true
                 return .none
 
             case .feedbacksUpdated(let feedbacks):

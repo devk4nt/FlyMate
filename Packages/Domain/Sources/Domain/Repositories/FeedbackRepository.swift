@@ -19,6 +19,9 @@ public protocol FeedbackRepository: Sendable {
     /// 피드백 내용을 수정한다 (작성자 본인만 가능).
     func updateFeedback(id: UUID, content: String) async throws -> Feedback
 
+    /// 피드백 확인 표시를 켜거나 끈다 (해당 영상 업로더만 가능).
+    func acknowledgeFeedback(id: UUID, isAcknowledged: Bool) async throws -> Feedback
+
     /// 피드백을 삭제한다.
     func deleteFeedback(id: UUID) async throws
 }

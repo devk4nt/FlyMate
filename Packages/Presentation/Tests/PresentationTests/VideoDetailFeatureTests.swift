@@ -646,6 +646,79 @@ struct VideoDetailFeatureTests {
 
 // MARK: - Mock Data
 
+// MARK: - 피드백 확인 표시
+
+@MainActor
+struct VideoDetailAcknowledgeTests {
+    private static let ownerID = UUID(uuidString: "00000000-0000-0000-0000-000000000010")!
+    private static let acknowledgedAt = Date(timeIntervalSince1970: 1_700_001_000)
+
+    private func loadedState(acknowledgedAt: Date? = nil) -> VideoDetailFeature.State {
+        var state = VideoDetailFeature.State(
+            video: .videoDetailMock,
+            currentUserID: Self.ownerID
+        )
+        state.feedbacks = .loaded([Feedback.videoDetailMock(acknowledgedAt: acknowledgedAt)])
+        return state
+    }
+
+    @Test
+    func 영상_주인이_확인_표시하면_낙관적_반영되고_서버_시각으로_확정된다() async {
+        let state = loadedState()
+        let feedback = Feedback.videoDetailMock()
+        let acknowledged = Feedback.videoDetailMock(acknowledgedAt: Self.acknowledgedAt)
+
+        let store = TestStore(initialState: state) {
+            VideoDetailFeature()
+        } withDependencies: {
+            $0.feedbackClient.acknowledgeFeedback = { id, isAcknowledged in
+                #expect(id == feedback.id)
+                #expect(isAcknowledged == true)
+                return acknowledged
+            }
+        }
+        // 낙관적 업데이트가 Date()를 쓰므로 중간 상태의 정확한 값은 검증하지 않는다
+        store.exhaustivity = .off
+
+        await store.send(.acknowledgeFeedbackTapped(feedback))
+
+        await store.receive(\.acknowledgeFeedbackResponse) {
+            $0.feedbacks = .loaded([acknowledged])
+        }
+    }
+
+    @Test
+    func 확인_표시_실패시_원래_상태로_롤백된다() async {
+        let store = TestStore(initialState: loadedState()) {
+            VideoDetailFeature()
+        } withDependencies: {
+            $0.feedbackClient.acknowledgeFeedback = { _, _ in
+                throw AppError.network(.serverError(statusCode: 500))
+            }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.acknowledgeFeedbackTapped(.videoDetailMock()))
+
+        await store.receive(\.acknowledgeFeedbackResponse) {
+            $0.feedbacks = .loaded([.videoDetailMock()])
+            $0.toastType = .error
+            $0.showToast = true
+        }
+        #expect(store.state.feedbacks.value?.first?.isAcknowledged == false)
+    }
+
+    @Test
+    func 영상_주인이_아니면_확인_표시가_무동작이다() async {
+        var state = loadedState()
+        state.currentUserID = UUID(uuidString: "00000000-0000-0000-0000-000000000099")
+        // acknowledgeFeedback은 unimplemented — 호출되면 테스트가 실패한다
+        let store = TestStore(initialState: state) { VideoDetailFeature() }
+
+        await store.send(.acknowledgeFeedbackTapped(.videoDetailMock()))
+    }
+}
+
 private extension Video {
     static let videoDetailMock = Video(
         id: UUID(uuidString: "00000000-0000-0000-0000-000000000003")!,
@@ -662,7 +735,8 @@ private extension Video {
 private extension Feedback {
     static func videoDetailMock(
         id: UUID = UUID(uuidString: "00000000-0000-0000-0000-000000000100")!,
-        commentCount: Int = 0
+        commentCount: Int = 0,
+        acknowledgedAt: Date? = nil
     ) -> Feedback {
         Feedback(
             id: id,
@@ -673,7 +747,8 @@ private extension Feedback {
             content: "시선 처리가 좋았습니다",
             timestampSeconds: 30.0,
             createdAt: Date(timeIntervalSince1970: 1_700_000_000),
-            commentCount: commentCount
+            commentCount: commentCount,
+            acknowledgedAt: acknowledgedAt
         )
     }
 }

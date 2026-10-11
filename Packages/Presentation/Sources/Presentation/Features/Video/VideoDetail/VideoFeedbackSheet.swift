@@ -98,6 +98,11 @@ public struct VideoFeedbackSheet: View {
         }
     }
 
+    /// 확인 표시는 영상 주인만 — 남이 보기엔 결과(체크 뱃지)만 보인다
+    private var isVideoOwner: Bool {
+        store.currentUserID == store.video.uploaderID
+    }
+
     // MARK: - Feedback Section
 
     private var feedbackSection: some View {
@@ -166,6 +171,9 @@ public struct VideoFeedbackSheet: View {
                             onToggleReplies: {
                                 store.send(.toggleRepliesTapped(feedback))
                             },
+                            onAcknowledge: isVideoOwner ? {
+                                store.send(.acknowledgeFeedbackTapped(feedback))
+                            } : nil,
                             onDeleteReply: { comment in
                                 store.send(.deleteReplyTapped(comment))
                             },
@@ -252,6 +260,7 @@ private struct FeedbackRow: View {
     var onTimestampTapped: (() -> Void)?
     var onReplyTapped: (() -> Void)?
     var onToggleReplies: (() -> Void)?
+    var onAcknowledge: (() -> Void)?
     var onDeleteReply: ((FeedbackComment) -> Void)?
     var onEdit: (() -> Void)?
     var onDelete: (() -> Void)?
@@ -346,6 +355,34 @@ private struct FeedbackRow: View {
                     .foregroundStyle(FMColors.secondaryLabel)
                 }
                 .accessibilityLabel("답글 달기")
+
+                // 확인 표시 — 주인은 토글 버튼, 나머지는 결과 뱃지만
+                if let onAcknowledge {
+                    Button {
+                        onAcknowledge()
+                    } label: {
+                        HStack(spacing: FMSpacing.xxxs) {
+                            Image(systemName: feedback.isAcknowledged ? "checkmark.circle.fill" : "checkmark.circle")
+                                .font(.system(size: FMSizing.IconSize.xs))
+                            Text("확인")
+                                .font(FMTypography.caption2)
+                        }
+                        .foregroundStyle(feedback.isAcknowledged ? FMColors.accent : FMColors.secondaryLabel)
+                    }
+                    .accessibilityLabel(feedback.isAcknowledged ? "확인 표시 해제" : "피드백 확인 표시")
+                    .accessibilityHint("확인 표시를 하면 작성자에게 알림이 갑니다")
+                    .accessibilityAddTraits(feedback.isAcknowledged ? .isSelected : [])
+                } else if feedback.isAcknowledged {
+                    HStack(spacing: FMSpacing.xxxs) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: FMSizing.IconSize.xs))
+                        Text("확인함")
+                            .font(FMTypography.caption2)
+                    }
+                    .foregroundStyle(FMColors.accent)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("영상 주인이 확인한 피드백")
+                }
 
                 // 답글 토글 버튼 (댓글이 있을 때만)
                 if feedback.commentCount > 0 {
