@@ -266,6 +266,9 @@ public struct AppFeature : Sendable {
                 if payload["recruitPostId"] != nil || payload["type"] == "recruit_post" {
                     return .send(.deepLink(.recruit))
                 }
+                if payload["quickFeedbackRequestId"] != nil {
+                    return .send(.deepLink(.quickFeedback))
+                }
                 if let studyID = payload["studyId"].flatMap(UUID.init(uuidString:)) {
                     // 가입 신청(방장 수신)은 승인/거절 화면으로 직행
                     if payload["type"] == "join_request" {
@@ -297,6 +300,12 @@ public struct AppFeature : Sendable {
                 case .recruit:
                     if case .tab = state.destination {
                         return .send(.destination(.tab(.showRecruit)))
+                    } else {
+                        state.pendingDeepLink = deepLink
+                    }
+                case .quickFeedback:
+                    if case .tab = state.destination {
+                        return .send(.destination(.tab(.showQuickFeedback)))
                     } else {
                         state.pendingDeepLink = deepLink
                     }
@@ -426,6 +435,7 @@ public enum DeepLink: Equatable {
     case inviteCode(String)
     case videoDetail(studyID: UUID, videoID: UUID, feedbackID: UUID? = nil)
     case recruit
+    case quickFeedback
     case studyDetail(studyID: UUID)
     case joinRequests(studyID: UUID)
 }

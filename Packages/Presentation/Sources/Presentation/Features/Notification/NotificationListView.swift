@@ -153,6 +153,8 @@ private struct NotificationRow: View {
             return "bell.badge.fill"
         case .quickFeedbackReceived:
             return "heart.text.square.fill"
+        case .quickFeedbackRequest:
+            return "bolt.fill"
         case .recruitPost:
             return "person.2.badge.plus.fill"
         case .joinRequest:
@@ -165,6 +167,8 @@ private struct NotificationRow: View {
             return "video.badge.plus"
         case .feedbackReminder:
             return "clock.badge.exclamationmark"
+        case .feedbackAcknowledged:
+            return "checkmark.circle.fill"
         }
     }
 

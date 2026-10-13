@@ -66,6 +66,24 @@ struct AppFeatureDeepLinkTests {
         await store.receive(\.destination.tab.showInviteCode)
     }
 
+    @Test
+    func 빠른피드백_푸시_탭시_빠른피드백_허브로_이동() async {
+        var state = AppFeature.State()
+        state.destination = .tab(TabFeature.State(currentUser: Self.mockUser))
+
+        let store = TestStore(initialState: state) {
+            AppFeature()
+        }
+        store.exhaustivity = .off
+
+        await store.send(.pushNotificationTapped([
+            "type": "quick_feedback_request",
+            "quickFeedbackRequestId": "00000000-0000-0000-0000-000000000030"
+        ]))
+        await store.receive(\.deepLink)
+        await store.receive(\.destination.tab.showQuickFeedback)
+    }
+
     // MARK: - 로그인 상태에서 딥링크 → 보류
 
     @Test

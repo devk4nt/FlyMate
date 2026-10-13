@@ -53,10 +53,12 @@ public enum NotificationType: String, Equatable, Sendable, Hashable {
     case mentionedInFeedbackComment = "mentioned_in_feedback_comment"
     case announcement
     case quickFeedbackReceived = "quick_feedback_received"
+    case quickFeedbackRequest = "quick_feedback_request"
     case recruitPost = "recruit_post"
     case joinRequest = "join_request"
     case joinRequestApproved = "join_request_approved"
     case joinRequestRejected = "join_request_rejected"
     case newVideoInStudy = "new_video_in_study"
     case feedbackReminder = "feedback_reminder"
+    case feedbackAcknowledged = "feedback_acknowledged"
 }

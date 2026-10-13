@@ -117,10 +117,34 @@ public struct FeedbackRepositoryImpl: FeedbackRepository {
         return DTOMapper.toDomain(dto)
     }
 
+    public func acknowledgeFeedback(id: UUID, isAcknowledged: Bool) async throws -> Feedback {
+        // RLS를 영상 주인까지 열면 컬럼 단위 제한이 불가능해 본문까지 고칠 수 있다.
+        // 권한 검사 + 알림 발송을 함께 하는 SECURITY DEFINER 함수를 호출한다.
+        let dtos: [FeedbackDTO] = try await client.rpc(
+            "acknowledge_feedback",
+            params: AcknowledgeFeedbackParams(
+                p_feedback_id: id,
+                p_acknowledged: isAcknowledged
+            )
+        )
+        .execute()
+        .value
+
+        guard let dto = dtos.first else {
+            throw AppError.unexpected("피드백을 찾을 수 없습니다")
+        }
+        return DTOMapper.toDomain(dto)
+    }
+
     public func deleteFeedback(id: UUID) async throws {
         try await client.from(SupabaseConfig.Table.feedbacks)
             .delete()
             .eq("id", value: id)
             .execute()
     }
+}
+
+private struct AcknowledgeFeedbackParams: Encodable {
+    let p_feedback_id: UUID
+    let p_acknowledged: Bool
 }

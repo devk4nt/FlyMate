@@ -152,6 +152,7 @@ struct FlyMateApp: App {
             fetchGiven: { try await feedbackRepo.fetchGivenFeedbacks(userID: $0, cursor: $1) },
             observeFeedbacks: { feedbackRepo.observeFeedbacks(videoID: $0) },
             updateFeedback: { try await feedbackRepo.updateFeedback(id: $0, content: $1) },
+            acknowledgeFeedback: { try await feedbackRepo.acknowledgeFeedback(id: $0, isAcknowledged: $1) },
             deleteFeedback: { try await feedbackRepo.deleteFeedback(id: $0) }
         )
 
@@ -606,7 +607,8 @@ struct FlyMateApp: App {
             Feedback(
                 id: uuid(200), videoID: uuid(100), studyID: studyA.id, authorID: haneulID, authorName: "김하늘",
                 content: "요청하신 미소 위주로 봤어요 — 도입부 인사는 정말 자연스러워요. 긴장한 티가 하나도 안 나요 😊",
-                timestampSeconds: 12, createdAt: now.addingTimeInterval(-2 * day), commentCount: 2
+                timestampSeconds: 12, createdAt: now.addingTimeInterval(-2 * day), commentCount: 2,
+                acknowledgedAt: now.addingTimeInterval(-1 * day)
             ),
             Feedback(
                 id: uuid(210), videoID: uuid(100), studyID: studyA.id, authorID: haneulID, authorName: "김하늘",
@@ -644,7 +646,8 @@ struct FlyMateApp: App {
             Feedback(
                 id: uuid(205), videoID: uuid(102), studyID: studyA.id, authorID: meID, authorName: "유나",
                 content: "요청하신 R/L 체크했어요 — Ladies and gentlemen에서 이제 확실히 구분돼요! 쉐도잉 효과 보이네요.",
-                timestampSeconds: 30, createdAt: now.addingTimeInterval(-1 * day), commentCount: 1
+                timestampSeconds: 30, createdAt: now.addingTimeInterval(-1 * day), commentCount: 1,
+                acknowledgedAt: now.addingTimeInterval(-6 * hour)
             ),
             Feedback(
                 id: uuid(206), videoID: uuid(102), studyID: studyA.id, authorID: minjunID, authorName: "이민준",
@@ -1146,6 +1149,12 @@ struct FlyMateApp: App {
                 }
                 return updated
             },
+            acknowledgeFeedback: { id, isAcknowledged in
+                guard let updated = feedbackStore.acknowledge(id: id, isAcknowledged: isAcknowledged) else {
+                    throw AppError.unexpected("피드백을 찾을 수 없습니다")
+                }
+                return updated
+            },
             deleteFeedback: { id in
                 feedbackStore.delete(id: id)
             }
@@ -1532,10 +1541,19 @@ struct FlyMateApp: App {
                     timestampSeconds: old.timestampSeconds,
                     createdAt: old.createdAt,
                     mentionedUserIDs: old.mentionedUserIDs,
-                    commentCount: old.commentCount
+                    commentCount: old.commentCount,
+                    acknowledgedAt: old.acknowledgedAt
                 )
                 feedbacks[index] = updated
                 return updated
+            }
+        }
+
+        func acknowledge(id: UUID, isAcknowledged: Bool) -> Feedback? {
+            lock.withLock {
+                guard let index = feedbacks.firstIndex(where: { $0.id == id }) else { return nil }
+                feedbacks[index].acknowledgedAt = isAcknowledged ? Date() : nil
+                return feedbacks[index]
             }
         }
 

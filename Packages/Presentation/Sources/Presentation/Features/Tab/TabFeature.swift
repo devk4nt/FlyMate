@@ -51,6 +51,7 @@ public struct TabFeature {
         case navigationFailed
         case showInviteCode(String)
         case showRecruit
+        case showQuickFeedback
         case newNotificationReceived(AppNotification)
         case unreadCountResponse(Int)
         case refreshUnreadCount
@@ -190,7 +191,7 @@ public struct TabFeature {
                     await send(.navigationFailed)
                 }
 
-            case .notificationList(.delegate(.navigateToQuickFeedback)):
+            case .notificationList(.delegate(.navigateToQuickFeedback)), .showQuickFeedback:
                 state.isNotificationSheetPresented = false
                 state.selectedTab = .study
                 return .send(.study(.showQuickFeedback))
