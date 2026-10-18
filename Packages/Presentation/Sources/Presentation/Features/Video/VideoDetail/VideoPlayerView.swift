@@ -1,6 +1,7 @@
 import AVFoundation
 import SwiftUI
 import UIKit
+import Core
 
 struct VideoPlayerView: UIViewRepresentable {
     let url: URL
@@ -77,6 +78,7 @@ struct VideoPlayerView: UIViewRepresentable {
         private var timeObserver: Any?
         private var statusObservation: NSKeyValueObservation?
         private var endObserver: NSObjectProtocol?
+        private var setupTask: Task<Void, Never>?
 
         init(parent: VideoPlayerView) {
             self.parent = parent
@@ -90,8 +92,18 @@ struct VideoPlayerView: UIViewRepresentable {
             parent.onPausedByOtherPlayer()
         }
 
+        /// 캐시된 로컬 파일을 먼저 확보한 뒤 플레이어를 붙인다 — 재시청 시 네트워크를 쓰지 않는다.
         @MainActor
         func setupPlayer(url: URL, initialTime: TimeInterval, in view: PlayerUIView) {
+            setupTask = Task { @MainActor [weak self] in
+                let localURL = await VideoCache.localURL(for: url)
+                guard !Task.isCancelled, let self else { return }
+                self.attachPlayer(url: localURL, initialTime: initialTime, in: view)
+            }
+        }
+
+        @MainActor
+        private func attachPlayer(url: URL, initialTime: TimeInterval, in view: PlayerUIView) {
             try? AVAudioSession.sharedInstance().setCategory(.playback)
             try? AVAudioSession.sharedInstance().setActive(true)
 
@@ -146,9 +158,18 @@ struct VideoPlayerView: UIViewRepresentable {
                     self.parent.onPlaybackEnded()
                 }
             }
+
+            // 캐시 조회 중 도착한 재생 요청은 updateUIView에서 흘려보냈으므로 여기서 반영한다
+            if parent.isPlaying {
+                Coordinator.activePlayer?.pauseByOtherPlayer(except: self)
+                Coordinator.activePlayer = self
+                player.play()
+            }
         }
 
         func cleanup() {
+            setupTask?.cancel()
+            setupTask = nil
             if let timeObserver {
                 player?.removeTimeObserver(timeObserver)
             }
