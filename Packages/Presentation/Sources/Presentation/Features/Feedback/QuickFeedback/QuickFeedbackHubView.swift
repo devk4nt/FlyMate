@@ -519,13 +519,17 @@ private struct QuickFeedbackRequestHistoryRow: View {
 
 public struct QuickFeedbackRequestDetailView: View {
     @Bindable var store: StoreOf<QuickFeedbackRequestDetailFeature>
-    @State private var player: AVPlayer
+    @State private var player = AVPlayer()
 
     public init(store: StoreOf<QuickFeedbackRequestDetailFeature>) {
         self.store = store
-        _player = State(initialValue: AVPlayer(
-            url: store.request.videoURL ?? URL(fileURLWithPath: "/dev/null")
-        ))
+    }
+
+    /// 캐시된 로컬 파일로 재생해 재시청 시 네트워크를 쓰지 않는다.
+    private func loadVideo() async {
+        guard let url = store.request.videoURL, player.currentItem == nil else { return }
+        let localURL = await VideoCache.localURL(for: url)
+        player.replaceCurrentItem(with: AVPlayerItem(url: localURL))
     }
 
     public var body: some View {
@@ -536,6 +540,7 @@ public struct QuickFeedbackRequestDetailView: View {
                         .aspectRatio(16 / 9, contentMode: .fit)
                         .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md))
                         .screenCaptureGuarded()
+                        .task { await loadVideo() }
                         .onDisappear { player.pause() }
                 } else {
                     FMEmptyState(
@@ -654,11 +659,20 @@ public struct QuickFeedbackRequestDetailView: View {
 
 public struct QuickFeedbackReviewView: View {
     @Bindable var store: StoreOf<QuickFeedbackReviewFeature>
-    @State private var player: AVPlayer
+    @State private var player = AVPlayer()
 
     public init(store: StoreOf<QuickFeedbackReviewFeature>) {
         self.store = store
-        _player = State(initialValue: AVPlayer(url: store.claimed.request.videoURL ?? URL(fileURLWithPath: "/dev/null")))
+    }
+
+    /// 캐시된 로컬 파일로 재생해 재시청 시 네트워크를 쓰지 않는다.
+    private func loadVideo() async {
+        guard let url = store.claimed.request.videoURL else { return }
+        if player.currentItem == nil {
+            let localURL = await VideoCache.localURL(for: url)
+            player.replaceCurrentItem(with: AVPlayerItem(url: localURL))
+        }
+        player.play()
     }
 
     public var body: some View {
@@ -668,7 +682,7 @@ public struct QuickFeedbackReviewView: View {
                     .aspectRatio(16 / 9, contentMode: .fit)
                     .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md))
                     .screenCaptureGuarded()
-                    .onAppear { player.play() }
+                    .task { await loadVideo() }
                     .onDisappear { player.pause() }
 
                 VStack(alignment: .leading, spacing: FMSpacing.xs) {

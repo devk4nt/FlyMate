@@ -18,6 +18,7 @@ struct FlyMateApp: App {
 
     init() {
         Self.configureTypographyAppearance()
+        Task.detached(priority: .utility) { VideoCache.purgeStale() }
         self.store = Store(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
