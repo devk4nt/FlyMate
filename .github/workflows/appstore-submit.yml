@@ -9,6 +9,10 @@ on:
         description: "심사 제출할 마케팅 버전"
         required: true
         default: "1.2"
+      status_only:
+        description: "true면 버전·심사 상태만 조회하고 종료 (제출하지 않음)"
+        required: false
+        default: "false"
       whats_new:
         description: "릴리즈 노트 한 줄 오버라이드 (비우면 Deliverables/AppStoreConnect/release-notes-ko.txt 사용 — 여러 줄은 이 입력으로 넘기면 공백으로 뭉개진다)"
         required: false
@@ -26,6 +30,7 @@ jobs:
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_KEY_P8_B64: ${{ secrets.ASC_KEY_P8 }}
           TARGET_VERSION: ${{ inputs.version }}
+          STATUS_ONLY: ${{ inputs.status_only }}
           WHATS_NEW: ${{ inputs.whats_new }}
         run: |
           export ASC_PRIVATE_KEY="$(echo "$ASC_KEY_P8_B64" | base64 -d)"
