@@ -3,6 +3,7 @@
 // 필요 env: ASC_KEY_ID, ASC_ISSUER_ID, ASC_PRIVATE_KEY(.p8 내용)
 // 선택 env: BUNDLE_ID(기본 com.flymate.app), TARGET_VERSION(기본 1.1), WHATS_NEW, WHATS_NEW_FILE
 //   STATUS_ONLY=true — 버전/심사 상태만 출력하고 종료 (변경 없음)
+//   UPDATE_NOTES_ONLY=true — TARGET_VERSION의 릴리즈 노트만 교체하고 종료
 import crypto from "node:crypto";
 import { readFileSync } from "node:fs";
 
@@ -86,6 +87,22 @@ const versions = await api(
 );
 for (const v of versions.data) {
   console.log(`기존 버전: ${v.attributes.versionString} — ${v.attributes.appStoreState}`);
+}
+
+// UPDATE_NOTES_ONLY: 지정 버전의 릴리즈 노트만 교체하고 종료 (제출하지 않음)
+// 출시된 버전(READY_FOR_SALE)은 Apple이 whatsNew를 잠그므로 실패할 수 있다 — 에러를 그대로 노출한다.
+if (process.env.UPDATE_NOTES_ONLY === "true") {
+  if (!WHATS_NEW) throw new Error(`릴리즈 노트가 비어 있음 — ${WHATS_NEW_FILE} 확인`);
+  const target = versions.data.find((v) => v.attributes.versionString === TARGET_VERSION);
+  if (!target) throw new Error(`버전 ${TARGET_VERSION}을 찾을 수 없음`);
+  const locs = await api("GET", `/v1/appStoreVersions/${target.id}/appStoreVersionLocalizations`);
+  for (const loc of locs.data) {
+    await api("PATCH", `/v1/appStoreVersionLocalizations/${loc.id}`, {
+      data: { type: "appStoreVersionLocalizations", id: loc.id, attributes: { whatsNew: WHATS_NEW } },
+    });
+    console.log(`whatsNew 갱신: ${loc.attributes.locale}`);
+  }
+  process.exit(0);
 }
 
 // STATUS_ONLY: 심사/출시 상태만 조회하고 종료 (아무것도 변경하지 않음)
