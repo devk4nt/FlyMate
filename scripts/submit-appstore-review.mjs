@@ -2,6 +2,7 @@
 // TestFlight 빌드 처리 완료를 기다렸다가 버전에 연결하고 심사 요청까지 수행한다.
 // 필요 env: ASC_KEY_ID, ASC_ISSUER_ID, ASC_PRIVATE_KEY(.p8 내용)
 // 선택 env: BUNDLE_ID(기본 com.flymate.app), TARGET_VERSION(기본 1.1), WHATS_NEW, WHATS_NEW_FILE
+//   STATUS_ONLY=true — 버전/심사 상태만 출력하고 종료 (변경 없음)
 import crypto from "node:crypto";
 import { readFileSync } from "node:fs";
 
@@ -85,6 +86,18 @@ const versions = await api(
 );
 for (const v of versions.data) {
   console.log(`기존 버전: ${v.attributes.versionString} — ${v.attributes.appStoreState}`);
+}
+
+// STATUS_ONLY: 심사/출시 상태만 조회하고 종료 (아무것도 변경하지 않음)
+if (process.env.STATUS_ONLY === "true") {
+  const subs = await api(
+    "GET",
+    `/v1/reviewSubmissions?filter[app]=${app.id}&limit=5&include=items&fields[reviewSubmissions]=state,submittedDate`,
+  );
+  for (const s of subs.data) {
+    console.log(`심사 제출: ${s.id} — ${s.attributes.state} (제출 ${s.attributes.submittedDate ?? "-"})`);
+  }
+  process.exit(0);
 }
 let version = versions.data.find((v) => EDITABLE_STATES.has(v.attributes.appStoreState));
 const blocking = versions.data.find((v) =>
