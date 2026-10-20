@@ -97,6 +97,7 @@ public struct StudyListView: View {
         .fullScreenCover(item: $store.scope(state: \.practiceMirror, action: \.practiceMirror)) { mirrorStore in
             PracticeMirrorView(store: mirrorStore)
         }
+        .trackScreen(AnalyticsScreen.studyList)
     }
 
     // MARK: - Pending Join Requests

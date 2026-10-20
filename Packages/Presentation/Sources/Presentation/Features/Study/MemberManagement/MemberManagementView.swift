@@ -38,6 +38,7 @@ public struct MemberManagementView: View {
                 ProgressView()
             }
         }
+        .trackScreen(AnalyticsScreen.memberManagement)
     }
 
     // MARK: - Member Row

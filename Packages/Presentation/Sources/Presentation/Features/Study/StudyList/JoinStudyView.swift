@@ -48,6 +48,7 @@ public struct JoinStudyView: View {
             }
             .fmSheetBottomBar()
         }
+        .trackScreen(AnalyticsScreen.joinStudy)
     }
 
     private var introHeader: some View {

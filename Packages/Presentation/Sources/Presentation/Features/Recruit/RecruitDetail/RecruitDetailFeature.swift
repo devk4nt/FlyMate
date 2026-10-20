@@ -114,6 +114,7 @@ public struct RecruitDetailFeature {
     @Dependency(\.recruitClient) private var recruitClient
     @Dependency(\.studyClient) private var studyClient
     @Dependency(\.blockClient) private var blockClient
+    @Dependency(\.analyticsClient) private var analyticsClient
     @Dependency(\.date.now) private var now
 
     public init() {}
@@ -146,6 +147,10 @@ public struct RecruitDetailFeature {
 
             case .joinResponse(.success(let request)):
                 state.joinRequest = .loaded(request)
+                analyticsClient.trackEvent(
+                    AnalyticsEvent.studyJoinRequested,
+                    [AnalyticsEvent.sourceParameter: "recruit_post"]
+                )
                 state.toastMessage = "가입 신청을 보냈어요. 방장이 확인하면 알림으로 알려드릴게요."
                 state.showToast = true
                 return .none

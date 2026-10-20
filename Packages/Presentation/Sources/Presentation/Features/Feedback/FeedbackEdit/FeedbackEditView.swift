@@ -65,5 +65,6 @@ public struct FeedbackEditView: View {
                 }
             }
         }
+        .trackScreen(AnalyticsScreen.feedbackEdit)
     }
 }

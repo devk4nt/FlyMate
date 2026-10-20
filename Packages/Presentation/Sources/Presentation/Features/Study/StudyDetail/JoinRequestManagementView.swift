@@ -20,6 +20,7 @@ public struct JoinRequestManagementView: View {
                 store.send(.onAppear)
             }
             .alert($store.scope(state: \.confirmAlert, action: \.confirmAlert))
+        .trackScreen(AnalyticsScreen.joinRequestManagement)
     }
 
     @ViewBuilder

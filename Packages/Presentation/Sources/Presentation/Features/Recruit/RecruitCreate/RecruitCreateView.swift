@@ -89,6 +89,7 @@ public struct RecruitCreateView: View {
                 Text(error.localizedDescription)
             }
         }
+        .trackScreen(AnalyticsScreen.recruitCreate)
     }
 
     // MARK: - Cards

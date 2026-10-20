@@ -19,6 +19,7 @@ struct MyActivitySheet: View {
         .onAppear {
             store.send(.onAppear)
         }
+        .trackScreen(AnalyticsScreen.myActivity)
     }
 
     @ViewBuilder

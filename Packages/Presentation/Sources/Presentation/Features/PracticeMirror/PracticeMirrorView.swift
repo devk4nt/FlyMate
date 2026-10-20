@@ -63,6 +63,7 @@ public struct PracticeMirrorView: View {
                 requestReview()
             }
         }
+        .trackScreen(AnalyticsScreen.practiceMirror)
     }
 
     /// 시뮬레이터 데모 — ARKit 미지원 환경(DEBUG)에서 합성 미소 값으로 전체 플로우를 확인한다.

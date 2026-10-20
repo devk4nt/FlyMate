@@ -140,6 +140,7 @@ public struct LoginView: View {
                 Text(error.errorDescription ?? "알 수 없는 오류가 발생했습니다.")
             }
         }
+        .trackScreen(AnalyticsScreen.login)
     }
 
     // MARK: - Email Login (App Store 심사용 히든 로그인)

@@ -59,6 +59,7 @@ public struct BlockedUsersView: View {
             message: store.toastMessage,
             type: .info
         )
+        .trackScreen(AnalyticsScreen.blockedUsers)
     }
 }
 

@@ -20,6 +20,7 @@ public struct FeedbackCommentListView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { store.send(.onAppear) }
         .fmSheetStyle()
+        .trackScreen(AnalyticsScreen.feedbackCommentList)
     }
 
     // MARK: - Comment List

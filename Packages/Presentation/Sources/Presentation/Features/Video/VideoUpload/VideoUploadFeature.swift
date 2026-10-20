@@ -74,6 +74,7 @@ public struct VideoUploadFeature {
 
     @Dependency(\.videoClient) private var videoClient
     @Dependency(\.quickFeedbackClient) private var quickFeedbackClient
+    @Dependency(\.analyticsClient) private var analyticsClient
     @Dependency(\.dismiss) private var dismiss
 
     public init() {}
@@ -177,10 +178,18 @@ public struct VideoUploadFeature {
 
             case .uploadResponse(.success):
                 state.uploadState = .completed
+                analyticsClient.trackEvent(
+                    AnalyticsEvent.videoUploaded,
+                    [AnalyticsEvent.kindParameter: "study"]
+                )
                 return .send(.uploadCompleted)
 
             case .quickFeedbackUploadResponse(.success):
                 state.uploadState = .completed
+                analyticsClient.trackEvent(
+                    AnalyticsEvent.videoUploaded,
+                    [AnalyticsEvent.kindParameter: "quick_feedback"]
+                )
                 return .send(.uploadCompleted)
 
             case .uploadResponse(.failure(let error)),

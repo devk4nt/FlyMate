@@ -50,6 +50,7 @@ public struct FeedbackWriteFeature {
 
     @Dependency(\.feedbackClient) private var feedbackClient
     @Dependency(\.studyClient) private var studyClient
+    @Dependency(\.analyticsClient) private var analyticsClient
     @Dependency(\.dismiss) private var dismiss
 
     public init() {}
@@ -161,6 +162,7 @@ public struct FeedbackWriteFeature {
 
             case .submitResponse(.success):
                 state.isSubmitting = false
+                analyticsClient.trackEvent(AnalyticsEvent.feedbackWritten, [:])
                 return .send(.feedbackSubmitted)
 
             case .submitResponse(.failure(let error)):

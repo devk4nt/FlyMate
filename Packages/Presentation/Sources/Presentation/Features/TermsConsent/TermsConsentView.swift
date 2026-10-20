@@ -48,6 +48,7 @@ public struct TermsConsentView: View {
             agreeButton
         }
         .background(FMColors.background)
+        .trackScreen(AnalyticsScreen.termsConsent)
     }
 
     // MARK: - Header

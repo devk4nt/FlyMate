@@ -32,6 +32,7 @@ public struct OnboardingView: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("FlyMate 앱 소개")
+        .trackScreen(AnalyticsScreen.onboarding)
     }
 
     private var pageSelection: Binding<Int> {

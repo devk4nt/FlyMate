@@ -263,6 +263,7 @@ public struct SettingsView: View {
         .sheet(item: $store.scope(state: \.destination?.myActivity, action: \.destination.myActivity)) { activityStore in
             MyActivitySheet(store: activityStore)
         }
+        .trackScreen(AnalyticsScreen.settings)
     }
 
     private var smileReminderDate: Date {

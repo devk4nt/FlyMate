@@ -37,6 +37,7 @@ public struct AnnouncementDetailView: View {
         .background(FMColors.canvas)
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+        .trackScreen(AnalyticsScreen.announcementDetail)
     }
 
     // MARK: - Header
