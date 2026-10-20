@@ -4,9 +4,19 @@ import ComposableArchitecture
 /// 분석 이벤트 클라이언트 — 구현은 앱 타겟에서 Firebase Analytics로 주입한다.
 public struct AnalyticsClient: Sendable {
     public var trackEvent: @Sendable (_ name: String, _ parameters: [String: String]) -> Void
+    /// GA4 User-ID 설정. nil이면 해제(로그아웃).
+    ///
+    /// 설정하지 않으면 GA4가 사람이 아니라 **기기** 단위로 집계한다 — 유지율 카드의
+    /// "기기 데이터만 기반으로 함"이 그 뜻이고, 기기 교체·재설치가 전부 신규 사용자로 잡힌다.
+    /// 식별자는 Supabase user UUID(가명)만 쓴다. 이메일 등 PII는 절대 넣지 않는다.
+    public var setUserID: @Sendable (_ userID: String?) -> Void
 
-    public init(trackEvent: @escaping @Sendable (String, [String: String]) -> Void) {
+    public init(
+        trackEvent: @escaping @Sendable (String, [String: String]) -> Void,
+        setUserID: @escaping @Sendable (String?) -> Void
+    ) {
         self.trackEvent = trackEvent
+        self.setUserID = setUserID
     }
 }
 
@@ -56,7 +66,7 @@ extension AnalyticsClient {
 
 extension AnalyticsClient: TestDependencyKey {
     /// 분석은 관찰용 부수효과라 테스트에서 스텁을 강제하지 않는다 (no-op)
-    public static let testValue = AnalyticsClient(trackEvent: { _, _ in })
+    public static let testValue = AnalyticsClient(trackEvent: { _, _ in }, setUserID: { _ in })
     public static let previewValue = testValue
 }
 

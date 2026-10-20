@@ -56,13 +56,15 @@ struct FlyMateApp: App {
         #if DEBUG
         if AppFeature.skipAuth, ProcessInfo.processInfo.environment["TEST_EMAIL"]?.isEmpty != false {
             dependencies.analyticsClient = AnalyticsClient(
-                trackEvent: { name, parameters in print("[Analytics] \(name) \(parameters)") }
+                trackEvent: { name, parameters in print("[Analytics] \(name) \(parameters)") },
+                setUserID: { userID in print("[Analytics] setUserID \(userID ?? "nil")") }
             )
             return
         }
         #endif
         dependencies.analyticsClient = AnalyticsClient(
-            trackEvent: { name, parameters in Analytics.logEvent(name, parameters: parameters) }
+            trackEvent: { name, parameters in Analytics.logEvent(name, parameters: parameters) },
+            setUserID: { userID in Analytics.setUserID(userID) }
         )
     }
 

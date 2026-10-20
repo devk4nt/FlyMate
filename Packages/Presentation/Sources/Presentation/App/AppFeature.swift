@@ -86,6 +86,7 @@ public struct AppFeature : Sendable {
     @Dependency(\.pushNotificationClient) private var pushNotificationClient
     @Dependency(\.userDefaultsClient) private var userDefaultsClient
     @Dependency(\.notificationClient) private var notificationClient
+    @Dependency(\.analyticsClient) private var analyticsClient
 
     public init() {}
 
@@ -171,6 +172,9 @@ public struct AppFeature : Sendable {
             case .authStateChanged(let user):
                 state.currentUser = user
                 state.hasResolvedAuth = true
+                // GA4 User-ID — 설정하지 않으면 유지율이 사람이 아닌 기기 단위로 집계된다.
+                // 가명 UUID만 보낸다 (PII 금지)
+                analyticsClient.setUserID(user?.id.uuidString)
                 if let user {
                     // 캐시 프로필로 먼저 진입한 뒤 최신 프로필(.initialSession/.tokenRefreshed)이 오면 Tab·설정에도 반영
                     state.tabState?.currentUser = user
@@ -373,6 +377,7 @@ public struct AppFeature : Sendable {
                 state.currentUser = nil
                 state.fcmToken = nil
                 state.destination = .login(LoginFeature.State())
+                analyticsClient.setUserID(nil)
                 return .merge(
                     .cancel(id: CancelID.fcmTokenObserver),
                     fcmToken.map { token in
