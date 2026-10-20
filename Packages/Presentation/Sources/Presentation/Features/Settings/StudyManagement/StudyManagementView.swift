@@ -35,6 +35,7 @@ public struct StudyManagementView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { store.send(.onAppear) }
         .alert($store.scope(state: \.confirmAlert, action: \.confirmAlert))
+        .trackScreen(AnalyticsScreen.studyManagement)
     }
 
     private var loadingContent: some View {

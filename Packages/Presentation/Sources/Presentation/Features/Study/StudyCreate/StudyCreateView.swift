@@ -62,6 +62,7 @@ public struct StudyCreateView: View {
                 Text(error.localizedDescription)
             }
         }
+        .trackScreen(AnalyticsScreen.studyCreate)
     }
 
     private var introHeader: some View {

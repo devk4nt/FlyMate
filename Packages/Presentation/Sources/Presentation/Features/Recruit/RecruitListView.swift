@@ -56,6 +56,7 @@ public struct RecruitListView: View {
                     type: .success
                 )
         }
+        .trackScreen(AnalyticsScreen.recruitList)
     }
 
     // MARK: - Content

@@ -61,6 +61,7 @@ public struct VideoFeedbackSheet: View {
         .alert($store.scope(state: \.deleteFeedbackAlert, action: \.deleteFeedbackAlert))
         .background(FMColors.background.ignoresSafeArea())
         .tint(FMColors.actionForeground)
+        .trackScreen(AnalyticsScreen.videoFeedbackSheet)
     }
 
     // MARK: - Video Info

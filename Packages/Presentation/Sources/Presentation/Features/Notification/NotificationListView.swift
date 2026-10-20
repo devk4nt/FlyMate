@@ -88,6 +88,7 @@ public struct NotificationListView: View {
         .sheet(item: $store.scope(state: \.announcement, action: \.announcement)) { announcementStore in
             AnnouncementDetailView(store: announcementStore)
         }
+        .trackScreen(AnalyticsScreen.notificationList)
     }
 }
 

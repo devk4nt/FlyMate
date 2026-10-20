@@ -18,6 +18,7 @@ struct MemberStatsSheet: View {
         .onAppear {
             store.send(.onAppear)
         }
+        .trackScreen(AnalyticsScreen.memberStats)
     }
 
     @ViewBuilder

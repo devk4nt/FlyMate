@@ -123,6 +123,7 @@ public struct RecruitDetailView: View {
             message: store.toastMessage,
             type: .info
         )
+        .trackScreen(AnalyticsScreen.recruitDetail)
     }
 
     // MARK: - Header

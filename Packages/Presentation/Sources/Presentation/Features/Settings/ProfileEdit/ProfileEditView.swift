@@ -41,6 +41,7 @@ public struct ProfileEditView: View {
         }
         .alert($store.scope(state: \.alert, action: \.alert))
         .fmSheetStyle()
+        .trackScreen(AnalyticsScreen.profileEdit)
     }
 
     private var profileHeader: some View {

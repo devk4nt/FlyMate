@@ -38,6 +38,7 @@ public struct StudyDetailView: View {
                 noticeEditorSheet
             }
             .background(FMColors.canvas)
+            .trackScreen(AnalyticsScreen.studyDetail)
     }
 
     @ViewBuilder

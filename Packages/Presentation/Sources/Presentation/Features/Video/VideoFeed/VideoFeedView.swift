@@ -43,6 +43,7 @@ public struct VideoFeedView<Header: View>: View {
         }
         .onAppear { store.send(.onAppear) }
         .onDisappear { store.send(.viewDisappeared) }
+        .trackScreen(AnalyticsScreen.videoFeed)
     }
 
     private var isFeedbackSheetOpen: Bool {

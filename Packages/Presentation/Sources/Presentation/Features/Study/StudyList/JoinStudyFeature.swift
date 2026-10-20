@@ -45,6 +45,7 @@ public struct JoinStudyFeature {
     }
 
     @Dependency(\.studyClient) private var studyClient
+    @Dependency(\.analyticsClient) private var analyticsClient
     @Dependency(\.dismiss) private var dismiss
 
     public init() {}
@@ -75,6 +76,10 @@ public struct JoinStudyFeature {
 
             case .requestResponse(.success(let joinRequest)):
                 state.joinState = .loaded(joinRequest)
+                analyticsClient.trackEvent(
+                    AnalyticsEvent.studyJoinRequested,
+                    [AnalyticsEvent.sourceParameter: "invite_code"]
+                )
                 return .none
 
             case .requestResponse(.failure(let error)):

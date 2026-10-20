@@ -51,6 +51,7 @@ public struct FeedbackManagementView: View {
             NavigationStack { QuickFeedbackRequestDetailView(store: detailStore) }
         }
         .background(FMColors.canvas)
+        .trackScreen(AnalyticsScreen.feedbackManagement)
     }
 
     private var tabHeader: some View {

@@ -74,6 +74,7 @@ public struct QuickFeedbackHubView: View {
             message: store.toastMessage,
             type: .info
         )
+        .trackScreen(AnalyticsScreen.quickFeedbackHub)
     }
 
     private func uploadCard(_ dashboard: QuickFeedbackDashboard) -> some View {
@@ -599,6 +600,7 @@ public struct QuickFeedbackRequestDetailView: View {
             message: store.toastMessage,
             type: .info
         )
+        .trackScreen(AnalyticsScreen.quickFeedbackRequestDetail)
     }
 
     private func reviewCard(_ review: QuickFeedbackReview) -> some View {

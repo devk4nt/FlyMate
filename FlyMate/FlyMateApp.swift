@@ -19,6 +19,9 @@ struct FlyMateApp: App {
     init() {
         Self.configureTypographyAppearance()
         Task.detached(priority: .utility) { VideoCache.purgeStale() }
+        // 화면 조회 추적은 View의 @Dependency에서 읽으므로 Store 스코프가 아닌 전역 기본값으로도 등록한다.
+        // (withDependencies:는 리듀서 실행 범위에만 적용돼 View에서는 testValue(no-op)로 떨어진다)
+        prepareDependencies { Self.registerAnalytics(&$0) }
         self.store = Store(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
@@ -46,6 +49,23 @@ struct FlyMateApp: App {
             #endif
             Self.registerLiveDependencies(&$0)
         }
+    }
+
+    /// 목 실행(로그인 없는 기본 디버그 스킴)은 prod Firebase를 오염시키지 않게 콘솔 출력만 한다.
+    private static func registerAnalytics(_ dependencies: inout DependencyValues) {
+        #if DEBUG
+        if AppFeature.skipAuth, ProcessInfo.processInfo.environment["TEST_EMAIL"]?.isEmpty != false {
+            dependencies.analyticsClient = AnalyticsClient(
+                trackEvent: { name, parameters in print("[Analytics] \(name) \(parameters)") },
+                setUserID: { userID in print("[Analytics] setUserID \(userID ?? "nil")") }
+            )
+            return
+        }
+        #endif
+        dependencies.analyticsClient = AnalyticsClient(
+            trackEvent: { name, parameters in Analytics.logEvent(name, parameters: parameters) },
+            setUserID: { userID in Analytics.setUserID(userID) }
+        )
     }
 
     private static func configureTypographyAppearance() {
@@ -279,9 +299,7 @@ struct FlyMateApp: App {
         )
 
         // Analytics — Firebase (이벤트 이름·파라미터는 Presentation의 AnalyticsEvent 참조)
-        dependencies.analyticsClient = AnalyticsClient(
-            trackEvent: { name, parameters in Analytics.logEvent(name, parameters: parameters) }
-        )
+        registerAnalytics(&dependencies)
 
         // UserDefaults
         dependencies.userDefaultsClient = UserDefaultsClient(
@@ -1457,10 +1475,8 @@ struct FlyMateApp: App {
             }
         )
 
-        // Analytics — 목 실행은 prod Firebase를 오염시키지 않게 콘솔 출력만
-        dependencies.analyticsClient = AnalyticsClient(
-            trackEvent: { name, parameters in print("[Analytics] \(name) \(parameters)") }
-        )
+        // Analytics
+        registerAnalytics(&dependencies)
 
         // UserDefaults — 기본 디버그 실행에서도 실제 앱과 동일하게 온보딩 상태 유지
         dependencies.userDefaultsClient = UserDefaultsClient(

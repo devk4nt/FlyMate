@@ -150,6 +150,7 @@ public struct FeedbackListView<Header: View>: View {
             message: store.toastMessage,
             type: .info
         )
+        .trackScreen(AnalyticsScreen.feedbackList)
     }
 
 }

@@ -148,6 +148,7 @@ struct BugReportView: View {
         } message: {
             Text("메일 앱을 설정한 뒤 다시 시도해 주세요. 문의 주소는 \(AppConstants.supportEmail)입니다.")
         }
+        .trackScreen(AnalyticsScreen.bugReport)
     }
 
     private var canSubmit: Bool {

@@ -104,6 +104,7 @@ public struct VideoUploadView: View {
             .ignoresSafeArea()
         }
         .disabled(isProcessingVideo)
+        .trackScreen(AnalyticsScreen.videoUpload)
     }
 
     private var maximumDurationText: String {

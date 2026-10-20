@@ -99,6 +99,7 @@ public struct ReportView: View {
         .fmSheetStyle()
         .onAppear { store.send(.onAppear) }
         .presentationDetents([.medium, .large])
+        .trackScreen(AnalyticsScreen.report)
     }
 
     private var reportTitle: String {

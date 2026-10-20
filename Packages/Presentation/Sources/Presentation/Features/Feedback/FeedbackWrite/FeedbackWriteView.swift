@@ -76,6 +76,7 @@ public struct FeedbackWriteView: View {
             }
         }
         .onAppear { store.send(.onAppear) }
+        .trackScreen(AnalyticsScreen.feedbackWrite)
     }
 
     // MARK: - Mention Suggestions
