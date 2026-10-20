@@ -24,7 +24,7 @@ Core → (없음)
 
 | 패키지 | 역할 | 주요 내용 |
 |--------|------|----------|
-| **Core** | 공통 유틸리티 | Extensions, AppConstants, Logger, Debouncer, RetryHelper, Protocols (Analytics/CrashReport 포함), Models (LoadingState, PaginatedState, AppError) |
+| **Core** | 공통 유틸리티 | Extensions, AppConstants, Logger, Debouncer, RetryHelper, Protocols (CrashReport), Models (LoadingState, PaginatedState, AppError) |
 | **Domain** | 비즈니스 모델 | Entities, Repository 프로토콜 |
 | **Data** | 데이터 소스 | DTOs, Mappers, Repository 구현체, Services (RealtimeService, StorageService) |
 | **Presentation** | UI 레이어 | TCA Features, DesignSystem, Dependencies (TCA Client) |
