@@ -22,10 +22,9 @@ struct VideoDetailFeatureTests {
         } withDependencies: {
             $0.feedbackClient.fetchFeedbacks = { _ in [feedback] }
             $0.feedbackClient.observeFeedbacks = { _ in .finished }
-            $0.feedbackCommentClient.fetchLatestComments = { _ in [feedback.id: comment] }
             $0.studyClient.fetchStudy = { _ in .mock }
         }
-        // onAppear는 fetch/observe/멤버 로드 3개 Effect를 merge하므로 수신 순서가 비결정적 — 핵심 액션만 검증
+        // onAppear는 fetch/observe 2개 Effect를 merge하므로 수신 순서가 비결정적 — 핵심 액션만 검증
         store.exhaustivity = .off
 
         await store.send(.onAppear) {
@@ -35,10 +34,6 @@ struct VideoDetailFeatureTests {
 
         await store.receive(\.feedbacksResponse.success) {
             $0.feedbacks = .loaded([feedback])
-        }
-
-        await store.receive(\.latestCommentsResponse.success) {
-            $0.latestComments = [feedback.id: comment]
         }
     }
 
@@ -68,7 +63,8 @@ struct VideoDetailFeatureTests {
     }
 
     @Test
-    func onAppear시_멤버_로드되면_commentInput에_전달() async {
+    func 시트를_열면_멤버_로드되어_commentInput에_전달() async {
+        let fetchCount = LockIsolated(0)
         let store = TestStore(
             initialState: VideoDetailFeature.State(video: .videoDetailMock)
         ) {
@@ -76,16 +72,26 @@ struct VideoDetailFeatureTests {
         } withDependencies: {
             $0.feedbackClient.fetchFeedbacks = { _ in [] }
             $0.feedbackClient.observeFeedbacks = { _ in .finished }
-            $0.feedbackCommentClient.fetchLatestComments = { _ in [:] }
-            $0.studyClient.fetchStudy = { _ in .mock }
+            $0.studyClient.fetchStudy = { _ in
+                fetchCount.withValue { $0 += 1 }
+                return .mock
+            }
         }
         store.exhaustivity = .off
 
+        // 페이지 전환(onAppear)만으로는 멤버를 받지 않는다 — 영상마다 중복 요청되던 경로
         await store.send(.onAppear)
+        #expect(fetchCount.value == 0)
 
+        await store.send(.feedbackSheetTapped)
         await store.receive(\.membersResponse.success) {
             $0.commentInput.members = Study.mock.members
         }
+
+        // 이미 받아둔 멤버는 시트를 다시 열어도 재요청하지 않는다
+        await store.send(.feedbackSheetDismissed)
+        await store.send(.feedbackSheetTapped)
+        #expect(fetchCount.value == 1)
     }
 
     // MARK: - 실시간 스트림
@@ -164,7 +170,11 @@ struct VideoDetailFeatureTests {
 
         let store = TestStore(initialState: initialState) {
             VideoDetailFeature()
+        } withDependencies: {
+            // 시트를 처음 열 때 멘션 후보를 받아온다
+            $0.studyClient.fetchStudy = { _ in .mock }
         }
+        store.exhaustivity = .off
 
         await store.send(.feedbackSheetTapped) {
             $0.showFeedbackSheet = true
@@ -414,7 +424,6 @@ struct VideoDetailFeatureTests {
         var state = VideoDetailFeature.State(video: .videoDetailMock)
         state.feedbacks = .loaded([blockedFeedback, otherFeedback])
         state.repliesByFeedback = [otherFeedback.id: .loaded([blockedComment, otherComment])]
-        state.latestComments = [otherFeedback.id: blockedComment]
 
         let blocked = LockIsolated<(UUID, String)?>(nil)
         let store = TestStore(initialState: state) {
@@ -445,7 +454,6 @@ struct VideoDetailFeatureTests {
         await store.receive(\.blockResponse.success) {
             $0.feedbacks = .loaded([otherFeedback])
             $0.repliesByFeedback = [otherFeedback.id: .loaded([otherComment])]
-            $0.latestComments = [:]
             $0.showToast = true
             $0.toastMessage = "사용자를 차단했습니다"
             $0.toastType = .success
@@ -513,7 +521,6 @@ struct VideoDetailFeatureTests {
         state.feedbacks = .loaded([feedback])
         state.expandedFeedbackIDs = [feedback.id]
         state.repliesByFeedback = [feedback.id: .loaded([comment])]
-        state.latestComments = [feedback.id: comment]
 
         let deletedID = LockIsolated<UUID?>(nil)
         let store = TestStore(initialState: state) {
@@ -544,7 +551,6 @@ struct VideoDetailFeatureTests {
         await store.receive(\.deleteFeedbackResponse.success) {
             $0.feedbacks = .loaded([])
             $0.repliesByFeedback = [:]
-            $0.latestComments = [:]
             $0.expandedFeedbackIDs = []
             $0.showToast = true
             $0.toastMessage = "피드백을 삭제했습니다"

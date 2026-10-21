@@ -12,7 +12,6 @@ public struct VideoDetailFeature {
         public var feedbacks: LoadingState<[Feedback]> = .idle
         public var player = VideoPlayerState()
         public var focusedFeedbackID: UUID?
-        public var latestComments: [UUID: FeedbackComment] = [:]
         public var currentUserID: UUID?
         public var commentInput: CommentInputFeature.State
         public var expandedFeedbackIDs: Set<UUID> = []
@@ -104,7 +103,6 @@ public struct VideoDetailFeature {
         case deleteReplyTapped(FeedbackComment)
         case deleteReplyResponse(feedbackID: UUID, Result<UUID, AppError>)
         // Comment list sheet (fallback)
-        case latestCommentsResponse(Result<[UUID: FeedbackComment], AppError>)
         case commentListTapped(Feedback)
         case feedbackCommentList(PresentationAction<FeedbackCommentListFeature.Action>)
         // 신고 / 차단
@@ -184,7 +182,6 @@ public struct VideoDetailFeature {
                 }
                 state.player.duration = state.video.durationSeconds
                 let client = feedbackClient
-                let study = studyClient
                 return .merge(
                     .run { send in
                         do {
@@ -201,15 +198,8 @@ public struct VideoDetailFeature {
                         }
                     }
                     .cancellable(id: RealtimeCancelID(videoID: videoID)),
-                    .run { send in
-                        do {
-                            let studyData = try await study.fetchStudy(studyID)
-                            await send(.membersResponse(.success(studyData)))
-                        } catch {
-                            let appError = error as? AppError ?? .unexpected(error.localizedDescription)
-                            await send(.membersResponse(.failure(appError)))
-                        }
-                    }
+                    // 멘션 목록은 시트 안에서만 쓰이므로 딥링크로 시트가 열린 채 진입할 때만 미리 받는다
+                    state.showFeedbackSheet ? fetchMembers(studyID: studyID) : .none
                 )
 
             case .onDisappear:
@@ -230,8 +220,6 @@ public struct VideoDetailFeature {
 
             case .feedbacksResponse(.success(let feedbacks)):
                 state.feedbacks = .loaded(feedbacks)
-                let commentClient = feedbackCommentClient
-                let feedbackIDs = feedbacks.map(\.id)
                 let seekEffect: Effect<Action>
                 if let focusedID = state.focusedFeedbackID,
                    let feedback = feedbacks.first(where: { $0.id == focusedID }) {
@@ -245,18 +233,7 @@ public struct VideoDetailFeature {
                 } else {
                     seekEffect = .none
                 }
-                return .merge(
-                    seekEffect,
-                    .run { send in
-                        do {
-                            let latest = try await commentClient.fetchLatestComments(feedbackIDs)
-                            await send(.latestCommentsResponse(.success(latest)))
-                        } catch {
-                            let appError = error as? AppError ?? .unexpected(error.localizedDescription)
-                            await send(.latestCommentsResponse(.failure(appError)))
-                        }
-                    }
-                )
+                return seekEffect
 
             case .feedbacksResponse(.failure(let error)):
                 state.feedbacks = .failed(error)
@@ -297,23 +274,6 @@ public struct VideoDetailFeature {
 
             case .feedbacksUpdated(let feedbacks):
                 state.feedbacks = .loaded(feedbacks)
-                let commentClient = feedbackCommentClient
-                let feedbackIDs = feedbacks.map(\.id)
-                return .run { send in
-                    do {
-                        let latest = try await commentClient.fetchLatestComments(feedbackIDs)
-                        await send(.latestCommentsResponse(.success(latest)))
-                    } catch {
-                        let appError = error as? AppError ?? .unexpected(error.localizedDescription)
-                        await send(.latestCommentsResponse(.failure(appError)))
-                    }
-                }
-
-            case .latestCommentsResponse(.success(let comments)):
-                state.latestComments = comments
-                return .none
-
-            case .latestCommentsResponse(.failure):
                 return .none
 
             case .clearFocusedFeedback:
@@ -369,7 +329,9 @@ public struct VideoDetailFeature {
                 // 시트를 연 순간의 초수에서 정지 — currentTime이 고정되어
                 // 피드백이 해당 시점에 달린다
                 state.player.isPlaying = false
-                return .none
+                // 멘션 후보(스터디 멤버)는 시트를 처음 열 때 한 번만 받는다
+                guard state.commentInput.members.isEmpty else { return .none }
+                return fetchMembers(studyID: state.video.studyID)
 
             case .feedbackSheetDismissed:
                 state.showFeedbackSheet = false
@@ -426,8 +388,6 @@ public struct VideoDetailFeature {
                     // 답글을 아직 펼친 적 없으면 새로 생성
                     state.repliesByFeedback[feedbackID] = .loaded([comment])
                 }
-                // latestComments 갱신
-                state.latestComments[feedbackID] = comment
                 // commentCount 갱신 (feedbacks 내 해당 항목)
                 if case .loaded(var feedbacks) = state.feedbacks,
                    let index = feedbacks.firstIndex(where: { $0.id == feedbackID }) {
@@ -609,7 +569,6 @@ public struct VideoDetailFeature {
                     state.feedbacks = .loaded(feedbacks)
                 }
                 state.repliesByFeedback[feedbackID] = nil
-                state.latestComments[feedbackID] = nil
                 state.expandedFeedbackIDs.remove(feedbackID)
                 if state.focusedFeedbackID == feedbackID { state.focusedFeedbackID = nil }
                 state.showToast = true
@@ -734,7 +693,6 @@ public struct VideoDetailFeature {
                         state.repliesByFeedback[feedbackID] = .loaded(comments)
                     }
                 }
-                state.latestComments = state.latestComments.filter { $0.value.authorID != userID }
                 state.showToast = true
                 state.toastMessage = "사용자를 차단했습니다"
                 state.toastType = .success
@@ -745,6 +703,20 @@ public struct VideoDetailFeature {
                 state.toastMessage = error.localizedDescription
                 state.toastType = .error
                 return .none
+            }
+        }
+    }
+
+    /// 멘션 후보로 쓸 스터디 멤버 조회 — 페이지 전환마다 호출하면 영상 수만큼 중복 요청이 된다
+    private func fetchMembers(studyID: UUID) -> Effect<Action> {
+        let study = studyClient
+        return .run { send in
+            do {
+                let studyData = try await study.fetchStudy(studyID)
+                await send(.membersResponse(.success(studyData)))
+            } catch {
+                let appError = error as? AppError ?? .unexpected(error.localizedDescription)
+                await send(.membersResponse(.failure(appError)))
             }
         }
     }
