@@ -174,13 +174,24 @@ public struct StudyNavigationFeature {
             case .navigateToStudy(let study):
                 state.path.removeAll()
                 state.path.append(.studyDetail(StudyDetailFeature.State(study: study, currentUserID: state.currentUserID)))
-                return .none
+                // removeAll + append로 같은 깊이에 같은 타입 화면을 갈아끼우면 SwiftUI가 뷰를 재사용해
+                // onAppear를 다시 부르지 않는다. 상태는 새 .idle이라 스켈레톤에서 영구 정지한다
+                // (푸시 딥링크 탭 직전에 이미 그 화면에 있던 경우). 로드를 명시적으로 건다.
+                // 자식 onAppear는 .idle 가드가 있어 SwiftUI가 실제로 불러도 중복 요청은 안 난다.
+                guard let detailID = state.path.ids.last else { return .none }
+                return .send(.path(.element(id: detailID, action: .studyDetail(.onAppear))))
 
             case .navigateToJoinRequests(let study):
                 state.path.removeAll()
                 state.path.append(.studyDetail(StudyDetailFeature.State(study: study, currentUserID: state.currentUserID)))
                 state.path.append(.joinRequestManagement(JoinRequestManagementFeature.State(studyID: study.id)))
-                return .none
+                // 위와 같은 이유. 뒤로 돌아갈 상세 화면까지 같이 깨운다.
+                let joinRequestIDs = Array(state.path.ids.suffix(2))
+                guard joinRequestIDs.count == 2 else { return .none }
+                return .merge(
+                    .send(.path(.element(id: joinRequestIDs[0], action: .studyDetail(.onAppear)))),
+                    .send(.path(.element(id: joinRequestIDs[1], action: .joinRequestManagement(.onAppear))))
+                )
 
             case .navigateToVideo(let study, let video, let feedbackID):
                 state.path.removeAll()
@@ -195,7 +206,13 @@ public struct StudyNavigationFeature {
                         )
                     )
                 )
-                return .none
+                // 위와 같은 이유 (영상 보던 중 다른 영상 푸시를 탭하는 경우).
+                let videoIDs = Array(state.path.ids.suffix(2))
+                guard videoIDs.count == 2 else { return .none }
+                return .merge(
+                    .send(.path(.element(id: videoIDs[0], action: .studyDetail(.onAppear)))),
+                    .send(.path(.element(id: videoIDs[1], action: .videoFeed(.onAppear))))
+                )
 
             case .studyList, .path:
                 return .none

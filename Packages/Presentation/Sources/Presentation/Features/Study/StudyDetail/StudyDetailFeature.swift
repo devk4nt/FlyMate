@@ -15,6 +15,12 @@ public struct StudyDetailFeature {
         public var editingNoticeText: String = ""
         public var noticeUpdateState: LoadingState<Bool> = .idle
         public var pendingRequestCount: Int = 0
+        /// 멤버용 공지 읽기 시트. 방장은 대신 편집 시트(isEditingNotice)가 열린다.
+        @Presents public var noticeDetail: AnnouncementDetailFeature.State?
+        public var isEditingDeadlines: Bool = false
+        public var editingVideoWeekday: Int?
+        public var editingFeedbackWeekday: Int?
+        public var deadlineUpdateState: LoadingState<Bool> = .idle
 
         public var isOwner: Bool {
             guard let currentUserID else { return false }
@@ -46,6 +52,14 @@ public struct StudyDetailFeature {
         case deleteNoticeTapped
         case dismissNoticeEditor
         case noticeUpdateResponse(Result<Bool, AppError>)
+        case noticeDetail(PresentationAction<AnnouncementDetailFeature.Action>)
+        // Deadlines
+        case deadlineTapped
+        case editingVideoWeekdayChanged(Int?)
+        case editingFeedbackWeekdayChanged(Int?)
+        case saveDeadlinesTapped
+        case dismissDeadlineEditor
+        case deadlineUpdateResponse(Result<Bool, AppError>)
     }
 
     @Dependency(\.videoClient) private var videoClient
@@ -161,7 +175,26 @@ public struct StudyDetailFeature {
             // MARK: - Notice
 
             case .noticeTapped:
-                guard state.isOwner else { return .none }
+                guard state.isOwner else {
+                    // 멤버는 읽기 전용 시트. 공지 푸시는 studyId를 싣고 있어 알림 목록이 아니라
+                    // 이 화면으로 들어오는데, 배너는 2줄로 잘려서 전문을 볼 길이 없었다.
+                    // 알림 목록에서 여는 것과 같은 시트를 써서 경로에 따라 다르게 보이지 않게 한다.
+                    guard let notice = state.study.notice, !notice.isEmpty else { return .none }
+                    state.noticeDetail = AnnouncementDetailFeature.State(
+                        notification: AppNotification(
+                            // ponytail: 시트는 title/body/createdAt만 그린다. id·recipientID는 표시에 쓰이지 않는다.
+                            id: state.study.id,
+                            recipientID: state.currentUserID ?? state.study.ownerID,
+                            type: .announcement,
+                            title: "\(state.study.name) 공지",
+                            body: notice,
+                            referenceStudyID: state.study.id,
+                            isRead: true,
+                            createdAt: state.study.noticeUpdatedAt ?? Date()
+                        )
+                    )
+                    return .none
+                }
                 state.editingNoticeText = state.study.notice ?? ""
                 state.isEditingNotice = true
                 return .none
@@ -227,7 +260,63 @@ public struct StudyDetailFeature {
             case .noticeUpdateResponse(.failure(let error)):
                 state.noticeUpdateState = .failed(error)
                 return .none
+
+            case .noticeDetail:
+                return .none
+
+            // MARK: - Deadlines
+
+            case .deadlineTapped:
+                guard state.isOwner else { return .none }
+                state.editingVideoWeekday = state.study.videoDeadlineWeekday
+                state.editingFeedbackWeekday = state.study.feedbackDeadlineWeekday
+                state.deadlineUpdateState = .idle
+                state.isEditingDeadlines = true
+                return .none
+
+            case .editingVideoWeekdayChanged(let weekday):
+                state.editingVideoWeekday = weekday
+                return .none
+
+            case .editingFeedbackWeekdayChanged(let weekday):
+                state.editingFeedbackWeekday = weekday
+                return .none
+
+            case .saveDeadlinesTapped:
+                state.deadlineUpdateState = .loading
+                let studyID = state.study.id
+                let videoWeekday = state.editingVideoWeekday
+                let feedbackWeekday = state.editingFeedbackWeekday
+                let client = studyClient
+                return .run { send in
+                    do {
+                        try await client.updateDeadlines(studyID, videoWeekday, feedbackWeekday)
+                        await send(.deadlineUpdateResponse(.success(true)))
+                    } catch {
+                        let appError = error as? AppError ?? .unexpected(error.localizedDescription)
+                        await send(.deadlineUpdateResponse(.failure(appError)))
+                    }
+                }
+
+            case .deadlineUpdateResponse(.success):
+                state.study.videoDeadlineWeekday = state.editingVideoWeekday
+                state.study.feedbackDeadlineWeekday = state.editingFeedbackWeekday
+                state.deadlineUpdateState = .idle
+                state.isEditingDeadlines = false
+                return .none
+
+            case .deadlineUpdateResponse(.failure(let error)):
+                state.deadlineUpdateState = .failed(error)
+                return .none
+
+            case .dismissDeadlineEditor:
+                state.isEditingDeadlines = false
+                state.deadlineUpdateState = .idle
+                return .none
             }
+        }
+        .ifLet(\.$noticeDetail, action: \.noticeDetail) {
+            AnnouncementDetailFeature()
         }
     }
 }

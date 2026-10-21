@@ -13,6 +13,8 @@ public struct StudyClient: Sendable {
     public var removeMember: @Sendable (UUID, UUID) async throws -> Void
     public var transferOwnership: @Sendable (UUID, UUID) async throws -> Void
     public var updateNotice: @Sendable (UUID, String?) async throws -> Void
+    /// (studyID, 영상 마감 요일, 피드백 마감 요일) — 요일은 0=일 ~ 6=토, nil이면 해제
+    public var updateDeadlines: @Sendable (UUID, Int?, Int?) async throws -> Void
     public var fetchPendingRequests: @Sendable (UUID) async throws -> [JoinRequest]
     public var fetchMyJoinRequests: @Sendable () async throws -> [JoinRequest]
     public var approveJoinRequest: @Sendable (UUID) async throws -> Void
@@ -31,6 +33,7 @@ public struct StudyClient: Sendable {
         removeMember: @escaping @Sendable (UUID, UUID) async throws -> Void,
         transferOwnership: @escaping @Sendable (UUID, UUID) async throws -> Void,
         updateNotice: @escaping @Sendable (UUID, String?) async throws -> Void,
+        updateDeadlines: @escaping @Sendable (UUID, Int?, Int?) async throws -> Void,
         fetchPendingRequests: @escaping @Sendable (UUID) async throws -> [JoinRequest],
         fetchMyJoinRequests: @escaping @Sendable () async throws -> [JoinRequest],
         approveJoinRequest: @escaping @Sendable (UUID) async throws -> Void,
@@ -48,6 +51,7 @@ public struct StudyClient: Sendable {
         self.removeMember = removeMember
         self.transferOwnership = transferOwnership
         self.updateNotice = updateNotice
+        self.updateDeadlines = updateDeadlines
         self.fetchPendingRequests = fetchPendingRequests
         self.fetchMyJoinRequests = fetchMyJoinRequests
         self.approveJoinRequest = approveJoinRequest
@@ -69,6 +73,7 @@ extension StudyClient: TestDependencyKey {
         removeMember: unimplemented("\(Self.self).removeMember"),
         transferOwnership: unimplemented("\(Self.self).transferOwnership"),
         updateNotice: unimplemented("\(Self.self).updateNotice"),
+        updateDeadlines: unimplemented("\(Self.self).updateDeadlines"),
         fetchPendingRequests: unimplemented("\(Self.self).fetchPendingRequests"),
         fetchMyJoinRequests: unimplemented("\(Self.self).fetchMyJoinRequests"),
         approveJoinRequest: unimplemented("\(Self.self).approveJoinRequest"),
