@@ -134,6 +134,7 @@ struct FlyMateApp: App {
             removeMember: { try await studyRepo.removeMember(studyID: $0, userID: $1) },
             transferOwnership: { try await studyRepo.transferOwnership(studyID: $0, newOwnerID: $1) },
             updateNotice: { try await studyRepo.updateNotice(studyID: $0, notice: $1) },
+            updateDeadlines: { try await studyRepo.updateDeadlines(studyID: $0, videoWeekday: $1, feedbackWeekday: $2) },
             fetchPendingRequests: { try await studyRepo.fetchPendingRequests(studyID: $0) },
             fetchMyJoinRequests: { try await studyRepo.fetchMyJoinRequests() },
             approveJoinRequest: { try await studyRepo.approveJoinRequest(requestID: $0) },
@@ -964,6 +965,13 @@ struct FlyMateApp: App {
                     guard let index = studies.firstIndex(where: { $0.id == studyID }) else { return }
                     studies[index].notice = notice
                     studies[index].noticeUpdatedAt = Date()
+                }
+            },
+            updateDeadlines: { studyID, videoWeekday, feedbackWeekday in
+                studyStore.withValue { studies in
+                    guard let index = studies.firstIndex(where: { $0.id == studyID }) else { return }
+                    studies[index].videoDeadlineWeekday = videoWeekday
+                    studies[index].feedbackDeadlineWeekday = feedbackWeekday
                 }
             },
             fetchPendingRequests: { studyID in

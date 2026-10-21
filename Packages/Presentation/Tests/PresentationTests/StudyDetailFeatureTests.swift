@@ -222,14 +222,157 @@ struct StudyDetailFeatureTests {
     }
 
     @Test
-    func 멤버가_공지_탭하면_무시() async {
+    func 멤버가_공지_탭하면_전문_시트_열림() async {
         let store = TestStore(
             initialState: StudyDetailFeature.State(study: .detailMock, currentUserID: Self.memberID)
         ) {
             StudyDetailFeature()
         }
 
+        // 공지 푸시는 studyId를 실어 스터디 상세로 들어오는데 배너는 2줄로 잘린다.
+        // 멤버도 알림 목록과 같은 시트로 전문을 볼 수 있어야 한다.
+        await store.send(.noticeTapped) {
+            $0.noticeDetail = AnnouncementDetailFeature.State(
+                notification: AppNotification(
+                    id: Study.detailMock.id,
+                    recipientID: Self.memberID,
+                    type: .announcement,
+                    title: "승무원 면접 스터디 공지",
+                    body: "기존 공지",
+                    referenceStudyID: Study.detailMock.id,
+                    isRead: true,
+                    createdAt: Date(timeIntervalSince1970: 1_700_000_000)
+                )
+            )
+        }
+    }
+
+    @Test
+    func 공지_없으면_멤버_탭_무시() async {
+        var study = Study.detailMock
+        study.notice = nil
+        study.noticeUpdatedAt = nil
+
+        let store = TestStore(
+            initialState: StudyDetailFeature.State(study: study, currentUserID: Self.memberID)
+        ) {
+            StudyDetailFeature()
+        }
+
         await store.send(.noticeTapped)
+    }
+
+    // MARK: - Deadlines
+
+    @Test
+    func 방장이_마감요일_탭하면_현재값으로_편집모드_진입() async {
+        var study = Study.detailMock
+        study.videoDeadlineWeekday = 5   // 금
+        study.feedbackDeadlineWeekday = 0 // 일
+
+        let store = TestStore(
+            initialState: StudyDetailFeature.State(study: study, currentUserID: Self.ownerID)
+        ) {
+            StudyDetailFeature()
+        }
+
+        await store.send(.deadlineTapped) {
+            $0.editingVideoWeekday = 5
+            $0.editingFeedbackWeekday = 0
+            $0.isEditingDeadlines = true
+        }
+    }
+
+    @Test
+    func 멤버는_마감요일_편집_불가() async {
+        let store = TestStore(
+            initialState: StudyDetailFeature.State(study: .detailMock, currentUserID: Self.memberID)
+        ) {
+            StudyDetailFeature()
+        }
+
+        await store.send(.deadlineTapped)
+    }
+
+    @Test
+    func 마감요일_저장_성공() async {
+        var state = StudyDetailFeature.State(study: .detailMock, currentUserID: Self.ownerID)
+        state.isEditingDeadlines = true
+        state.editingVideoWeekday = 5
+        state.editingFeedbackWeekday = 0
+
+        let store = TestStore(initialState: state) {
+            StudyDetailFeature()
+        } withDependencies: {
+            $0.studyClient.updateDeadlines = { studyID, video, feedback in
+                #expect(studyID == Study.detailMock.id)
+                #expect(video == 5)
+                #expect(feedback == 0)
+            }
+        }
+
+        await store.send(.saveDeadlinesTapped) {
+            $0.deadlineUpdateState = .loading
+        }
+
+        await store.receive(\.deadlineUpdateResponse.success) {
+            $0.study.videoDeadlineWeekday = 5
+            $0.study.feedbackDeadlineWeekday = 0
+            $0.deadlineUpdateState = .idle
+            $0.isEditingDeadlines = false
+        }
+    }
+
+    @Test
+    func 마감요일_해제_저장() async {
+        var study = Study.detailMock
+        study.videoDeadlineWeekday = 5
+        var state = StudyDetailFeature.State(study: study, currentUserID: Self.ownerID)
+        state.isEditingDeadlines = true
+        state.editingVideoWeekday = nil
+        state.editingFeedbackWeekday = nil
+
+        let store = TestStore(initialState: state) {
+            StudyDetailFeature()
+        } withDependencies: {
+            $0.studyClient.updateDeadlines = { _, video, feedback in
+                #expect(video == nil)
+                #expect(feedback == nil)
+            }
+        }
+
+        await store.send(.saveDeadlinesTapped) {
+            $0.deadlineUpdateState = .loading
+        }
+
+        await store.receive(\.deadlineUpdateResponse.success) {
+            $0.study.videoDeadlineWeekday = nil
+            $0.deadlineUpdateState = .idle
+            $0.isEditingDeadlines = false
+        }
+    }
+
+    @Test
+    func 마감요일_저장_실패시_상태유지() async {
+        var state = StudyDetailFeature.State(study: .detailMock, currentUserID: Self.ownerID)
+        state.isEditingDeadlines = true
+        state.editingVideoWeekday = 3
+
+        let store = TestStore(initialState: state) {
+            StudyDetailFeature()
+        } withDependencies: {
+            $0.studyClient.updateDeadlines = { _, _, _ in throw AppError.business(.unauthorized) }
+        }
+
+        await store.send(.saveDeadlinesTapped) {
+            $0.deadlineUpdateState = .loading
+        }
+
+        // 시트를 닫지 않아야 사용자가 재시도할 수 있다
+        await store.receive(\.deadlineUpdateResponse.failure) {
+            $0.deadlineUpdateState = .failed(.business(.unauthorized))
+        }
+        #expect(store.state.isEditingDeadlines == true)
     }
 
     @Test

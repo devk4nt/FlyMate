@@ -257,6 +257,25 @@ public struct StudyRepositoryImpl: StudyRepository {
             .execute()
     }
 
+    public func updateDeadlines(studyID: UUID, videoWeekday: Int?, feedbackWeekday: Int?) async throws {
+        struct UpdateDeadlines: Codable {
+            let videoDeadlineWeekday: Int?
+            let feedbackDeadlineWeekday: Int?
+            enum CodingKeys: String, CodingKey {
+                case videoDeadlineWeekday = "video_deadline_weekday"
+                case feedbackDeadlineWeekday = "feedback_deadline_weekday"
+            }
+        }
+
+        // updateNotice와 같은 이유로 select+single — RLS로 0행이 바뀌면 침묵 성공한다.
+        try await client.from(SupabaseConfig.Table.studies)
+            .update(UpdateDeadlines(videoDeadlineWeekday: videoWeekday, feedbackDeadlineWeekday: feedbackWeekday))
+            .eq("id", value: studyID)
+            .select("id")
+            .single()
+            .execute()
+    }
+
     public func fetchMemberStats(studyID: UUID, userID: UUID) async throws -> MemberStats {
         do {
             let response: MemberStatsResponse = try await client.rpc(

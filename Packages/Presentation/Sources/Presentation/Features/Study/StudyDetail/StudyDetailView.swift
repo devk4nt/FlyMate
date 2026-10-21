@@ -37,6 +37,17 @@ public struct StudyDetailView: View {
             )) {
                 noticeEditorSheet
             }
+            .sheet(item: $store.scope(state: \.noticeDetail, action: \.noticeDetail)) { noticeStore in
+                AnnouncementDetailView(store: noticeStore)
+            }
+            .sheet(isPresented: Binding(
+                get: { store.isEditingDeadlines },
+                set: { newValue in
+                    if !newValue { store.send(.dismissDeadlineEditor) }
+                }
+            )) {
+                deadlineEditorSheet
+            }
             .background(FMColors.canvas)
             .trackScreen(AnalyticsScreen.studyDetail)
     }
@@ -147,17 +158,16 @@ public struct StudyDetailView: View {
 
                     Spacer(minLength: 0)
 
-                    if store.isOwner {
-                        Image(systemName: "chevron.right")
-                            .font(FMTypography.caption2)
-                            .foregroundStyle(FMColors.secondaryLabel)
-                    }
+                    Image(systemName: "chevron.right")
+                        .font(FMTypography.caption2)
+                        .foregroundStyle(FMColors.secondaryLabel)
                 }
                 .padding(FMSpacing.sm)
                 .background(FMColors.primary.opacity(0.08))
                 .clipShape(RoundedRectangle(cornerRadius: FMSpacing.CornerRadius.md))
             }
             .buttonStyle(.plain)
+            .accessibilityHint(store.isOwner ? "공지사항을 편집합니다" : "공지사항 전문을 봅니다")
         } else if store.isOwner {
             Button {
                 store.send(.editNoticeTapped)
@@ -397,12 +407,168 @@ public struct StudyDetailView: View {
 
     // MARK: - Study Info Header
 
+    // MARK: - Deadline
+
+    /// 0=일 ~ 6=토. Postgres EXTRACT(DOW)와 같은 인코딩 (studies.video_deadline_weekday)
+    private static let weekdayNames = ["일", "월", "화", "수", "목", "금", "토"]
+
+    private static func weekdayName(_ weekday: Int?) -> String? {
+        guard let weekday, weekdayNames.indices.contains(weekday) else { return nil }
+        return weekdayNames[weekday]
+    }
+
+    private var hasDeadline: Bool {
+        store.study.videoDeadlineWeekday != nil || store.study.feedbackDeadlineWeekday != nil
+    }
+
+    private var deadlineSummary: String {
+        var parts: [String] = []
+        if let video = Self.weekdayName(store.study.videoDeadlineWeekday) {
+            parts.append("영상 \(video)요일")
+        }
+        if let feedback = Self.weekdayName(store.study.feedbackDeadlineWeekday) {
+            parts.append("피드백 \(feedback)요일")
+        }
+        return parts.isEmpty ? "마감 요일 설정" : parts.joined(separator: " · ")
+    }
+
+    @ViewBuilder
+    private var deadlineRow: some View {
+        if store.isOwner {
+            Button {
+                store.send(.deadlineTapped)
+            } label: {
+                deadlineRowLabel(showsChevron: true)
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("주간 마감 요일을 설정합니다")
+        } else {
+            deadlineRowLabel(showsChevron: false)
+                .accessibilityElement(children: .combine)
+        }
+    }
+
+    private func deadlineRowLabel(showsChevron: Bool) -> some View {
+        HStack(spacing: FMSpacing.xs) {
+            Image(systemName: "calendar.badge.clock")
+                .font(FMTypography.caption1)
+                .foregroundStyle(hasDeadline ? FMColors.actionForeground : FMColors.secondaryLabel)
+
+            Text(deadlineSummary)
+                .font(FMTypography.caption1)
+                .foregroundStyle(hasDeadline ? FMColors.label : FMColors.secondaryLabel)
+                .lineLimit(1)
+
+            Spacer(minLength: 0)
+
+            if showsChevron {
+                Image(systemName: "chevron.right")
+                    .font(FMTypography.caption2)
+                    .foregroundStyle(FMColors.secondaryLabel)
+            }
+        }
+        // Spacer가 차지한 빈 영역은 기본적으로 히트 영역이 아니다 — 행 전체를 눌리게 한다
+        .contentShape(Rectangle())
+    }
+
+    private var deadlineEditorSheet: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: FMSpacing.lg) {
+                    deadlinePickerCard(
+                        title: "영상 마감 요일",
+                        description: "그날 저녁 8시에 영상을 아직 안 올린 멤버에게만 알립니다.",
+                        selection: Binding(
+                            get: { store.editingVideoWeekday },
+                            set: { store.send(.editingVideoWeekdayChanged($0)) }
+                        )
+                    )
+
+                    deadlinePickerCard(
+                        title: "피드백 마감 요일",
+                        description: "그날 저녁 8시에 피드백을 아직 안 남긴 멤버에게만 알립니다.",
+                        selection: Binding(
+                            get: { store.editingFeedbackWeekday },
+                            set: { store.send(.editingFeedbackWeekdayChanged($0)) }
+                        )
+                    )
+
+                    if case .failed(let error) = store.deadlineUpdateState {
+                        noticeErrorCard(message: error.errorDescription ?? "마감 요일을 저장하지 못했습니다.")
+                    }
+                }
+                .padding(.horizontal, FMSpacing.md)
+                .padding(.top, FMSpacing.sm)
+                .padding(.bottom, FMSpacing.xxxl)
+            }
+            .background(FMColors.canvas)
+            .navigationTitle("마감 요일")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("취소") {
+                        store.send(.dismissDeadlineEditor)
+                    }
+                    .disabled(store.deadlineUpdateState.isLoading)
+                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                FMButton(
+                    title: "저장",
+                    isLoading: store.deadlineUpdateState.isLoading
+                ) {
+                    store.send(.saveDeadlinesTapped)
+                }
+                .accessibilityHint("마감 요일을 저장합니다")
+                .padding(.horizontal, FMSpacing.lg)
+                .padding(.vertical, FMSpacing.md)
+                .background(.ultraThinMaterial)
+            }
+        }
+        .fmSheetStyle()
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+        .interactiveDismissDisabled(store.deadlineUpdateState.isLoading)
+    }
+
+    private func deadlinePickerCard(
+        title: String,
+        description: String,
+        selection: Binding<Int?>
+    ) -> some View {
+        FMCard {
+            VStack(alignment: .leading, spacing: FMSpacing.sm) {
+                Text(title)
+                    .font(FMTypography.headline)
+                    .foregroundStyle(FMColors.label)
+
+                Text(description)
+                    .font(FMTypography.caption1)
+                    .foregroundStyle(FMColors.secondaryLabel)
+
+                Picker(title, selection: selection) {
+                    Text("안 함").tag(Int?.none)
+                    ForEach(Array(Self.weekdayNames.enumerated()), id: \.offset) { index, name in
+                        Text("\(name)요일").tag(Int?.some(index))
+                    }
+                }
+                .pickerStyle(.menu)
+                .accessibilityLabel(title)
+            }
+        }
+    }
+
     private var studyInfoHeader: some View {
         FMCard {
             VStack(alignment: .leading, spacing: FMSpacing.sm) {
                 Text(store.study.description)
                     .font(FMTypography.body)
                     .foregroundStyle(FMColors.secondaryLabel)
+
+                if hasDeadline || store.isOwner {
+                    Divider()
+                    deadlineRow
+                }
 
                 Divider()
 

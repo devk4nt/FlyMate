@@ -10,6 +10,8 @@ struct StudyDTO: Codable, Sendable {
     let createdAt: String
     let notice: String?
     let noticeUpdatedAt: String?
+    let videoDeadlineWeekday: Int?
+    let feedbackDeadlineWeekday: Int?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -21,6 +23,8 @@ struct StudyDTO: Codable, Sendable {
         case createdAt = "created_at"
         case notice
         case noticeUpdatedAt = "notice_updated_at"
+        case videoDeadlineWeekday = "video_deadline_weekday"
+        case feedbackDeadlineWeekday = "feedback_deadline_weekday"
     }
 }
 

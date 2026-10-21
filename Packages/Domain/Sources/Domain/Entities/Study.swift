@@ -11,6 +11,10 @@ public struct Study: Equatable, Identifiable, Sendable, Hashable {
     public let createdAt: Date
     public var notice: String?
     public var noticeUpdatedAt: Date?
+    /// 주간 영상 과제 마감 요일. 0=일 ~ 6=토 (Postgres EXTRACT(DOW)와 동일 인코딩), nil이면 리마인더 없음
+    public var videoDeadlineWeekday: Int?
+    /// 주간 피드백 마감 요일. 인코딩은 videoDeadlineWeekday와 동일
+    public var feedbackDeadlineWeekday: Int?
 
     public init(
         id: UUID,
@@ -22,7 +26,9 @@ public struct Study: Equatable, Identifiable, Sendable, Hashable {
         members: [StudyMember],
         createdAt: Date,
         notice: String? = nil,
-        noticeUpdatedAt: Date? = nil
+        noticeUpdatedAt: Date? = nil,
+        videoDeadlineWeekday: Int? = nil,
+        feedbackDeadlineWeekday: Int? = nil
     ) {
         self.id = id
         self.name = name
@@ -34,6 +40,8 @@ public struct Study: Equatable, Identifiable, Sendable, Hashable {
         self.createdAt = createdAt
         self.notice = notice
         self.noticeUpdatedAt = noticeUpdatedAt
+        self.videoDeadlineWeekday = videoDeadlineWeekday
+        self.feedbackDeadlineWeekday = feedbackDeadlineWeekday
     }
 
     public var isFull: Bool {

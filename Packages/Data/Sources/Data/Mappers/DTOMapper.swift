@@ -49,7 +49,9 @@ enum DTOMapper {
             members: members.map(toDomain),
             createdAt: parseDate(dto.createdAt),
             notice: dto.notice,
-            noticeUpdatedAt: dto.noticeUpdatedAt.map(parseDate)
+            noticeUpdatedAt: dto.noticeUpdatedAt.map(parseDate),
+            videoDeadlineWeekday: dto.videoDeadlineWeekday,
+            feedbackDeadlineWeekday: dto.feedbackDeadlineWeekday
         )
     }
 
