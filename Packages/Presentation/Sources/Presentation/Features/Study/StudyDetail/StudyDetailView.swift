@@ -417,6 +417,14 @@ public struct StudyDetailView: View {
         return weekdayNames[weekday]
     }
 
+    /// 선택한 요일을 넣어 "언제 누구에게" 가 한 문장에 드러나게 한다. 미선택이면 알림이 없다는 사실을 먼저 말한다.
+    private static func deadlineDescription(weekday: Int?, pending: String) -> String {
+        guard let name = weekdayName(weekday) else {
+            return "지금은 알림을 보내지 않아요. 요일을 정하면 그날 저녁 8시에 알려드려요."
+        }
+        return "매주 \(name)요일 저녁 8시에 \(pending) 멤버에게만 알림이 갑니다."
+    }
+
     private var hasDeadline: Bool {
         store.study.videoDeadlineWeekday != nil || store.study.feedbackDeadlineWeekday != nil
     }
@@ -476,8 +484,13 @@ public struct StudyDetailView: View {
             ScrollView {
                 VStack(spacing: FMSpacing.lg) {
                     deadlinePickerCard(
+                        systemImage: "video.badge.checkmark",
                         title: "영상 마감 요일",
-                        description: "그날 저녁 8시에 영상을 아직 안 올린 멤버에게만 알립니다.",
+                        // "그날 저녁 8시"는 어느 날인지 와닿지 않는다 — 고른 요일을 그대로 문장에 넣는다
+                        description: Self.deadlineDescription(
+                            weekday: store.editingVideoWeekday,
+                            pending: "영상을 아직 안 올린"
+                        ),
                         selection: Binding(
                             get: { store.editingVideoWeekday },
                             set: { store.send(.editingVideoWeekdayChanged($0)) }
@@ -485,8 +498,12 @@ public struct StudyDetailView: View {
                     )
 
                     deadlinePickerCard(
+                        systemImage: "bubble.left.and.text.bubble.right",
                         title: "피드백 마감 요일",
-                        description: "그날 저녁 8시에 피드백을 아직 안 남긴 멤버에게만 알립니다.",
+                        description: Self.deadlineDescription(
+                            weekday: store.editingFeedbackWeekday,
+                            pending: "피드백을 아직 안 남긴"
+                        ),
                         selection: Binding(
                             get: { store.editingFeedbackWeekday },
                             set: { store.send(.editingFeedbackWeekdayChanged($0)) }
@@ -531,20 +548,32 @@ public struct StudyDetailView: View {
         .interactiveDismissDisabled(store.deadlineUpdateState.isLoading)
     }
 
+    /// 설정 화면의 행과 같은 톤 — 왼쪽에 아이콘·제목·설명, 오른쪽에 현재 값
     private func deadlinePickerCard(
+        systemImage: String,
         title: String,
         description: String,
         selection: Binding<Int?>
     ) -> some View {
         FMCard {
-            VStack(alignment: .leading, spacing: FMSpacing.sm) {
-                Text(title)
-                    .font(FMTypography.headline)
-                    .foregroundStyle(FMColors.label)
+            HStack(spacing: FMSpacing.sm) {
+                Image(systemName: systemImage)
+                    .font(FMTypography.body)
+                    .foregroundStyle(FMColors.actionForeground)
+                    .frame(width: FMSizing.IconSize.md)
 
-                Text(description)
-                    .font(FMTypography.caption1)
-                    .foregroundStyle(FMColors.secondaryLabel)
+                VStack(alignment: .leading, spacing: FMSpacing.xxs) {
+                    Text(title)
+                        .font(FMTypography.headline)
+                        .foregroundStyle(FMColors.label)
+
+                    Text(description)
+                        .font(FMTypography.caption1)
+                        .foregroundStyle(FMColors.secondaryLabel)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: FMSpacing.xs)
 
                 Picker(title, selection: selection) {
                     Text("안 함").tag(Int?.none)
@@ -553,6 +582,7 @@ public struct StudyDetailView: View {
                     }
                 }
                 .pickerStyle(.menu)
+                .labelsHidden()
                 .accessibilityLabel(title)
             }
         }
