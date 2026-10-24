@@ -145,16 +145,24 @@ if (!version) {
 }
 console.log(`대상 버전: ${version.id} (${TARGET_VERSION})`);
 
-// 3. 해당 버전의 최신 빌드가 처리 완료(VALID)될 때까지 대기 (최대 40분)
+// 3. 빌드가 처리 완료(VALID)될 때까지 대기 (최대 40분)
+// ⚠️ MIN_BUILD 없이 "최신 빌드"만 보면, 같은 버전 트레인에 이전 빌드가 이미 VALID일 때
+//    방금 올린 빌드를 기다리지 않고 옛 빌드를 붙여 제출한다 (2026-10-23 실제 발생:
+//    빌드 20 업로드 41초 뒤 제출 → ASC에 아직 안 보여 빌드 19가 제출됨 → 취소 후 재제출).
+//    release-upload 직후 돌릴 땐 MIN_BUILD로 기대 빌드 번호를 넘길 것.
+const MIN_BUILD = Number(process.env.MIN_BUILD ?? 0);
 let build = null;
 for (let attempt = 0; attempt < 40; attempt += 1) {
   const builds = await api(
     "GET",
-    `/v1/builds?filter[app]=${app.id}&filter[preReleaseVersion.version]=${TARGET_VERSION}&sort=-uploadedDate&limit=1`,
+    `/v1/builds?filter[app]=${app.id}&filter[preReleaseVersion.version]=${TARGET_VERSION}&sort=-uploadedDate&limit=5`,
   );
-  const candidate = builds.data[0];
+  const candidate = builds.data.find((b) => Number(b.attributes.version) >= MIN_BUILD);
   const state = candidate?.attributes.processingState;
-  console.log(`빌드 상태: ${candidate ? `${candidate.attributes.version} — ${state}` : "업로드된 빌드 없음"}`);
+  const label = candidate
+    ? `${candidate.attributes.version} — ${state}`
+    : `빌드 ${MIN_BUILD} 이상 없음 (업로드 반영 대기)`;
+  console.log(`빌드 상태: ${label}${MIN_BUILD ? ` (최소 빌드 ${MIN_BUILD})` : ""}`);
   if (state === "VALID") {
     build = candidate;
     break;
