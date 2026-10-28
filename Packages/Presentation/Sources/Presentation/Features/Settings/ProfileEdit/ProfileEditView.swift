@@ -15,6 +15,9 @@ public struct ProfileEditView: View {
     public var body: some View {
         ScrollView {
             VStack(spacing: FMSpacing.lg) {
+                if store.isNameSetup {
+                    nameSetupNotice
+                }
                 profileHeader
                 profileInformationCard
 
@@ -29,11 +32,11 @@ public struct ProfileEditView: View {
         .scrollDismissesKeyboard(.interactively)
         .dismissKeyboardOnTap()
         .background(FMColors.canvas)
-        .navigationTitle("프로필 수정")
+        .navigationTitle(store.isNameSetup ? "이름 설정" : "프로필 수정")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
-                Button("취소") { store.send(.cancelTapped) }
+                Button(store.isNameSetup ? "나중에" : "취소") { store.send(.cancelTapped) }
             }
         }
         .safeAreaInset(edge: .bottom) {
@@ -42,6 +45,14 @@ public struct ProfileEditView: View {
         .alert($store.scope(state: \.alert, action: \.alert))
         .fmSheetStyle()
         .trackScreen(AnalyticsScreen.profileEdit)
+    }
+
+    private var nameSetupNotice: some View {
+        Text("피드백을 주고받을 때 상대에게 이 이름으로 보여요. 실명이 아니어도 괜찮아요.")
+            .font(FMTypography.caption1)
+            .foregroundStyle(FMColors.secondaryLabel)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, FMSpacing.xxs)
     }
 
     private var profileHeader: some View {

@@ -32,6 +32,8 @@ public struct AppFeature : Sendable {
         /// 온보딩을 본 첫 세션에는 공지 팝업을 보류한다 (첫 실행 팝업 연타 방지)
         public var didShowOnboardingThisSession = false
         @Presents public var announcement: AnnouncementDetailFeature.State?
+        /// 임시 이름(User28 등)으로 가입한 사용자에게 한 번 띄우는 이름 설정 시트
+        @Presents public var nameSetup: ProfileEditFeature.State?
 
         public var startupAnnouncementUserID: UUID? {
             guard hasCheckedOnboarding, onboarding == nil, termsConsent == nil,
@@ -62,6 +64,8 @@ public struct AppFeature : Sendable {
         case registerTokenResponse
         case pushNotificationTapped([String: String])
         case checkOnboarding
+        case checkNameSetup
+        case nameSetup(PresentationAction<ProfileEditFeature.Action>)
         case onboarding(OnboardingFeature.Action)
         case termsConsent(TermsConsentFeature.Action)
         case startupAnnouncementRequested
@@ -134,8 +138,9 @@ public struct AppFeature : Sendable {
                     // 온보딩 → 가이드라인 → 업로드 순서로 이어진다
                     state.onboarding = OnboardingFeature.State()
                     state.didShowOnboardingThisSession = true
+                    return .none
                 }
-                return .none
+                return .send(.checkNameSetup)
 
             case .onboarding(.delegate(.notificationPermissionRequested)):
                 // 온보딩 알림 페이지 CTA — 어필 문구를 본 직후 시스템 팝업 표시
@@ -145,7 +150,10 @@ public struct AppFeature : Sendable {
                 state.onboarding = nil
                 // 알림 페이지 CTA를 거치지 않고 닫았어도 권한 요청·FCM 등록은 보장
                 // (이미 결정된 상태면 시스템 팝업 없이 토큰 등록만 수행)
-                return state.termsConsent == nil ? .send(.requestPushPermission) : .none
+                return .merge(
+                    state.termsConsent == nil ? .send(.requestPushPermission) : .none,
+                    .send(.checkNameSetup)
+                )
 
             case .onboarding(.delegate(.firstUploadRequested)):
                 state.onboarding = nil
@@ -162,7 +170,7 @@ public struct AppFeature : Sendable {
                 state.termsConsent = nil
                 // 로그인 전에 동의한 경우 푸시 권한은 로그인 완료(authStateChanged) 시점에 요청
                 if case .tab = state.destination {
-                    return .send(.requestPushPermission)
+                    return .merge(.send(.requestPushPermission), .send(.checkNameSetup))
                 }
                 return .none
 
@@ -223,6 +231,18 @@ public struct AppFeature : Sendable {
                         } ?? .none
                     )
                 }
+                return .none
+
+            case .checkNameSetup:
+                return presentNameSetupIfNeeded(&state)
+
+            case .nameSetup(.presented(.profileUpdated(let user))):
+                state.currentUser = user
+                state.tabState?.currentUser = user
+                state.tabState?.settings.currentUser = user
+                return .none
+
+            case .nameSetup:
                 return .none
 
             case .verifiedUserIDsLoaded(let ids):
@@ -395,6 +415,9 @@ public struct AppFeature : Sendable {
         .ifLet(\.loginState, action: \.destination.login) {
             LoginFeature()
         }
+        .ifLet(\.$nameSetup, action: \.nameSetup) {
+            ProfileEditFeature()
+        }
         .ifLet(\.$announcement, action: \.announcement) {
             AnnouncementDetailFeature()
         }
@@ -407,6 +430,35 @@ public struct AppFeature : Sendable {
         .ifLet(\.termsConsent, action: \.termsConsent) {
             TermsConsentFeature()
         }
+    }
+
+    /// 임시 이름으로 가입한 사용자에게 이름 설정 시트를 한 번만 띄운다.
+    ///
+    /// Apple 로그인은 이름을 주지 않아 서버 트리거가 `User`/`User28` 같은 임시 이름을 넣는다.
+    /// 서로 영상에 피드백을 주고받는 앱이라, 임시 이름이면 상대가 사람으로 보이지 않는다.
+    ///
+    /// ponytail: 본문을 `Reduce` 밖으로 뺀 이유는 스타일이 아니라 컴파일이다 —
+    /// switch 전체가 한 덩어리 표현식이라 케이스를 더하면 타입 체커가 시간 초과를 낸다.
+    private func presentNameSetupIfNeeded(_ state: inout State) -> Effect<Action> {
+        if state.nameSetup != nil { return .none }
+        if state.onboarding != nil || state.termsConsent != nil { return .none }
+        guard let user = state.currentUser else { return .none }
+        guard Self.hasPlaceholderName(user.name) else { return .none }
+        guard !userDefaultsClient.boolForKey(Self.nameSetupPromptedKey) else { return .none }
+        state.nameSetup = ProfileEditFeature.State(currentUser: user, isNameSetup: true)
+        // 건너뛴 사람을 매 실행마다 붙잡지 않는다 — 이름은 설정에서 언제든 바꿀 수 있다
+        let defaults = userDefaultsClient
+        return .run { _ in await defaults.setBool(true, Self.nameSetupPromptedKey) }
+    }
+
+    /// 이름 설정 권유를 이미 띄웠는지 (기기 단위)
+    static let nameSetupPromptedKey = "hasPromptedNameSetup"
+
+    /// 서버 기본 이름(`User`, `User2`, …) 여부 — `handle_new_user()` 트리거가 넣는 값
+    static func hasPlaceholderName(_ name: String) -> Bool {
+        guard name.hasPrefix("User") else { return false }
+        let suffix = name.dropFirst(4)
+        return suffix.isEmpty || suffix.allSatisfy(\.isNumber)
     }
 }
 

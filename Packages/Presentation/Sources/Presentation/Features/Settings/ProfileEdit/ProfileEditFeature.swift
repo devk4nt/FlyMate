@@ -13,10 +13,14 @@ public struct ProfileEditFeature {
         public var isSubmitting = false
         public var error: AppError?
         @Presents public var alert: AlertState<Action.Alert>?
+        /// 첫 로그인 직후 이름 설정 권유로 띄운 경우 — 문구만 달라지고 저장 로직은 같다
+        public let isNameSetup: Bool
 
-        public init(currentUser: User) {
+        public init(currentUser: User, isNameSetup: Bool = false) {
             self.currentUser = currentUser
-            self.name = currentUser.name
+            // 임시 이름(User28 등)을 그대로 두면 지우고 쓰는 수고가 생긴다
+            self.name = isNameSetup ? "" : currentUser.name
+            self.isNameSetup = isNameSetup
         }
 
         public var isValid: Bool {

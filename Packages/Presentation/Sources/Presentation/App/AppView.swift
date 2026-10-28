@@ -8,6 +8,7 @@ public struct AppView: View {
     @State private var splashStartedAt = ContinuousClock.now
     private static let maxSplashWait: Duration = .seconds(6)
     @State private var bugReportDraft: BugReportDraft?
+    @Dependency(\.analyticsClient) private var analyticsClient
 
     public init(store: StoreOf<AppFeature>) {
         self.store = store
@@ -40,12 +41,27 @@ public struct AppView: View {
             try? await Task.sleep(until: splashStartedAt + wait, clock: .continuous)
             guard !Task.isCancelled else { return }
 
+            // 인증을 못 기다리고 최대 대기로 풀렸는지 기록한다.
+            // 설치 후 로그인 화면조차 못 보고 이탈한 사람이 여기서 막힌 것인지 판별할 유일한 단서.
+            analyticsClient.trackEvent(
+                AnalyticsEvent.splashResolved,
+                [
+                    AnalyticsEvent.timedOutParameter: String(!store.hasResolvedAuth),
+                    AnalyticsEvent.durationMsParameter: String(Int(splashStartedAt.duration(to: .now) / .milliseconds(1))),
+                ]
+            )
+
             withAnimation(reduceMotion ? .linear(duration: 0.15) : .easeOut(duration: 0.4)) {
                 isShowingSplash = false
             }
         }
         .sheet(item: $bugReportDraft) { draft in
             BugReportView(draft: draft)
+        }
+        .sheet(item: $store.scope(state: \.nameSetup, action: \.nameSetup)) { nameSetupStore in
+            NavigationStack {
+                ProfileEditView(store: nameSetupStore)
+            }
         }
         .sheet(item: $store.scope(state: \.announcement, action: \.announcement)) { announcementStore in
             AnnouncementDetailView(store: announcementStore)

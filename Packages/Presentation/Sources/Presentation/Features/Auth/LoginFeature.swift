@@ -50,6 +50,8 @@ public struct LoginFeature {
         public var email = ""
         public var password = ""
         public var showsStagingAccountPicker = false
+        /// 성공·실패 이벤트에 로그인 수단을 싣기 위해 시도 시점에 기록해 둔다
+        public var attemptedProvider: String?
         /// nil이면 테스트 계정 로그인 비활성 — 테스트에서 주입 가능하도록 State에 둔다
         public let stagingTestPassword: String?
 
@@ -77,8 +79,30 @@ public struct LoginFeature {
     @Dependency(\.authClient) private var authClient
     @Dependency(\.appleSignInClient) private var appleSignInClient
     @Dependency(\.kakaoSignInClient) private var kakaoSignInClient
+    @Dependency(\.analyticsClient) private var analyticsClient
+    @Dependency(\.date.now) private var now
+
+    /// 서버 가입 처리와 첫 로그인 사이의 허용 오차 — 이 안이면 신규 가입으로 집계한다
+    private static let newUserWindow: TimeInterval = 60
+
+    /// GA4 `provider` 파라미터 값
+    private enum Provider {
+        static let apple = "apple"
+        static let kakao = "kakao"
+        static let email = "email"
+    }
 
     public init() {}
+
+    private func trackLoginFailed(provider: String, reason: String) {
+        analyticsClient.trackEvent(
+            AnalyticsEvent.loginFailed,
+            [
+                AnalyticsEvent.providerParameter: provider,
+                AnalyticsEvent.reasonParameter: reason,
+            ]
+        )
+    }
 
     public var body: some ReducerOf<Self> {
         Reduce { state, action in
@@ -86,6 +110,11 @@ public struct LoginFeature {
             case .appleLoginTapped:
                 state.isLoading = true
                 state.error = nil
+                state.attemptedProvider = Provider.apple
+                analyticsClient.trackEvent(
+                    AnalyticsEvent.loginAttempted,
+                    [AnalyticsEvent.providerParameter: Provider.apple]
+                )
                 let client = appleSignInClient
                 return .run { send in
                     do {
@@ -112,6 +141,7 @@ public struct LoginFeature {
 
             case .appleSignInResult(.failure(let error)):
                 state.isLoading = false
+                trackLoginFailed(provider: Provider.apple, reason: error == .canceled ? "canceled" : "sdk")
                 if error == .canceled { return .none }
                 state.error = .unexpected(error.localizedDescription ?? "Apple 로그인에 실패했습니다.")
                 return .none
@@ -119,6 +149,11 @@ public struct LoginFeature {
             case .kakaoLoginTapped:
                 state.isLoading = true
                 state.error = nil
+                state.attemptedProvider = Provider.kakao
+                analyticsClient.trackEvent(
+                    AnalyticsEvent.loginAttempted,
+                    [AnalyticsEvent.providerParameter: Provider.kakao]
+                )
                 let client = kakaoSignInClient
                 return .run { send in
                     do {
@@ -145,6 +180,7 @@ public struct LoginFeature {
 
             case .kakaoSignInResult(.failure(let error)):
                 state.isLoading = false
+                trackLoginFailed(provider: Provider.kakao, reason: error == .canceled ? "canceled" : "sdk")
                 if error == .canceled { return .none }
                 state.error = .unexpected(error.localizedDescription ?? "카카오 로그인에 실패했습니다.")
                 return .none
@@ -199,6 +235,11 @@ public struct LoginFeature {
                 guard !email.isEmpty, !password.isEmpty else { return .none }
                 state.isLoading = true
                 state.error = nil
+                state.attemptedProvider = Provider.email
+                analyticsClient.trackEvent(
+                    AnalyticsEvent.loginAttempted,
+                    [AnalyticsEvent.providerParameter: Provider.email]
+                )
                 let client = authClient
                 return .run { send in
                     do {
@@ -216,8 +257,17 @@ public struct LoginFeature {
                 state.password = ""
                 return .none
 
-            case .loginResponse(.success):
+            case .loginResponse(.success(let user)):
                 state.isLoading = false
+                analyticsClient.trackEvent(
+                    AnalyticsEvent.loginSucceeded,
+                    [
+                        AnalyticsEvent.providerParameter: user.provider.rawValue,
+                        // 가입 트리거가 users 행을 만든 직후의 첫 로그인이면 신규 가입으로 본다
+                        AnalyticsEvent.isNewParameter: String(now.timeIntervalSince(user.createdAt) < Self.newUserWindow),
+                    ]
+                )
+                state.attemptedProvider = nil
                 state.showsEmailLogin = false
                 state.email = ""
                 state.password = ""
@@ -225,6 +275,10 @@ public struct LoginFeature {
 
             case .loginResponse(.failure(let error)):
                 state.isLoading = false
+                trackLoginFailed(
+                    provider: state.attemptedProvider ?? "unknown",
+                    reason: String(describing: error)
+                )
                 state.error = error
                 return .none
 
