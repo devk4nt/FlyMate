@@ -25,17 +25,20 @@ struct LoginFeatureTests {
         } withDependencies: {
             $0.appleSignInClient.signIn = { Self.appleSignInResult }
             $0.authClient.signInWithApple = { _, _ in mockUser }
+            $0.date = .constant(Date(timeIntervalSince1970: 1_700_000_000))
         }
 
         await store.send(.appleLoginTapped) {
             $0.isLoading = true
             $0.error = nil
+            $0.attemptedProvider = "apple"
         }
 
         await store.receive(\.appleSignInResult.success)
 
         await store.receive(\.loginResponse.success) {
             $0.isLoading = false
+            $0.attemptedProvider = nil
         }
     }
 
@@ -53,6 +56,7 @@ struct LoginFeatureTests {
         await store.send(.appleLoginTapped) {
             $0.isLoading = true
             $0.error = nil
+            $0.attemptedProvider = "apple"
         }
 
         await store.receive(\.appleSignInResult.success)
@@ -108,6 +112,7 @@ struct LoginFeatureTests {
         let store = TestStore(initialState: state) {
             LoginFeature()
         } withDependencies: {
+            $0.date = .constant(Date(timeIntervalSince1970: 1_700_000_000))
             $0.authClient.signInWithEmail = { email, _ in
                 receivedEmail.setValue(email)
                 return mockUser
@@ -122,6 +127,7 @@ struct LoginFeatureTests {
 
         await store.receive(\.loginResponse.success) {
             $0.isLoading = false
+            $0.attemptedProvider = nil
         }
 
         receivedEmail.withValue { #expect($0 == LoginFeature.StagingAccount.owner.email) }
@@ -153,6 +159,7 @@ struct LoginFeatureTests {
             LoginFeature()
         } withDependencies: {
             $0.authClient.signInWithEmail = { _, _ in mockUser }
+            $0.date = .constant(Date(timeIntervalSince1970: 1_700_000_000))
         }
 
         await store.send(.emailChanged("reviewer@flymate.app")) {
@@ -165,6 +172,7 @@ struct LoginFeatureTests {
         await store.send(.emailLoginTapped) {
             $0.isLoading = true
             $0.error = nil
+            $0.attemptedProvider = "email"
         }
 
         await store.receive(\.loginResponse.success) {
@@ -172,6 +180,7 @@ struct LoginFeatureTests {
             $0.showsEmailLogin = false
             $0.email = ""
             $0.password = ""
+            $0.attemptedProvider = nil
         }
     }
 

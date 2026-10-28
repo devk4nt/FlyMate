@@ -49,6 +49,25 @@ public enum AnalyticsEvent {
     public static let sourceParameter = "source"
     /// 업로드 종류 구분: `study` | `quick_feedback`
     public static let kindParameter = "kind"
+
+    // MARK: - 진입 퍼널 (설치 → 로그인 → 가입)
+    /// 스플래시 해제 시점. 인증 확인을 못 기다리고 최대 대기(6초)로 풀렸는지 `timed_out`으로 구분한다 —
+    /// 설치 후 로그인 화면조차 못 본 이탈이 스플래시 때문인지 판별할 유일한 단서.
+    public static let splashResolved = "splash_resolved"
+    /// 로그인 버튼 탭. `login_succeeded`와의 차이가 곧 "눌렀는데 못 들어간" 사람 수다.
+    public static let loginAttempted = "login_attempted"
+    public static let loginSucceeded = "login_succeeded"
+    /// 실패·사용자 취소 모두 포함 — `reason`으로 구분한다
+    public static let loginFailed = "login_failed"
+
+    /// 로그인 수단: `apple` | `kakao` | `email`
+    public static let providerParameter = "provider"
+    /// 가입 직후 첫 로그인이면 `true` — 신규 가입 전환 측정
+    public static let isNewParameter = "is_new"
+    public static let durationMsParameter = "duration_ms"
+    public static let timedOutParameter = "timed_out"
+    /// 실패 사유: `canceled` | `sdk` | AppError 설명
+    public static let reasonParameter = "reason"
 }
 
 extension AnalyticsClient {
